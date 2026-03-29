@@ -9,7 +9,7 @@ pages/index.vue
       <!-- 主内容网格 -->
       <div class="main-grid">
         <!-- 左侧：上传区 -->
-        <ImageUploader />
+        <UploaderImage />
         
 
         <!-- 右侧：结果区 -->
@@ -38,7 +38,7 @@ pages/index.vue
 import CodeEditor from "~/components/code/CodeEditor.vue";
 import OptimizationPanel from "~/components/code/OptimizationPanel.vue";
 import HeroSection from "~/components/layout/HeroSection.vue";
-import ImageUploader from "~/components/upload/ImageUploader.vue";
+import UploaderImage from "~/components/upload/UploaderImage.vue";
 
 // 代码数据
 const code = ref(

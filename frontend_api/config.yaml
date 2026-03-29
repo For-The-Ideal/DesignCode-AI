@@ -1,0 +1,6 @@
+mysql:
+  dsn: "root:123456@tcp(127.0.0.1:3306)/stock_pulse?charset=utf8mb4&parseTime=True&loc=Local"
+server:
+  local: "http://localhost"
+  port: ":8080"
+  jwt_secret: "stock_pulse_secret_key"
