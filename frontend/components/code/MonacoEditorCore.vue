@@ -228,35 +228,5 @@ onBeforeUnmount(() => {
   background: #0a0a0f;
   text-align: left;
 }
-/* 自定义滚动条样式 - 科技感 */
-:deep(::-webkit-scrollbar) {
-  width: 2px;
-  height: 2px;
-}
-:deep(::-webkit-scrollbar-track) {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 3px;
-}
-:deep(::-webkit-scrollbar-thumb) {
-  background: rgba(0, 255, 255, 0.3);
-  border-radius: 3px;
-  transition: background 0.2s;
-}
-:deep(::-webkit-scrollbar-thumb:hover) {
-  background: rgba(0, 255, 255, 0.6);
-}
-:deep(::-webkit-scrollbar-thumb:active) {
-  background: #00ffff;
-}
 
-/* Firefox 滚动条 */
-:deep(*) {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(0, 255, 255, 0.3) rgba(255, 255, 255, 0.05);
-}
-
-.monaco-editor ::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
-}
 </style>

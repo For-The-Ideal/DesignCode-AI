@@ -19,14 +19,12 @@
 
       <!-- 导航菜单 -->
       <nav class="nav">
-        <a href="#" class="nav-link active">首页</a>
-        <a href="#" class="nav-link">模型对比</a>
-        <a href="#" class="nav-link">生成历史</a>
+        <a href="#" class="nav-link" :class="{'active': route.path === item.link}" v-for="item in navList" :key="item.name">{{item.name}}</a>
       </nav>
 
       <!-- 右侧区域 -->
       <div class="auth-area">
-        <button class="btn-login">
+        <button class="btn-login" @click="loginModalRef.open()">
           <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M20 21V19C20 16.8 18.2 15 16 15H8C5.8 15 4 16.8 4 19V21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
             <path d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z" stroke="currentColor" stroke-width="1.5"/>
@@ -35,8 +33,40 @@
         </button>
       </div>
     </div>
+
+     <LoginModal 
+      ref="loginModalRef" 
+      @login-success="handleLoginSuccess"
+      @register-success="handleRegisterSuccess"
+      @close="handleModalClose"
+    />
+
   </header>
 </template>
+
+
+<script setup>
+import {computed} from "vue"
+import LoginModal from '~/components/auth/LoginModal.vue'
+const route = useRoute()
+const loginModalRef = ref()
+const navList = ref([
+  {
+    name:"首页",
+    link:"/",
+  },
+  {
+    name:"模型对比",
+    link:"/compare",
+  },
+  {
+    name:"首页",
+    link:"/history",
+  }
+])
+
+</script>
+
 
 <style scoped>
 * {
