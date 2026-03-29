@@ -9,8 +9,8 @@
       :style="{
         top: card.currentTop,
         left: card.currentLeft,
-        transition: card.isAnimating ? 'top 0.5s cubic-bezier(0.2, 0.9, 0.4, 1.1), left 0.5s cubic-bezier(0.2, 0.9, 0.4, 1.1)' : 'none',
-        opacity: card.isAnimating ? 1 : 0,
+        transition: card.isAnimating ? 'top 0.5s cubic-bezier(0.2, 0.9, 0.4, 1.1), left 0.5s cubic-bezier(0.2, 0.9, 0.4, 1.1), opacity 0.5s ease' : '',
+        opacity: card.isVisible ? 1 : 0,
         '--duration': card.duration,
         '--delay': card.delay
       }"
@@ -30,7 +30,9 @@
       :style="{
         top: previewTop,
         opacity: previewOpacity,
-        transition: 'top 0.5s cubic-bezier(0.2, 0.9, 0.4, 1.1), opacity 0.4s ease',
+        transition: previewAnimationDone 
+          ? 'top 0.5s cubic-bezier(0.2, 0.9, 0.4, 1.1), opacity 0.4s ease, transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.4s ease, border-color 0.4s ease, background 0.4s ease'
+          : 'top 0.5s cubic-bezier(0.2, 0.9, 0.4, 1.1), opacity 0.4s ease',
         animation: previewAnimationDone ? 'floatCard 5s ease-in-out infinite' : 'none'
       }"
     >
@@ -61,18 +63,19 @@ import { ref, onMounted, nextTick, watch } from 'vue'
 
 const emit = defineEmits(['copy'])
 
-// 卡片配置 - 添加方向属性
+// 卡片配置 - 移除固定角度，由逻辑动态生成
 const cardsConfig = [
-  { icon: "fas fa-image", text: "设计稿上传", badge: null, direction: "top" },
-  { icon: "fas fa-brain", text: "AI 分析", badge: "AI", direction: "bottom" },
-  { icon: "fas fa-code", text: "代码生成", badge: null, direction: "left" },
-  { icon: "fas fa-stethoscope", text: "智能诊断", badge: "AI", direction: "right" },
-  { icon: "fas fa-code-branch", text: "代码Diff", badge: "对比", direction: "random" },
+  { icon: "fas fa-image", text: "设计稿上传", badge: null },
+  { icon: "fas fa-brain", text: "AI 分析", badge: "AI" },
+  { icon: "fas fa-code", text: "代码生成", badge: null },
+  { icon: "fas fa-stethoscope", text: "智能诊断", badge: "AI" },
+  { icon: "fas fa-code-branch", text: "代码Diff", badge: "对比" },
 ]
 
 const CARD_WIDTH = 140
 const CARD_HEIGHT = 70
-const TARGET_TOP = 100 // 代码卡片最终距离顶部的位置
+const TARGET_TOP = 120 // 下移一点，留出更多空间
+const RADIUS = 280     // 基础半径
 
 const previewAnimationDone = ref(false)
 const previewTop = ref('-100px')
@@ -83,7 +86,7 @@ const hoveredIndex = ref(-1)
 const previewCardRef = ref(null)
 const heroCardsRef = ref(null)
 
-// 获取代码卡片最终位置（相对于 hero-cards 容器）
+// 获取代码卡片最终位置
 const getFinalPreviewRect = () => {
   if (!previewCardRef.value || !heroCardsRef.value) return null
   const containerRect = heroCardsRef.value.getBoundingClientRect()
@@ -92,27 +95,6 @@ const getFinalPreviewRect = () => {
   const left = (containerRect.width - cardWidth) / 2
   const top = TARGET_TOP
   return { left, top, width: cardWidth, height: cardHeight }
-}
-
-// 根据方向获取偏移量
-const getOffsetByDirection = (direction, distance = 205) => {
-  switch(direction) {
-    case 'top':
-      return { offsetX: 0, offsetY: -distance }
-    case 'bottom':
-      return { offsetX: 0, offsetY: distance }
-    case 'left':
-      return { offsetX: -distance, offsetY: 0 }
-    case 'right':
-      return { offsetX: distance, offsetY: 0 }
-    case 'random':
-    default:
-      const angle = Math.random() * Math.PI * 2
-      return {
-        offsetX: Math.cos(angle) * distance,
-        offsetY: Math.sin(angle) * distance
-      }
-  }
 }
 
 // 设置初始位置
@@ -124,35 +106,42 @@ const setInitialPositions = async () => {
   const finalRect = getFinalPreviewRect()
   if (!finalRect) return
 
-  // 代码卡片初始位置：顶部外 + 透明
-  previewTop.value = '-100px'
-  previewOpacity.value = 0
-
   const finalCenterX = finalRect.left + finalRect.width / 2
   const finalCenterY = finalRect.top + finalRect.height / 2
 
-  // 生成每个气泡的目标位置（根据方向，距离 170-240px）
-  const targetPositions = []
-  for (let i = 0; i < cardsConfig.length; i++) {
-    const config = cardsConfig[i]
-    // 距离：170-240px 随机
-    const distance = 170 + Math.random() * 70
-    const { offsetX, offsetY } = getOffsetByDirection(config.direction, distance)
-    targetPositions.push({ offsetX, offsetY })
-  }
+  // 1. 固定这 5 个关键点位（角度和半径倍率，以完美匹配截图）
+  const fixedPoints = [
+    { angle: -150, rFactor: 1.15 }, // 左上 (代码Diff)
+    { angle: -35,  rFactor: 1.1 },  // 右上 (AI 分析)
+    { angle: 15,   rFactor: 1.25 }, // 正右偏下 (代码生成)
+    { angle: 160,  rFactor: 1.15 }, // 左下 (智能诊断)
+    { angle: 90,   rFactor: 0.95 }  // 正下 (设计稿上传)
+  ]
+  
+  // 2. 将气泡内容随机打乱
+  const shuffledCards = [...cardsConfig].sort(() => Math.random() - 0.5)
 
   const newCards = []
-  for (let i = 0; i < cardsConfig.length; i++) {
-    const config = cardsConfig[i]
-    const target = targetPositions[i]
-    const duration = 3 + Math.random() * 3
-    const delay = Math.random() * 2
+  for (let i = 0; i < shuffledCards.length; i++) {
+    const config = shuffledCards[i]
+    const point = fixedPoints[i] 
+    
+    const rad = (point.angle * Math.PI) / 180
+    const customRadius = RADIUS * point.rFactor
+    
+    // 计算目标位置
+    const targetOffsetX = Math.cos(rad) * customRadius
+    const targetOffsetY = Math.sin(rad) * customRadius
+
+    const duration = 3 + Math.random() * 2
+    const delay = i * 0.15
+
     newCards.push({
       ...config,
       currentTop: `${finalCenterY - CARD_HEIGHT / 2}px`,
       currentLeft: `${finalCenterX - CARD_WIDTH / 2}px`,
-      targetTop: `${finalCenterY + target.offsetY - CARD_HEIGHT / 2}px`,
-      targetLeft: `${finalCenterX + target.offsetX - CARD_WIDTH / 2}px`,
+      targetTop: `${finalCenterY + targetOffsetY - CARD_HEIGHT / 2}px`,
+      targetLeft: `${finalCenterX + targetOffsetX - CARD_WIDTH / 2}px`,
       duration: `${duration}s`,
       delay: `${delay}s`,
       isAnimating: false,
@@ -219,6 +208,14 @@ const startBubblesAnimation = () => {
       const target = event.target
       if (target && target.classList && target.classList.contains('floating-card')) {
         target.removeEventListener('transitionend', onTransitionEnd)
+        
+        // 找到当前卡片并关闭 isAnimating 状态，以便使用 CSS 的过渡属性
+        const elements = document.querySelectorAll('.floating-card')
+        const index = Array.from(elements).indexOf(target)
+        if (index !== -1 && cards.value[index]) {
+          cards.value[index].isAnimating = false
+        }
+
         currentIndex++
         animateNext()
       }
@@ -282,7 +279,7 @@ class GeneratedWidget extends StatelessWidget {
 .hero-cards {
   flex: 1;
   position: relative;
-  min-height: 400px;
+  min-height: 500px;
   width: 100%;
   overflow: visible;
 }
@@ -303,18 +300,22 @@ class GeneratedWidget extends StatelessWidget {
   white-space: nowrap;
   opacity: 0;
   /* 优化过渡属性：增加 transform, box-shadow 和 border-color 的平滑度 */
-  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), 
-              box-shadow 0.3s ease,
-              border-color 0.3s ease,
-              opacity 0.4s ease;
+  transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), 
+              box-shadow 0.4s ease,
+              border-color 0.4s ease,
+              opacity 0.4s ease,
+              background 0.4s ease;
   will-change: transform;
 }
 
 /* 悬浮效果：向上移动并放大 */
 .floating-card:hover {
-  transform: translateY(-10px) scale(1.08);
+  transform: translateY(-15px) scale(1.12);
+  background: rgba(15, 30, 45, 0.9);
   border-color: #00ffff;
-  box-shadow: 0 20px 40px rgba(0, 255, 255, 0.35);
+  box-shadow: 0 25px 50px rgba(0, 255, 255, 0.4),
+              0 0 15px rgba(0, 255, 255, 0.2);
+  z-index: 10;
 }
 
 .card-glow {
@@ -427,7 +428,6 @@ class GeneratedWidget extends StatelessWidget {
   border: 1px solid rgba(0, 255, 255, 0.3);
   border-radius: 20px;
   overflow: hidden;
-  transition: all 0.3s;
   z-index: 4;
 }
 
@@ -438,8 +438,10 @@ class GeneratedWidget extends StatelessWidget {
 
 .preview-card:hover {
   border-color: #00ffff;
-  transform: translateX(-50%) translateY(-5px);
-  box-shadow: 0 15px 35px rgba(0, 255, 255, 0.2);
+  transform: translateX(-50%) translateY(-12px) scale(1.03);
+  box-shadow: 0 25px 50px rgba(0, 255, 255, 0.35),
+              0 0 15px rgba(0, 255, 255, 0.1);
+  background: rgba(15, 30, 45, 0.95);
 }
 
 .preview-header {

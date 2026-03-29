@@ -113,7 +113,16 @@ const initEditor = async () => {
       cursorSmoothCaretAnimation: 'on',
       formatOnPaste: true,
       formatOnType: false,
-      placeholder: props.placeholder
+      placeholder: props.placeholder,
+      // 隐藏滚动条
+      scrollbar: {
+        vertical: 'hidden',
+        horizontal: 'hidden',
+        handleMouseWheel: true
+      },
+      // 隐藏右侧缩略图旁边的装饰
+      overviewRulerLanes: 0,
+      overviewRulerBorder: false
     })
     
     // 监听内容变化
