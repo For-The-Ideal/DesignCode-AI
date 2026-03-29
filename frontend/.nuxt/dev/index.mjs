@@ -647,7 +647,14 @@ const _inlineRuntimeConfig = {
       }
     }
   },
-  "public": {}
+  "public": {
+    "apiBase": "http://localhost:8080",
+    "wsBase": "ws://localhost:8080/ws",
+    "siteTitle": "Design2Code AI (Dev)",
+    "debug": true,
+    "cryptoSecret": "design2code-ai-secret-key-2025"
+  },
+  "apiSecret": ""
 };
 const envOptions = {
   prefix: "NITRO_",
@@ -2576,10 +2583,12 @@ async function getIslandContext(event) {
 	};
 }
 
+const _lazy_Ey5ywE = () => Promise.resolve().then(function () { return ajaxData$1; });
 const _lazy_jDXYbL = () => Promise.resolve().then(function () { return renderer; });
 
 const handlers = [
   { route: '', handler: _FyfEb9, lazy: false, middleware: true, method: undefined },
+  { route: '/api/ajaxData', handler: _lazy_Ey5ywE, lazy: true, middleware: false, method: undefined },
   { route: '/__nuxt_error', handler: _lazy_jDXYbL, lazy: true, middleware: false, method: undefined },
   { route: '/__nuxt_island/**', handler: handler$1, lazy: false, middleware: false, method: undefined },
   { route: '/**', handler: _lazy_jDXYbL, lazy: true, middleware: false, method: undefined }
@@ -2927,6 +2936,17 @@ const styles = {};
 const styles$1 = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProperty({
   __proto__: null,
   default: styles
+}, Symbol.toStringTag, { value: 'Module' }));
+
+const ajaxData = defineEventHandler(async (event) => {
+  const { body } = await readBody(event);
+  console.log(body);
+  return body;
+});
+
+const ajaxData$1 = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProperty({
+  __proto__: null,
+  default: ajaxData
 }, Symbol.toStringTag, { value: 'Module' }));
 
 function renderPayloadResponse(ssrContext) {
