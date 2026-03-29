@@ -2,13 +2,13 @@
 <template>
   <Teleport to="body">
     <transition name="toast">
-      <div v-if="visible" class="toast-container" :class="type">
+      <div v-if="getVisible" class="toast-container" :class="getToastParams.type">
         <div class="toast-icon">
           <i :class="iconClass"></i>
         </div>
         <div class="toast-content">
-          <div class="toast-title">{{ title }}</div>
-          <div class="toast-message">{{ message }}</div>
+          <div class="toast-title">{{ getToastParams.title }}</div>
+          <div class="toast-message">{{ getToastParams.message }}</div>
         </div>
         <button class="toast-close" @click="close">
           <i class="fas fa-times"></i>
@@ -19,57 +19,30 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import {useToastNotificationStore} from "~/stores/toastNotification"
-const props = defineProps({
-  type: {
-    type: String,
-    default: 'success'
-  },
-  title: {
-    type: String,
-    default: ''
-  },
-  message: {
-    type: String,
-    default: ''
-  },
-  duration: {
-    type: Number,
-    default: 3000
-  }
-})
+const toastNotificationStore = useToastNotificationStore()
 
+const getToastParams = computed(() => toastNotificationStore.toastParams)
+const getVisible = computed(() => toastNotificationStore.visible)
 const emit = defineEmits(['close'])
-
-const visible = ref(false)
-let timer = null
 
 const iconClass = computed(() => {
   const icons = {
     success: 'fas fa-check-circle',
     error: 'fas fa-times-circle',
     warning: 'fas fa-exclamation-triangle',
-    info: 'fas fa-info-circle'
+    info: 'fas fa-info-circle',
+    loading: 'fas fa-spinner-circle'
   }
-  return icons[props.type] || 'fas fa-check-circle'
+  return icons[getToastParams.value.type] || 'fas fa-check-circle'
 })
 
-const show = () => {
-  visible.value = true
-  if (timer) clearTimeout(timer)
-  timer = setTimeout(() => {
-    close()
-  }, props.duration)
-}
 
 const close = () => {
-  visible.value = false
-  if (timer) clearTimeout(timer)
-  emit('close')
+ toastNotificationStore.hideToast()
 }
 
-defineExpose({ show, close })
 </script>
 
 <style scoped>

@@ -38,9 +38,10 @@ export const LayoutCardsArea: typeof import("../components/layout/CardsArea.vue"
 export const LayoutHeroSection: typeof import("../components/layout/HeroSection.vue")['default']
 export const OptimizationCompareModal: typeof import("../components/optimization/CompareModal.vue")['default']
 export const OptimizationProgressModal: typeof import("../components/optimization/ProgressModal.vue")['default']
+export const UploadDescEditorModal: typeof import("../components/upload/DescEditorModal.vue")['default']
 export const UploadDragDropZone: typeof import("../components/upload/DragDropZone.vue")['default']
-export const UploadImagePreview: typeof import("../components/upload/ImagePreview.vue")['default']
-export const UploadImageUploader: typeof import("../components/upload/ImageUploader.vue")['default']
+export const UploadPreviewImage: typeof import("../components/upload/PreviewImage.vue")['default']
+export const UploadUploaderImage: typeof import("../components/upload/UploaderImage.vue")['default']
 export const NuxtWelcome: typeof import("../node_modules/nuxt/dist/app/components/welcome.vue")['default']
 export const NuxtLayout: typeof import("../node_modules/nuxt/dist/app/components/nuxt-layout")['default']
 export const NuxtErrorBoundary: typeof import("../node_modules/nuxt/dist/app/components/nuxt-error-boundary.vue")['default']
@@ -89,9 +90,10 @@ export const LazyLayoutCardsArea: LazyComponent<typeof import("../components/lay
 export const LazyLayoutHeroSection: LazyComponent<typeof import("../components/layout/HeroSection.vue")['default']>
 export const LazyOptimizationCompareModal: LazyComponent<typeof import("../components/optimization/CompareModal.vue")['default']>
 export const LazyOptimizationProgressModal: LazyComponent<typeof import("../components/optimization/ProgressModal.vue")['default']>
+export const LazyUploadDescEditorModal: LazyComponent<typeof import("../components/upload/DescEditorModal.vue")['default']>
 export const LazyUploadDragDropZone: LazyComponent<typeof import("../components/upload/DragDropZone.vue")['default']>
-export const LazyUploadImagePreview: LazyComponent<typeof import("../components/upload/ImagePreview.vue")['default']>
-export const LazyUploadImageUploader: LazyComponent<typeof import("../components/upload/ImageUploader.vue")['default']>
+export const LazyUploadPreviewImage: LazyComponent<typeof import("../components/upload/PreviewImage.vue")['default']>
+export const LazyUploadUploaderImage: LazyComponent<typeof import("../components/upload/UploaderImage.vue")['default']>
 export const LazyNuxtWelcome: LazyComponent<typeof import("../node_modules/nuxt/dist/app/components/welcome.vue")['default']>
 export const LazyNuxtLayout: LazyComponent<typeof import("../node_modules/nuxt/dist/app/components/nuxt-layout")['default']>
 export const LazyNuxtErrorBoundary: LazyComponent<typeof import("../node_modules/nuxt/dist/app/components/nuxt-error-boundary.vue")['default']>

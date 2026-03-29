@@ -1,5 +1,5 @@
 <template>
-  <div class="hero-cards" ref="heroCardsRef">
+  <div class="hero-cards" ref="heroCardsRef" :class="{ 'preview-animation-done': previewAnimationDone }">
     <!-- 浮动气泡卡片 -->
     <div
       v-for="(card, index) in cards"
@@ -10,7 +10,7 @@
         top: card.currentTop,
         left: card.currentLeft,
         transition: card.isAnimating ? 'top 0.5s cubic-bezier(0.2, 0.9, 0.4, 1.1), left 0.5s cubic-bezier(0.2, 0.9, 0.4, 1.1), opacity 0.5s ease' : '',
-        opacity: card.isVisible ? 1 : 0,
+        opacity: previewAnimationDone ? '' : (card.isVisible ? 1 : 0),
         '--duration': card.duration,
         '--delay': card.delay
       }"
@@ -112,10 +112,10 @@ const setInitialPositions = async () => {
   // 1. 固定这 5 个关键点位（角度和半径倍率，以完美匹配截图）
   const fixedPoints = [
     { angle: -150, rFactor: 1.15 }, // 左上 (代码Diff)
-    { angle: -35,  rFactor: 1.1 },  // 右上 (AI 分析)
+    { angle: -15,  rFactor: 1.1 },  // 右上 (AI 分析)
     { angle: 15,   rFactor: 1.25 }, // 正右偏下 (代码生成)
     { angle: 160,  rFactor: 1.15 }, // 左下 (智能诊断)
-    { angle: 90,   rFactor: 0.95 }  // 正下 (设计稿上传)
+    { angle: 90,   rFactor: 0.75 }  // 正下 (设计稿上传)
   ]
   
   // 2. 将气泡内容随机打乱
@@ -309,12 +309,14 @@ class GeneratedWidget extends StatelessWidget {
 }
 
 /* 悬浮效果：向上移动并放大 */
+/* 悬浮时停止基础动画，应用 Hover 样式 */
 .floating-card:hover {
-  transform: translateY(-15px) scale(1.12);
+  animation-play-state: paused;
+  transform: translateY(-15px) scale(1.12) !important;
   background: rgba(15, 30, 45, 0.9);
-  border-color: #00ffff;
+  border-color: #00ffff !important;
   box-shadow: 0 25px 50px rgba(0, 255, 255, 0.4),
-              0 0 15px rgba(0, 255, 255, 0.2);
+              0 0 15px rgba(0, 255, 255, 0.2) !important;
   z-index: 10;
 }
 
@@ -405,16 +407,30 @@ class GeneratedWidget extends StatelessWidget {
 .floating-card:nth-child(5) { border-color: rgba(100, 255, 100, 0.4); }
 .floating-card:nth-child(5) .card-icon i { color: #88ff88; }
 
-/* 所有扩散完成后才添加浮动动画 */
+/* 所有扩散完成后才添加浮动和呼吸动画 */
 .preview-animation-done .floating-card {
-  animation: floatRandom var(--duration, 4s) ease-in-out infinite;
+  opacity: 1;
+  animation: subtleFloat var(--duration, 4s) ease-in-out infinite,
+             glowBreathing var(--duration, 4s) ease-in-out infinite;
   animation-delay: var(--delay, 0s);
 }
 
-@keyframes floatRandom {
-  0%, 100% { transform: translateY(0) translateX(0); }
-  25% { transform: translateY(-8px) translateX(3px); }
-  75% { transform: translateY(5px) translateX(-2px); }
+@keyframes subtleFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+
+@keyframes glowBreathing {
+  0%, 100% { 
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 255, 255, 0.1);
+    opacity: 0.85;
+  }
+  50% { 
+    box-shadow: 0 15px 30px rgba(0, 255, 255, 0.25);
+    border-color: rgba(0, 255, 255, 0.6);
+    opacity: 1;
+  }
 }
 
 /* 代码预览卡片 */

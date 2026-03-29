@@ -60,7 +60,7 @@ const navList = ref([
     link:"/compare",
   },
   {
-    name:"首页",
+    name:"历史记录",
     link:"/history",
   }
 ])

@@ -31,3 +31,8 @@ export { requestIdleCallback, cancelIdleCallback } from '#app/compat/idle-callba
 export { setInterval } from '#app/compat/interval';
 export { definePageMeta, PageMeta } from '#app/composables/pages';
 export { defineLazyHydrationComponent } from '#app/composables/lazy-hydration';
+export { httpPequest } from '../utils/request';
+export { useAuthStore } from '../stores/auth';
+export { useToastNotificationStore } from '../stores/toastNotification';
+export { useUserStore } from '../stores/user';
+export { defineStore, acceptHMRUpdate, usePinia, storeToRefs } from '../node_modules/@pinia/nuxt/dist/runtime/composables';

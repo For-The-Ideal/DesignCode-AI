@@ -2,10 +2,12 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: false },  // 关键：关闭 devtools
   ssr: false,  // 关闭 SSR 测试
-  modules: [],  // 清空所有模块
   css: [
     '~/assets/css/main.css',  // 这里配置全局样式
      '@fortawesome/fontawesome-free/css/all.min.css'  // 添加 Font Awesome
+  ],
+   modules: [
+    '@pinia/nuxt',
   ],
    app: {
     head: {
