@@ -29,20 +29,23 @@ type RegisterRequest struct {
 
 // LoginRequest 登录请求参数
 type LoginRequest struct {
-	Username string `json:"username" binding:"required"`
-	Password string `json:"password" binding:"required"`
+	Username    string `json:"username" binding:"required"`
+	Password    string `json:"password" binding:"required"`
+	CaptchaID   string `json:"captcha_id" binding:"required"`
+	CaptchaCode string `json:"captcha_code" binding:"required"`
 }
 
 type CaptchaResponse struct {
-	CaptchaID string `json:"captcha_id"`
-	Captcha   string `json:"captcha"`
+	CaptchaID    string `json:"captcha_id"`
+	CaptchaImage string `json:"captcha_image"`
 }
 
-// Captcha 获取验证码
+// Captcha 获取图形验证码
 func (a *AuthController) Captcha(c *gin.Context) {
+	captchaID, captchaImage, _ := utils.GenerateCaptcha()
 	utils.Success(c, CaptchaResponse{
-		CaptchaID: utils.GenerateCaptcha()["captcha_id"], // 生成验证码ID
-		Captcha:   utils.GenerateCaptcha()["captcha"],    // 生成验证码
+		CaptchaID:    captchaID,
+		CaptchaImage: captchaImage,
 	}, "验证码获取成功")
 }
 
@@ -94,6 +97,12 @@ func (a *AuthController) Login(c *gin.Context) {
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		utils.BadRequest(c, "参数校验失败: "+err.Error())
+		return
+	}
+
+	// 0. 校验验证码（一次性消费）
+	if !utils.VerifyCaptcha(req.CaptchaID, req.CaptchaCode) {
+		utils.BadRequest(c, "验证码错误或已过期")
 		return
 	}
 

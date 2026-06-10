@@ -61,6 +61,31 @@
               </svg>
             </div>
             <p v-if="loginErrors.password" class="field-error">{{ loginErrors.password }}</p>
+
+            <!-- 验证码 -->
+            <div class="captcha-row">
+              <div class="input-field captcha-input" :class="{ error: loginErrors.captchaCode }">
+                <i class="fas fa-shield-alt input-icon"></i>
+                <input
+                  type="text"
+                  v-model="loginForm.captchaCode"
+                  placeholder="验证码"
+                  maxlength="4"
+                  @focus="handleFocus('login-captcha')"
+                  @blur="handleBlur('login-captcha')"
+                  @input="clearLoginError('captchaCode')"
+                  @keyup.enter="handleLogin"
+                >
+              </div>
+              <div class="captcha-img-wrap" @click="fetchCaptcha" title="点击刷新验证码">
+                <img v-if="captchaImage" :src="captchaImage" alt="验证码" class="captcha-img" />
+                <span v-else class="captcha-placeholder">
+                  <i v-if="captchaLoading" class="fas fa-spinner fa-spin"></i>
+                  <i v-else class="fas fa-sync-alt"></i>
+                </span>
+              </div>
+            </div>
+            <p v-if="loginErrors.captchaCode" class="field-error">{{ loginErrors.captchaCode }}</p>
             
             <div class="form-options">
               <label class="checkbox">
@@ -204,11 +229,16 @@ const showRegisterPassword = ref(false)
 const showRegisterConfirm = ref(false)
 
 // 表单数据
-const loginForm = reactive({ username: '', password: '' })
+const loginForm = reactive({ username: '', password: '', captchaCode: '' })
 const registerForm = reactive({ username: '', email: '', password: '', confirm: '' })
 
+// 验证码
+const captchaId = ref('')
+const captchaImage = ref('')
+const captchaLoading = ref(false)
+
 // 字段校验错误
-const loginErrors = reactive({ username: '', password: '' })
+const loginErrors = reactive({ username: '', password: '', captchaCode: '' })
 const registerErrors = reactive({ username: '', email: '', password: '', confirm: '' })
 
 // 清除单个字段错误
@@ -233,6 +263,7 @@ const handleBlur = (inputId) => {
 const open = () => {
   visible.value = true
   resetForms()
+  fetchCaptcha()
 }
 const close = () => {
   visible.value = false
@@ -241,8 +272,10 @@ const close = () => {
 const resetForms = () => {
   loginForm.username = ''
   loginForm.password = ''
+  loginForm.captchaCode = ''
   loginErrors.username = ''
   loginErrors.password = ''
+  loginErrors.captchaCode = ''
   registerForm.username = ''
   registerForm.email = ''
   registerForm.password = ''
@@ -251,6 +284,8 @@ const resetForms = () => {
   registerErrors.email = ''
   registerErrors.password = ''
   registerErrors.confirm = ''
+  captchaId.value = ''
+  captchaImage.value = ''
   loading.value = false
   focusedInput.value = null
   animatedInput.value = null
@@ -261,24 +296,56 @@ const resetForms = () => {
 const toggleMode = () => {
   isLogin.value = !isLogin.value
   resetForms()
+  if (isLogin.value) fetchCaptcha()
 }
 
-// 登录/注册逻辑
+// 获取验证码
+const fetchCaptcha = async () => {
+  captchaLoading.value = true
+  try {
+    const res = await loginApi.captcha()
+    if (res.code === 200) {
+      captchaId.value = res.data.captcha_id
+      captchaImage.value = res.data.captcha_image
+    }
+  } catch (e) {
+    console.error('验证码获取失败', e)
+  } finally {
+    captchaLoading.value = false
+  }
+}
+
+// 登录
 const handleLogin = async () => {
   let valid = true
-  if (!loginForm.username) { loginErrors.username = '请输入用户名'; valid = false }
-  if (!loginForm.password) { loginErrors.password = '请输入密码'; valid = false }
+  if (!loginForm.username)    { loginErrors.username    = '请输入用户名'; valid = false }
+  if (!loginForm.password)    { loginErrors.password    = '请输入密码'; valid = false }
+  if (!loginForm.captchaCode) { loginErrors.captchaCode = '请输入验证码'; valid = false }
   if (!valid) return
   loading.value = true
-  let res = await loginApi.captcha()
-  // await new Promise(resolve => setTimeout(resolve, 800))
- 
-  //   const user = { username: loginForm.username, email: 'demo@example.com' }
-  //   if (rememberMe.value) localStorage.setItem('user', JSON.stringify(user))
-  //   emit('login-success', user)
-  //   close()
- 
-  // loading.value = false
+  try {
+    const res = await loginApi.login({
+      username: loginForm.username,
+      password: loginForm.password,
+      captcha_id: captchaId.value,
+      captcha_code: loginForm.captchaCode,
+    })
+    if (res.code === 200) {
+      if (rememberMe.value) localStorage.setItem('user', JSON.stringify(res.data))
+      emit('login-success', res.data)
+      close()
+    } else {
+      // 登录失败刷新验证码
+      fetchCaptcha()
+      loginForm.captchaCode = ''
+      // alert(res.message || '登录失败')
+    }
+  } catch (e) {
+    fetchCaptcha()
+    loginForm.captchaCode = ''
+  } finally {
+    loading.value = false
+  }
 }
 
 const handleRegister = async () => {
@@ -497,6 +564,45 @@ defineExpose({ open, close })
 @keyframes errorFadeIn {
   from { opacity: 0; transform: translateY(-4px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ========== 验证码 ========== */
+.captcha-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.captcha-input {
+  flex: 1;
+}
+.captcha-img-wrap {
+  width: 130px;
+  height: 48px;
+  border-radius: 40px;
+  overflow: hidden;
+  cursor: pointer;
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  transition: border-color 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.4);
+  flex-shrink: 0;
+}
+.captcha-img-wrap:hover {
+  border-color: rgba(0, 255, 255, 0.5);
+}
+.captcha-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.captcha-placeholder {
+  color: #666;
+  font-size: 20px;
+}
+.captcha-placeholder .fa-spin {
+  color: #00ffff;
 }
 
 .input-field input:focus ~ .input-icon {
