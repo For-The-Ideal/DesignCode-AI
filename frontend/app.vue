@@ -8,9 +8,11 @@
 </template>
 
 <script setup>
+import { defineAsyncComponent } from "vue";
 import AppFooter from "~/components/layout/AppFooter.vue";
 import AppHeader from "~/components/layout/AppHeader.vue";
-import ParticlesBackground from "~/components/layout/ParticlesBackground.vue";
+const ParticlesBackground = defineAsyncComponent(() => import("~/components/layout/ParticlesBackground.vue"));
+
 </script>
 
 <style lang="scss" scoped>

@@ -10,19 +10,15 @@
       <!-- 第三屏 -->
       <DiagnosticBubbles ref="thirdScreenRef" />
     </div>
-    <ClientOnly>
-      <ParticlesBackground />
-    </ClientOnly>
   </div>
 </template>
 
 <script setup>
 import { ElMessage } from 'element-plus'
-import { defineAsyncComponent } from "vue";
 import HeroSection from "~/components/screen/HeroSection.vue";
 import SSEGenerator from "~/components/screen/SSEGenerator.vue";
 import DiagnosticBubbles from "~/components/screen/DiagnosticBubbles.vue";
-const ParticlesBackground = defineAsyncComponent(() => import("~/components/layout/ParticlesBackground.vue"));
+
 
 const scrollToSecond = () => {
   const container = document.querySelector(".screens-container");

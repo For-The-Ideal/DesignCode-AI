@@ -1,26 +1,31 @@
 <!-- components/auth/AuthModal.vue -->
 <template>
-  <DialogModel ref="dialogRef" @close="emit('close')" v-border-gradient>
-    <button class="close-btn" @click="handleClose">
-      <i v-if="isForgotPassword" class="fas fa-arrow-left"></i>
-      <i v-else class="fas fa-times"></i>
+  <div v-border-gradient>
+    <DialogModel ref="dialogRef" @close="emit('close')">
+    <button v-if="isForgotPassword" class="back-btn" @click="goToLogin" type="button">
+      <i class="fas fa-arrow-left"></i>
+      <span>返回登录</span>
+    </button>
+    <button v-if="!isForgotPassword && !isCaptchaActive" class="close-btn" @click="close" type="button">
+      <i class="fas fa-times"></i>
     </button>
 
-    <div class="modal-icon">
+    <div v-if="!isCaptchaActive" class="modal-icon">
       <div class="icon-ring">
         <i class="fas fa-microchip"></i>
       </div>
     </div>
 
-    <h2 class="modal-title">
+    <h2 v-if="!isCaptchaActive" class="modal-title">
       {{ isForgotPassword ? '忘记密码' : isLogin ? '登录账户' : '注册账户' }}
     </h2>
-    <p class="modal-subtitle">
+    <p v-if="!isCaptchaActive" class="modal-subtitle">
       {{ isForgotPassword ? '输入邮箱地址，我们将发送重置链接' : isLogin ? '欢迎回来，登录继续你的创作' : '创建账户，开启 AI 设计转代码之旅' }}
     </p>
 
-    <!-- 登录 / 注册 / 忘记密码 三态切换 -->
-    <Login v-if="isLogin" @success="onLoginSuccess" @forgotPassword="goToForgotPassword" />
+    <!-- 登录 / 注册 / 忘记密码 / 验证码 四态切换 -->
+    <Login v-if="isLogin && !isCaptchaActive" @forgotPassword="goToForgotPassword" @requestCaptcha="onRequestCaptcha" />
+    <CaptchaModal v-if="isCaptchaActive" ref="captchaModalRef" @confirm="onCaptchaConfirm" @back="onCaptchaBack" />
     <Register v-if="isRegister" @success="onRegisterSuccess" />
     <div v-if="isForgotPassword" class="forgot-form">
       <form @submit.prevent="submitForgotPassword" >
@@ -46,11 +51,8 @@
       </form>
     </div>
 
-    <div class="switch-mode">
-      <p v-if="isForgotPassword">
-        <a href="#" @click.prevent="goToLogin">← 返回登录</a>
-      </p>
-      <p class="switch-status" v-else>
+    <div v-if="!isCaptchaActive && !isForgotPassword" class="switch-mode">
+      <p class="switch-status">
         {{ isLogin ? '还没有账户？' : '已有账户？' }}
         <a href="#" @click.prevent="toggleMode">
           {{ isLogin ? '立即注册' : '立即登录' }}
@@ -58,13 +60,16 @@
       </p>
     </div>
   </DialogModel>
+  </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, reactive } from 'vue'
 import DialogModel from '@/components/dialog/DialogModel.vue'
 import Login from './Login.vue'
 import Register from './Register.vue'
+import CaptchaModal from './CaptchaModal.vue'
+import { loginApi } from '@/api/login'
 
 const emit = defineEmits(['loginSuccess', 'registerSuccess', 'close'])
 
@@ -72,6 +77,9 @@ const dialogRef = ref(null)
 const isLogin = ref(true)
 const isRegister = ref(false)
 const isForgotPassword = ref(false)
+const isCaptchaActive = ref(false)
+const captchaModalRef = ref(null)
+const loginCreds = reactive({ email: '', password: '', rememberMe: false })
 
 // 忘记密码表单
 const forgotEmail = ref('')
@@ -83,14 +91,6 @@ const open = () => {
   goToLogin()
 }
 const close = () => { dialogRef.value?.close() }
-
-const handleClose = () => {
-  if (isForgotPassword.value) {
-    goToLogin()
-  } else {
-    close()
-  }
-}
 
 const goToLogin = () => {
   isLogin.value = true
@@ -110,6 +110,42 @@ const goToForgotPassword = () => {
 const toggleMode = () => {
   if (isLogin.value) goToRegister()
   else goToLogin()
+}
+
+const onRequestCaptcha = ({ email, password, rememberMe }) => {
+  loginCreds.email = email
+  loginCreds.password = password
+  loginCreds.rememberMe = rememberMe
+  isCaptchaActive.value = true
+}
+
+const onCaptchaBack = () => {
+  isCaptchaActive.value = false
+}
+
+const onCaptchaConfirm = async ({ captchaId, captchaCode }) => {
+  try {
+    const res = await loginApi.login({
+      email: loginCreds.email,
+      password: loginCreds.password,
+      captcha_id: captchaId,
+      captcha_code: captchaCode,
+    })
+    if (res.code === 200) {
+      if (loginCreds.rememberMe) localStorage.setItem('user', JSON.stringify(res.data))
+      isCaptchaActive.value = false
+      emit('loginSuccess', res.data)
+      close()
+    } else {
+      captchaModalRef.value?.showError(res.message || '验证失败，请重试')
+      captchaModalRef.value?.refresh()
+    }
+  } catch (e) {
+    captchaModalRef.value?.showError('网络错误，请重试')
+    captchaModalRef.value?.refresh()
+  } finally {
+    captchaModalRef.value?.resetLoading()
+  }
 }
 
 const onLoginSuccess = (data) => {
@@ -139,6 +175,24 @@ defineExpose({ open, close })
 </script>
 
 <style scoped>
+.back-btn {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background: transparent;
+  border: none;
+  color: #888;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: color 0.3s;
+  padding: 0;
+  z-index: 2;
+}
+.back-btn:hover { color: #00ffff; }
+
 .close-btn {
   position: absolute;
   top: 20px;
@@ -154,6 +208,7 @@ defineExpose({ open, close })
   display: flex;
   align-items: center;
   justify-content: center;
+  z-index: 2;
 }
 .close-btn:hover {
   background: rgba(255, 255, 255, 0.1);

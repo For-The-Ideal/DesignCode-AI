@@ -15,7 +15,7 @@
     <!-- 密码 -->
     <div class="input-field" :class="{ focused: focusedInput === 'password', error: errors.password }">
       <i class="fas fa-lock input-icon"></i>
-      <input :type="showPassword ? 'text' : 'password'" v-model="form.password" placeholder="密码" maxlength="20"
+      <input :type="showPassword ? 'text' : 'password'" v-model="form.password" placeholder="密码" minlength="8" maxlength="20"
         @focus="onFocus('password')" @blur="onBlur('password')" @input="clearError('password')" @keyup.enter="handleLogin">
       <button type="button" class="password-eye" @click="showPassword = !showPassword">
         <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
@@ -26,27 +26,6 @@
       </svg>
     </div>
     <p v-if="errors.password" class="field-error">{{ errors.password }}</p>
-
-    <!-- 验证码 -->
-    <div class="captcha-row">
-      <div class="input-field captcha-input" :class="{ focused: focusedInput === 'captchaCode', error: errors.captchaCode }">
-        <i class="fas fa-shield-alt input-icon"></i>
-        <input type="text" v-model="form.captchaCode" placeholder="验证码" maxlength="4"
-          @focus="onFocus('captchaCode')" @blur="onBlur('captchaCode')" @input="clearError('captchaCode')" @keyup.enter="handleLogin">
-        <svg class="border-svg" :class="{ animate: animatedInput === 'captchaCode' }">
-          <rect x="0" y="0" rx="26" ry="26" width="100%" height="100%" pathLength="100" class="border-bg" />
-          <rect x="0" y="0" rx="26" ry="26" width="100%" height="100%" pathLength="100" class="moving-stroke" />
-        </svg>
-      </div>
-      <div class="captcha-img-wrap" @click="fetchCaptcha" title="点击刷新验证码">
-        <img v-if="captchaImage" :src="captchaImage" alt="验证码" class="captcha-img" />
-        <span v-else class="captcha-placeholder">
-          <i v-if="captchaLoading" class="fas fa-spinner fa-spin"></i>
-          <i v-else class="fas fa-sync-alt"></i>
-        </span>
-      </div>
-    </div>
-    <p v-if="errors.captchaCode" class="field-error">{{ errors.captchaCode }}</p>
 
     <!-- 记住我 / 忘记密码 -->
     <div class="form-options">
@@ -67,9 +46,8 @@
 
 <script setup>
 import { ref, reactive } from 'vue'
-import { loginApi } from '@/api/login'
 
-const emit = defineEmits(['success', 'forgotPassword'])
+const emit = defineEmits(['forgotPassword', 'requestCaptcha'])
 
 const loading = ref(false)
 const rememberMe = ref(false)
@@ -77,12 +55,8 @@ const showPassword = ref(false)
 const focusedInput = ref(null)
 const animatedInput = ref(null)
 
-const form = reactive({ email: '', password: '', captchaCode: '' })
-const errors = reactive({ email: '', password: '', captchaCode: '' })
-
-const captchaId = ref('')
-const captchaImage = ref('')
-const captchaLoading = ref(false)
+const form = reactive({ email: '', password: '' })
+const errors = reactive({ email: '', password: '' })
 
 const clearError = (field) => { errors[field] = '' }
 const onFocus = (id) => { focusedInput.value = id; animatedInput.value = id }
@@ -90,52 +64,18 @@ const onBlur = (id) => {
   if (focusedInput.value === id) { focusedInput.value = null; animatedInput.value = null }
 }
 
-const fetchCaptcha = async () => {
-  captchaLoading.value = true
-  try {
-    const res = await loginApi.captcha()
-    if (res.code === 200) {
-      captchaId.value = res.data.captcha_id
-      captchaImage.value = res.data.captcha_image
-    }
-  } catch (e) {
-    console.error('验证码获取失败', e)
-  } finally {
-    captchaLoading.value = false
-  }
-}
-
-const handleLogin = async () => {
+const handleLogin = () => {
   let valid = true
   if (!form.email)    { errors.email    = '请输入邮箱地址'; valid = false }
-  if (!form.password)    { errors.password    = '请输入密码'; valid = false }
-  if (!form.captchaCode) { errors.captchaCode = '请输入验证码'; valid = false }
+  if (!form.password) { errors.password = '请输入密码'; valid = false }
   if (!valid) return
 
-  loading.value = true
-  try {
-    const res = await loginApi.login({
-      email: form.email,
-      password: form.password,
-      captcha_id: captchaId.value,
-      captcha_code: form.captchaCode,
-    })
-    if (res.code === 200) {
-      if (rememberMe.value) localStorage.setItem('user', JSON.stringify(res.data))
-      emit('success', res.data)
-    } else {
-      fetchCaptcha()
-      form.captchaCode = ''
-    }
-  } catch (e) {
-    fetchCaptcha()
-    form.captchaCode = ''
-  } finally {
-    loading.value = false
-  }
+  emit('requestCaptcha', {
+    email: form.email,
+    password: form.password,
+    rememberMe: rememberMe.value,
+  })
 }
-
-
 </script>
 
 <style scoped>
@@ -195,45 +135,6 @@ const handleLogin = async () => {
 @keyframes errorFadeIn {
   from { opacity: 0; transform: translateY(-4px); }
   to   { opacity: 1; transform: translateY(0); }
-}
-
-/* 验证码 */
-.captcha-row {
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
-}
-.captcha-input {
-  flex: 1;
-}
-.captcha-img-wrap {
-  width: 130px;
-  height: 48px;
-  border-radius: 40px;
-  overflow: hidden;
-  cursor: pointer;
-  border: 1px solid rgba(0, 255, 255, 0.2);
-  transition: border-color 0.3s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.4);
-  flex-shrink: 0;
-}
-.captcha-img-wrap:hover {
-  border-color: rgba(0, 255, 255, 0.5);
-}
-.captcha-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.captcha-placeholder {
-  color: #666;
-  font-size: 20px;
-}
-.captcha-placeholder .fa-spin {
-  color: #00ffff;
 }
 
 /* SVG 光带边框 */

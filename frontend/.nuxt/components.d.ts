@@ -15,6 +15,7 @@ type LazyComponent<T> = DefineComponent<HydrationStrategies, {}, {}, {}, {}, {},
 
 
 export const AuthModal: typeof import("../components/auth/AuthModal.vue")['default']
+export const AuthCaptchaModal: typeof import("../components/auth/CaptchaModal.vue")['default']
 export const AuthLogin: typeof import("../components/auth/Login.vue")['default']
 export const AuthPassword: typeof import("../components/auth/Password.vue")['default']
 export const AuthRegister: typeof import("../components/auth/Register.vue")['default']
@@ -72,6 +73,7 @@ export const Html: typeof import("../node_modules/nuxt/dist/head/runtime/compone
 export const Body: typeof import("../node_modules/nuxt/dist/head/runtime/components")['Body']
 export const NuxtIsland: typeof import("../node_modules/nuxt/dist/app/components/nuxt-island")['default']
 export const LazyAuthModal: LazyComponent<typeof import("../components/auth/AuthModal.vue")['default']>
+export const LazyAuthCaptchaModal: LazyComponent<typeof import("../components/auth/CaptchaModal.vue")['default']>
 export const LazyAuthLogin: LazyComponent<typeof import("../components/auth/Login.vue")['default']>
 export const LazyAuthPassword: LazyComponent<typeof import("../components/auth/Password.vue")['default']>
 export const LazyAuthRegister: LazyComponent<typeof import("../components/auth/Register.vue")['default']>
