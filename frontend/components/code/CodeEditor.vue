@@ -8,39 +8,20 @@
           <div class="dot dot-yellow"></div>
           <div class="dot dot-green"></div>
         </div>
-        <div class="editor-lang">output.dart</div>
-        <div class="editor-actions">
-          <button class="editor-btn" @click="handleCopy" :disabled="!codeContent">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M16 1H4C2.9 1 2 1.9 2 3V17H4V3H16V1ZM19 5H8C6.9 5 6 5.9 6 7V21C6 22.1 6.9 23 8 23H19C20.1 23 21 22.1 21 21V7C21 5.9 20.1 5 19 5ZM19 21H8V7H19V21Z" fill="currentColor"/>
-            </svg>
-            复制
-          </button>
-        </div>
       </div>
       
      
 
 
-      <!-- <div class="code-editor-loading">
+      <div v-show="isLoading || !modelValue" class="code-editor-loading">
         <div class="loading-spinner"></div>
         <span>加载编辑器中...</span>
-      </div> -->
+      </div>
 
       
-      <GeneratingOverlay
-      v-if="showGenerating"
-      :visible="showGenerating"
-      :initial-progress="generatingProgress"
-      @complete="onGenerateComplete"
-      @progress="onGenerateProgress"
-      ref="generatingOverlayRef"
-    />
-
-      <!-- <div ref="editorContainer" v-else class="editor-container"></div> -->
 
       <MonacoEditorCore
-        v-else
+      v-show="!isLoading && modelValue"
         ref="editorCoreRef"
         :value="modelValue"
         :language="language"
@@ -51,8 +32,7 @@
         :theme="theme"
         :height="height"
         :placeholder="placeholder"
-        @update:value="handleValueUpdate"
-        @change="handleChange"
+        @ready="onEditorReady"
       />
 
     </div>
@@ -129,11 +109,18 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'change', 'copy', 'format'])
 
 // ========== 响应式数据 ==========
+const editorCoreRef = ref(null)
 const editorContainer = ref(null)
 let editor = null
 let monaco = null
 
+const isLoading = ref(true)
+
 const showGenerating = computed(() => props.generating)
+
+function onEditorReady() {
+  isLoading.value = false
+}
 
 // 语言映射（用于显示）
 const languageMap = {
@@ -355,6 +342,7 @@ defineExpose({
 
 <style scoped>
 .code-editor-wrapper {
+  position: relative;
   background: #0a0a0f;
   border: 1px solid rgba(0, 255, 255, 0.3);
   border-radius: 16px;
@@ -445,11 +433,12 @@ defineExpose({
 }
 
 .code-editor-loading {
+  z-index: 10;
   background: #0a0a0f;
   border: 1px solid rgba(0, 255, 255, 0.3);
   border-radius: 16px;
-  height: v-bind(height);
   display: flex;
+  height: 650px;
   flex-direction: column;
   align-items: center;
   justify-content: center;

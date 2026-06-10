@@ -53,7 +53,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['update:value', 'change', 'focus', 'blur'])
+const emit = defineEmits(['update:value', 'change', 'focus', 'blur', 'ready'])
 
 // 语言映射
 const languageMap = {
@@ -140,6 +140,9 @@ const initEditor = async () => {
     editor.onDidBlurEditorText(() => {
       emit('blur')
     })
+
+    // 通知父组件编辑器已就绪
+    emit('ready')
     
   } catch (error) {
     console.error('Monaco Editor 加载失败:', error)

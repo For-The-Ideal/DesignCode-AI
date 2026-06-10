@@ -98,8 +98,10 @@
     </div>
 
     <!-- 生成按钮 -->
-    <button class="generate-btn" @click="generateCode" :disabled="images.length === 0">
-      <i class="fas fa-play"></i> 开始生成代码
+    <button class="generate-btn" @click="generateCode" :disabled="images.length === 0 || generating">
+      <i v-if="generating" class="fas fa-spinner fa-spin"></i>
+      <i v-else class="fas fa-play"></i>
+      {{ generating ? '正在生成...' : '开始生成代码' }}
     </button>
 
     <!-- 评分卡片 -->
@@ -141,6 +143,8 @@ import { ref, computed } from 'vue'
 import DescEditorModal from './DescEditorModal.vue'
 import {useToastNotificationStore} from "~/stores/toastNotification"
 import { identifyApi } from "/api/identify"
+
+const emit = defineEmits(['generated'])
 const toastNotificationStore = useToastNotificationStore()
 
 // 图片列表
@@ -154,6 +158,8 @@ const maxLen = ref(5) // 最多5张
 // 评分数据
 const score = ref(0)
 const scoreDimensions = ref([])
+// 生成状态
+const generating = ref(false)
 
 // 描述弹窗
 const descModalVisible = ref(false)
@@ -251,8 +257,9 @@ const truncateText = (text, maxLen) => {
 }
 
 const generateCode = async () => {
+  if (generating.value) return
+  generating.value = true
   try {
-    
     // 构建设计稿数组 - 图片和描述在同一个对象里
     const designs = await Promise.all(
       images.value.map(async (img) => ({
@@ -262,7 +269,7 @@ const generateCode = async () => {
       }))
     )
     
-    // 请求参数 - 只有一个 designs 数组
+    // 请求参数
     const payload = {
       designs: designs,
       framework: framework.value,
@@ -270,32 +277,32 @@ const generateCode = async () => {
     }
     toastNotificationStore.info('正在生成代码...')
     console.log('payload:', payload)
-    await identifyApi.sendFile(payload)
-    // await uploaderStore.setUserInfo(payload)
-    // const response = await fetch('/api/generate', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify(payload)
-    // })
     
-    // const result = await response.json()
+    // 调用 API
+    const result = await identifyApi.sendFile(payload)
     
-    // if (result.code) {
-    //   console.log('生成的代码:', result.code)
-    //   score.value = result.score || 85
-    //   scoreDimensions.value = result.dimensions || [
-    //     { name: '视觉还原度', score: 85, icon: 'fas fa-palette' },
-    //     { name: '代码质量', score: 82, icon: 'fas fa-code' },
-    //     { name: '响应式设计', score: 78, icon: 'fas fa-mobile-alt' },
-    //     { name: '性能优化', score: 75, icon: 'fas fa-tachometer-alt' }
-    //   ]
-    // }
-    
+    // 如果 API 返回了代码，设置评分并通知父组件
+    if (result && result.code) {
+      score.value = result.score || 85
+      scoreDimensions.value = result.dimensions || [
+        { name: '视觉还原度', score: 85, icon: 'fas fa-palette' },
+        { name: '代码质量', score: 82, icon: 'fas fa-code' },
+        { name: '响应式设计', score: 78, icon: 'fas fa-mobile-alt' },
+        { name: '性能优化', score: 75, icon: 'fas fa-tachometer-alt' }
+      ]
+      emit('generated', {
+        code: result.code,
+        framework: framework.value,
+        score: result.score || 85,
+        dimensions: result.dimensions || []
+      })
+      toastNotificationStore.success('代码生成成功！')
+    }
   } catch (error) {
     console.error('生成失败:', error)
-   
+    toastNotificationStore.error('生成失败，请稍后重试')
   } finally {
-
+    generating.value = false
   }
 }
 

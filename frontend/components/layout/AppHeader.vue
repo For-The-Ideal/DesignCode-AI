@@ -19,52 +19,126 @@
 
       <!-- 导航菜单 -->
       <nav class="nav">
-        <a href="#" class="nav-link" :class="{'active': route.path === item.link}" v-for="item in navList" :key="item.name">{{item.name}}</a>
+        <a href="javascript:void(0)" class="nav-link" :class="{'active': route.path === item.link}" v-for="item in navList" :key="item.name" 
+        @click="handleNavClick(item.link)">{{item.name}}</a>
       </nav>
 
       <!-- 右侧区域 -->
       <div class="auth-area">
-        <button class="btn-login" @click="loginModalRef.open()">
+        <!-- 未登录：登录按钮 -->
+        <button v-if="!authStore.isLoggedIn" class="btn-login" @click="loginModalRef.open()">
           <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M20 21V19C20 16.8 18.2 15 16 15H8C5.8 15 4 16.8 4 19V21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
             <path d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z" stroke="currentColor" stroke-width="1.5"/>
           </svg>
           登录
         </button>
+
+        <!-- 已登录：头像 + 下拉菜单 -->
+        <div v-else class="user-menu" @mouseenter="showDropdown = true" @mouseleave="showDropdown = false">
+          <div class="user-avatar">
+            <span class="avatar-text">{{ authStore.userInfo?.username?.charAt(0)?.toUpperCase() || 'U' }}</span>
+          </div>
+          <span class="user-name">{{ authStore.userInfo?.username }}</span>
+
+          <!-- 下拉菜单 -->
+          <transition name="dropdown-fade">
+            <div v-if="showDropdown" class="dropdown-panel">
+              <div class="dropdown-header">
+                <div class="dropdown-avatar">
+                  <span>{{ authStore.userInfo?.username?.charAt(0)?.toUpperCase() || 'U' }}</span>
+                </div>
+                <div class="dropdown-user-info">
+                  <span class="dropdown-username">{{ authStore.userInfo?.username }}</span>
+                  <span class="dropdown-email">{{ authStore.userInfo?.email }}</span>
+                </div>
+              </div>
+              <div class="dropdown-divider"></div>
+              <button class="dropdown-item" @click.stop="openPasswordModal">
+                <i class="fas fa-key"></i>
+                <span>修改密码</span>
+              </button>
+              <button class="dropdown-item logout" @click.stop="handleLogout">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>退出登录</span>
+              </button>
+            </div>
+          </transition>
+        </div>
       </div>
     </div>
 
-     <LoginModal 
+    <LoginModal 
       ref="loginModalRef" 
       @login-success="handleLoginSuccess"
       @register-success="handleRegisterSuccess"
       @close="handleModalClose"
     />
 
+    <PasswordModal ref="passwordModalRef" />
+
   </header>
 </template>
 
-
 <script setup>
-import {computed} from "vue"
+import { computed } from "vue"
 import LoginModal from '~/components/auth/LoginModal.vue'
+import PasswordModal from '~/components/auth/PasswordModal.vue'
+import { useAuthStore } from '~/stores/auth'
+
+const router = useRouter()
 const route = useRoute()
+const authStore = useAuthStore()
 const loginModalRef = ref()
+const passwordModalRef = ref()
+const showDropdown = ref(false)
+
 const navList = ref([
   {
     name:"首页",
     link:"/",
   },
   {
-    name:"模型对比",
-    link:"/compare",
+    name:"代码生成",
+    link:"/code",
   },
+  // {
+  //   name:"模型对比",
+  //   link:"/compare",
+  // },
   {
     name:"历史记录",
     link:"/history",
   }
 ])
 
+const handleLoginSuccess = (user) => {
+  authStore.login({ username: user.username, password: '' })
+  if (user.username) localStorage.setItem('user', JSON.stringify(user))
+}
+
+const handleRegisterSuccess = () => {}
+
+const handleModalClose = () => {}
+
+const handleLogout = () => {
+  showDropdown.value = false
+  authStore.logout()
+}
+
+const handleNavClick = (link) => {
+  if (route.path === link) return;
+  router.push(link)
+}
+
+const openPasswordModal = () => {
+  showDropdown.value = false
+  passwordModalRef.value?.open()
+}
+
+onMounted(() => {
+  authStore.checkAuth()
+})
 </script>
 
 
@@ -213,6 +287,142 @@ const navList = ref([
   border-color: rgba(0, 255, 255, 0.5);
   transform: translateY(-1px);
   box-shadow: 0 4px 15px rgba(0, 255, 255, 0.2);
+}
+
+/* ── 用户菜单 ── */
+.user-menu {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  padding: 4px 12px 4px 4px;
+  border-radius: 40px;
+  transition: all 0.3s;
+  border: 1px solid transparent;
+}
+.user-menu:hover {
+  background: rgba(0, 255, 255, 0.06);
+  border-color: rgba(0, 255, 255, 0.2);
+}
+
+.user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #00ffff, #ff00ff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 0 12px rgba(0, 255, 255, 0.3);
+}
+.avatar-text {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0a0a0f;
+}
+.user-name {
+  font-size: 14px;
+  color: #c5c5d2;
+  font-weight: 500;
+}
+
+/* ── 下拉菜单 ── */
+.dropdown-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 240px;
+  background: rgba(16, 24, 32, 0.98);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 255, 255, 0.25);
+  border-radius: 16px;
+  padding: 8px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), 0 0 30px rgba(0, 255, 255, 0.06);
+  z-index: 100;
+}
+
+.dropdown-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+}
+.dropdown-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #00ffff, #ff00ff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 700;
+  color: #0a0a0f;
+  flex-shrink: 0;
+}
+.dropdown-user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+}
+.dropdown-username {
+  font-size: 15px;
+  font-weight: 600;
+  color: #e5e7eb;
+}
+.dropdown-email {
+  font-size: 12px;
+  color: #6b7280;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  margin: 4px 0;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 11px 14px;
+  background: none;
+  border: none;
+  border-radius: 10px;
+  color: #c5c5d2;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+.dropdown-item i {
+  width: 18px;
+  text-align: center;
+  font-size: 14px;
+}
+.dropdown-item:hover {
+  background: rgba(0, 255, 255, 0.08);
+  color: #00ffff;
+}
+.dropdown-item.logout:hover {
+  background: rgba(255, 59, 110, 0.12);
+  color: #ff3b6e;
+}
+
+/* ── 下拉过渡 ── */
+.dropdown-fade-enter-active { transition: all 0.2s ease; }
+.dropdown-fade-leave-active { transition: all 0.15s ease; }
+.dropdown-fade-enter-from,
+.dropdown-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
 }
 
 .btn-icon {

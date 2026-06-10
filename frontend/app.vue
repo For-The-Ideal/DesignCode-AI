@@ -1,5 +1,6 @@
 <template>
   <div>
+    <ParticlesBackground />
     <AppHeader />
     <NuxtPage />
     <AppFooter />
@@ -9,6 +10,7 @@
 <script setup>
 import AppFooter from "~/components/layout/AppFooter.vue";
 import AppHeader from "~/components/layout/AppHeader.vue";
+import ParticlesBackground from "~/components/layout/ParticlesBackground.vue";
 </script>
 
 <style lang="scss" scoped>

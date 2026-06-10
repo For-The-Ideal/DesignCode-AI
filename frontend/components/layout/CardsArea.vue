@@ -59,11 +59,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick, watch } from 'vue'
+import { ref, onMounted, watch } from 'vue'
+import { useCardSpreadAnimation } from '@/composables/useCardSpreadAnimation'
 
 const emit = defineEmits(['copy'])
 
-// 卡片配置 - 移除固定角度，由逻辑动态生成
 const cardsConfig = [
   { icon: "fas fa-image", text: "设计稿上传", badge: null },
   { icon: "fas fa-brain", text: "AI 分析", badge: "AI" },
@@ -74,17 +74,25 @@ const cardsConfig = [
 
 const CARD_WIDTH = 140
 const CARD_HEIGHT = 70
-const TARGET_TOP = 120 // 下移一点，留出更多空间
-const RADIUS = 280     // 基础半径
+const TARGET_TOP = 120
+const RADIUS = 280
 
 const previewAnimationDone = ref(false)
 const previewTop = ref('-100px')
 const previewOpacity = ref(0)
-const cards = ref([])
 const hoveredIndex = ref(-1)
 
 const previewCardRef = ref(null)
 const heroCardsRef = ref(null)
+
+// ── 卡片扩散动画 composable ──
+const anglePoints = [
+  { angle: -150, rFactor: 1.15 },
+  { angle: -15,  rFactor: 1.1 },
+  { angle: 15,   rFactor: 1.25 },
+  { angle: 160,  rFactor: 1.15 },
+  { angle: 90,   rFactor: 0.85 },
+]
 
 // 获取代码卡片最终位置
 const getFinalPreviewRect = () => {
@@ -94,61 +102,42 @@ const getFinalPreviewRect = () => {
   const cardHeight = previewCardRef.value?.offsetHeight || 320
   const left = (containerRect.width - cardWidth) / 2
   const top = TARGET_TOP
-  return { left, top, width: cardWidth, height: cardHeight }
+  return { left, top, width: cardWidth, height: cardHeight, containerWidth: containerRect.width }
 }
 
-// 设置初始位置
-const setInitialPositions = async () => {
-  await nextTick()
-  const container = heroCardsRef.value
-  if (!container) return
+// 使用扩散动画 composable
+const { cards, animationDone: spreadDone, start: startSpread } = useCardSpreadAnimation({
+  cardWidth: CARD_WIDTH,
+  cardHeight: CARD_HEIGHT,
+  radius: RADIUS,
+  anglePoints,
+})
 
+// 触发动画：代码滑入 → 气泡扩散
+const startAnimation = () => {
   const finalRect = getFinalPreviewRect()
   if (!finalRect) return
 
-  const finalCenterX = finalRect.left + finalRect.width / 2
-  const finalCenterY = finalRect.top + finalRect.height / 2
+  // 设定 composable 需要的中心点（preview 卡中心）
+  const cx = finalRect.left + finalRect.width / 2
+  const cy = finalRect.top + finalRect.height / 2
 
-  // 1. 固定这 5 个关键点位（角度和半径倍率，以完美匹配截图）
-  const fixedPoints = [
-    { angle: -150, rFactor: 1.15 }, // 左上 (代码Diff)
-    { angle: -15,  rFactor: 1.1 },  // 右上 (AI 分析)
-    { angle: 15,   rFactor: 1.25 }, // 正右偏下 (代码生成)
-    { angle: 160,  rFactor: 1.15 }, // 左下 (智能诊断)
-    { angle: 90,   rFactor: 0.75 }  // 正下 (设计稿上传)
-  ]
-  
-  // 2. 将气泡内容随机打乱
-  const shuffledCards = [...cardsConfig].sort(() => Math.random() - 0.5)
+  // 第一步：代码卡片滑入 + 淡入
+  previewTop.value = `${finalRect.top}px`
+  previewOpacity.value = 1
 
-  const newCards = []
-  for (let i = 0; i < shuffledCards.length; i++) {
-    const config = shuffledCards[i]
-    const point = fixedPoints[i] 
-    
-    const rad = (point.angle * Math.PI) / 180
-    const customRadius = RADIUS * point.rFactor
-    
-    // 计算目标位置
-    const targetOffsetX = Math.cos(rad) * customRadius
-    const targetOffsetY = Math.sin(rad) * customRadius
-
-    const duration = 3 + Math.random() * 2
-    const delay = i * 0.15
-
-    newCards.push({
-      ...config,
-      currentTop: `${finalCenterY - CARD_HEIGHT / 2}px`,
-      currentLeft: `${finalCenterX - CARD_WIDTH / 2}px`,
-      targetTop: `${finalCenterY + targetOffsetY - CARD_HEIGHT / 2}px`,
-      targetLeft: `${finalCenterX + targetOffsetX - CARD_WIDTH / 2}px`,
-      duration: `${duration}s`,
-      delay: `${delay}s`,
-      isAnimating: false,
-      isVisible: false,
-    })
+  const onPreviewTransitionEnd = () => {
+    if (!previewCardRef.value) return
+    previewCardRef.value.removeEventListener('transitionend', onPreviewTransitionEnd)
+    // 第二步：气泡扩散
+    startSpread(cardsConfig, cx, cy)
   }
-  cards.value = newCards
+
+  if (previewCardRef.value) {
+    previewCardRef.value.addEventListener('transitionend', onPreviewTransitionEnd)
+  } else {
+    setTimeout(() => startSpread(cardsConfig, cx, cy), 500)
+  }
 }
 
 // 鼠标移入效果
@@ -160,94 +149,11 @@ const handleMouseLeave = (index) => {
   hoveredIndex.value = -1
 }
 
-// 触发动画：代码滑入 -> 气泡依次扩散
-const startAnimation = () => {
-  const finalRect = getFinalPreviewRect()
-  if (!finalRect) return
-
-  // 第一步：代码卡片滑入 + 淡入
-  previewTop.value = `${finalRect.top}px`
-  previewOpacity.value = 1
-
-  const onPreviewTransitionEnd = () => {
-    if (!previewCardRef.value) return
-    previewCardRef.value.removeEventListener('transitionend', onPreviewTransitionEnd)
-    // 第二步：气泡依次扩散
-    startBubblesAnimation()
-  }
-
-  if (previewCardRef.value) {
-    previewCardRef.value.addEventListener('transitionend', onPreviewTransitionEnd)
-  } else {
-    setTimeout(() => {
-      startBubblesAnimation()
-    }, 500)
-  }
-}
-
-// 依次启动每个气泡的动画
-const startBubblesAnimation = () => {
-  const total = cards.value.length
-  let currentIndex = 0
-
-  const animateNext = () => {
-    if (currentIndex >= total) {
-      // 所有气泡动画完成，开启浮动动画
-      previewAnimationDone.value = true
-      return
-    }
-
-    const card = cards.value[currentIndex]
-    card.isAnimating = true
-    card.isVisible = true
-    card.currentTop = card.targetTop
-    card.currentLeft = card.targetLeft
-
-    // 监听动画结束
-    const onTransitionEnd = (event) => {
-      const target = event.target
-      if (target && target.classList && target.classList.contains('floating-card')) {
-        target.removeEventListener('transitionend', onTransitionEnd)
-        
-        // 找到当前卡片并关闭 isAnimating 状态，以便使用 CSS 的过渡属性
-        const elements = document.querySelectorAll('.floating-card')
-        const index = Array.from(elements).indexOf(target)
-        if (index !== -1 && cards.value[index]) {
-          cards.value[index].isAnimating = false
-        }
-
-        currentIndex++
-        animateNext()
-      }
-    }
-
-    // 找到对应的 DOM 元素
-    setTimeout(() => {
-      const elements = document.querySelectorAll('.floating-card')
-      if (elements[currentIndex]) {
-        elements[currentIndex].addEventListener('transitionend', onTransitionEnd)
-      } else {
-        setTimeout(() => {
-          currentIndex++
-          animateNext()
-        }, 100)
-      }
-    }, 50)
-  }
-
-  // 先显示所有卡片（但位置在中心，透明）
-  cards.value.forEach(card => {
-    card.isVisible = true
-  })
-  
-  // 开始第一个动画
-  animateNext()
-}
-
 onMounted(() => {
-  setInitialPositions().then(() => {
-    startAnimation()
+  watch(spreadDone, (val) => {
+    if (val) previewAnimationDone.value = true
   })
+  startAnimation()
 })
 
 const copyCode = async () => {
