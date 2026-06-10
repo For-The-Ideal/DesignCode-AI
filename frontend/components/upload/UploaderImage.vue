@@ -124,6 +124,7 @@ import { ref, computed } from 'vue'
 import DescEditorModal from './DescEditorModal.vue'
 import { identifyApi } from "/api/identify"
 import { ElMessage } from 'element-plus'
+import { useGeneration } from '~/composables/useGeneration'
 const emit = defineEmits(['generated'])
 
 // 图片列表
@@ -138,7 +139,7 @@ const maxLen = ref(5) // 最多5张
 const score = ref(0)
 const scoreDimensions = ref([])
 // 生成状态
-const generating = ref(false)
+const { generating, start: genStart, complete: genComplete, reset: genReset } = useGeneration()
 
 // 描述弹窗
 const descEditorRef = ref(null)
@@ -237,7 +238,7 @@ const truncateText = (text, maxLen) => {
 
 const generateCode = async () => {
   if (generating.value) return
-  generating.value = true
+  genStart()
   try {
     // 构建设计稿数组 - 图片和描述在同一个对象里
     const designs = await Promise.all(
@@ -254,14 +255,14 @@ const generateCode = async () => {
       framework: framework.value,
       quality: qualityValue.value
     }
-    ElMessage.info('正在生成代码...')
+    // ElMessage.info('正在生成代码...')
     console.log('payload:', payload)
     
     // 调用 API
     const result = await identifyApi.sendFile(payload)
     
     // 如果 API 返回了代码，设置评分并通知父组件
-    if (result && result.code) {
+    // if (result && result.code) {
       score.value = result.score || 85
       scoreDimensions.value = result.dimensions || [
         { name: '视觉还原度', score: 85, icon: 'fas fa-palette' },
@@ -275,13 +276,15 @@ const generateCode = async () => {
         score: result.score || 85,
         dimensions: result.dimensions || []
       })
+      genComplete()
       ElMessage.success('代码生成成功！')
-    }
+    // } else {
+    //   genComplete()
+    // }
   } catch (error) {
     console.error('生成失败:', error)
+    genReset()
     ElMessage.error('生成失败，请稍后重试')
-  } finally {
-    generating.value = false
   }
 }
 

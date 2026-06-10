@@ -12,14 +12,14 @@
       </div>
 
       <!-- 进度百分比 -->
-      <div class="generating-percent">{{ progress }}%</div>
+      <div class="generating-percent">{{ displayProgress }}%</div>
 
       <!-- 状态文字 -->
       <div class="generating-status">{{ currentStep }}</div>
 
       <!-- 进度条 -->
       <div class="generating-progress-bar">
-        <div class="progress-fill" :style="{ width: progress + '%' }">
+        <div class="progress-fill" :style="{ width: displayProgress + '%' }">
           <div class="progress-glow"></div>
         </div>
       </div>
@@ -60,7 +60,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted } from "vue";
+import { ref, computed, watch, onUnmounted } from "vue";
 
 const props = defineProps({
   // 是否显示
@@ -68,10 +68,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
-  // 初始进度
-  initialProgress: {
+  // 外部控制进度 (0-100)，为 null 时使用内部模拟定时器
+  progress: {
     type: Number,
-    default: 0,
+    default: null,
   },
   // 自定义步骤
   customSteps: {
@@ -81,6 +81,9 @@ const props = defineProps({
 });
 
 const emit = defineEmits(["complete", "progress"]);
+
+// 是否由外部控制进度
+const isExternal = computed(() => props.progress !== null);
 
 // 默认步骤
 const defaultSteps = [
@@ -93,20 +96,25 @@ const defaultSteps = [
 
 const steps = computed(() => props.customSteps || defaultSteps);
 
-const progress = ref(props.initialProgress);
+const internalProgress = ref(0);
 const currentStepIndex = ref(0);
 const currentStep = ref("准备就绪");
 const messages = ref([]);
 let timer = null;
 
+// 当前显示的进度
+const displayProgress = computed(() =>
+  isExternal.value ? props.progress : internalProgress.value
+);
+
 // 更新进度
 const updateProgress = (newProgress) => {
-  progress.value = Math.min(newProgress, 100);
-  emit("progress", progress.value);
+  internalProgress.value = Math.min(newProgress, 100);
+  emit("progress", displayProgress.value);
 
   // 根据进度更新当前步骤
   for (let i = 0; i < steps.value.length; i++) {
-    if (progress.value >= steps.value[i].progress) {
+    if (displayProgress.value >= steps.value[i].progress) {
       currentStepIndex.value = i;
       currentStep.value = steps.value[i].label;
 
@@ -124,16 +132,16 @@ const updateProgress = (newProgress) => {
   }
 
   // 完成时触发事件
-  if (progress.value >= 100) {
+  if (displayProgress.value >= 100) {
     setTimeout(() => {
       emit("complete");
     }, 500);
   }
 };
 
-// 开始生成（模拟进度）
+// 开始生成（内部模拟进度，仅在没有外部进度时使用）
 const start = (duration = 3000) => {
-  progress.value = 0;
+  internalProgress.value = 0;
   messages.value = [];
   currentStepIndex.value = 0;
 
@@ -161,7 +169,7 @@ const setProgress = (value) => {
 // 重置
 const reset = () => {
   if (timer) clearInterval(timer);
-  progress.value = 0;
+  internalProgress.value = 0;
   messages.value = [];
   currentStepIndex.value = 0;
   currentStep.value = "准备就绪";
@@ -172,8 +180,23 @@ const reset = () => {
 watch(
   () => props.visible,
   (newVal) => {
-    if (newVal && !timer && progress.value === 0) {
-      start();
+    if (newVal) {
+      // 外部控制进度时不启动内部定时器
+      if (!isExternal.value && !timer && internalProgress.value === 0) {
+        start();
+      }
+    } else {
+      reset();
+    }
+  },
+);
+
+// 监听外部进度变化
+watch(
+  () => props.progress,
+  (newVal) => {
+    if (isExternal.value && newVal !== null) {
+      updateProgress(newVal);
     }
   },
 );
@@ -192,6 +215,8 @@ defineExpose({
 
 <style scoped>
 .generating-overlay {
+  position: absolute;
+  inset: 0;
   background: rgba(10, 10, 15, 0.95);
   backdrop-filter: blur(12px);
   border-radius: 16px;

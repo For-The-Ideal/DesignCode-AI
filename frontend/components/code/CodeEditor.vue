@@ -1,4 +1,3 @@
-<!-- components/code/CodeEditor.vue -->
 <template>
   <ClientOnly>
     <div class="code-editor-wrapper">
@@ -9,16 +8,13 @@
           <div class="dot dot-green"></div>
         </div>
       </div>
-      
-     
 
-
-      <div v-show="isLoading || !modelValue"  class="code-editor-loading">
+      <div v-show="isLoading || !modelValue" class="code-editor-loading">
         <div class="loading-spinner"></div>
         <span>加载编辑器中...</span>
       </div>
 
-      
+      <GeneratingOverlay v-if="generating" :visible="generating" :progress="genProgress" />
 
       <MonacoEditorCore
       v-show="!isLoading && modelValue"
@@ -47,6 +43,9 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import GeneratingOverlay from './GeneratingOverlay.vue'
 import MonacoEditorCore from './MonacoEditorCore.vue'
+import { useGeneration } from '~/composables/useGeneration'
+
+const { generating, progress: genProgress } = useGeneration()
 
 // ========== Props 定义 ==========
 const props = defineProps({
@@ -95,28 +94,16 @@ const props = defineProps({
     type: String,
     default: '// 代码将显示在这里...'
   },
-  generating:{ // 是否正在生成中
-    type: Boolean,
-    default: false
-  },
-  // 生成进度
-  generatingProgress: {
-    type: Number,
-    default: 80
-  },
 })
 
 const emit = defineEmits(['update:modelValue', 'change', 'copy', 'format'])
 
 // ========== 响应式数据 ==========
 const editorCoreRef = ref(null)
-const editorContainer = ref(null)
 let editor = null
 let monaco = null
 
 const isLoading = ref(true)
-
-const showGenerating = computed(() => props.generating)
 
 function onEditorReady() {
   isLoading.value = false

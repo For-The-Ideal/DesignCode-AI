@@ -17,7 +17,7 @@
         </div>
         <!-- 右侧手机模拟器 -->
         <div class="preview-area">
-          <PhoneMockup :html="phoneHtml" />
+          <FlutterTemplate :html="phoneHtml" />
         </div>
       </div>
       <div class="scroll-hint"><span>▼ 继续滚动查看 AI 智能诊断 ▼</span></div>
@@ -28,7 +28,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
 import CodeEditor from '@/components/code/CodeEditor.vue';
-import PhoneMockup from '@/components/common/PhoneMockup.vue';
+import FlutterTemplate from '@/components/common/FlutterTemplate.vue';
 
 const screenRef = ref(null);
 const generatedCode = ref('');

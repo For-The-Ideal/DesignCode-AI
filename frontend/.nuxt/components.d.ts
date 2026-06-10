@@ -25,7 +25,9 @@ export const CodeGeneratingOverlay: typeof import("../components/code/Generating
 export const CodeMonacoEditorCore: typeof import("../components/code/MonacoEditorCore.vue")['default']
 export const CodeOptimizationPanel: typeof import("../components/code/OptimizationPanel.vue")['default']
 export const CodeSyntaxHighlighter: typeof import("../components/code/SyntaxHighlighter.vue")['default']
-export const CommonPhoneMockup: typeof import("../components/common/PhoneMockup.vue")['default']
+export const CommonFlutterTemplate: typeof import("../components/common/FlutterTemplate.vue")['default']
+export const CommonReactTemplate: typeof import("../components/common/ReactTemplate.vue")['default']
+export const CommonVueTemplate: typeof import("../components/common/VueTemplate.vue")['default']
 export const ComparisonDiffViewer: typeof import("../components/comparison/DiffViewer.vue")['default']
 export const ComparisonModelComparison: typeof import("../components/comparison/ModelComparison.vue")['default']
 export const ComparisonVersionTimeline: typeof import("../components/comparison/VersionTimeline.vue")['default']
@@ -82,7 +84,9 @@ export const LazyCodeGeneratingOverlay: LazyComponent<typeof import("../componen
 export const LazyCodeMonacoEditorCore: LazyComponent<typeof import("../components/code/MonacoEditorCore.vue")['default']>
 export const LazyCodeOptimizationPanel: LazyComponent<typeof import("../components/code/OptimizationPanel.vue")['default']>
 export const LazyCodeSyntaxHighlighter: LazyComponent<typeof import("../components/code/SyntaxHighlighter.vue")['default']>
-export const LazyCommonPhoneMockup: LazyComponent<typeof import("../components/common/PhoneMockup.vue")['default']>
+export const LazyCommonFlutterTemplate: LazyComponent<typeof import("../components/common/FlutterTemplate.vue")['default']>
+export const LazyCommonReactTemplate: LazyComponent<typeof import("../components/common/ReactTemplate.vue")['default']>
+export const LazyCommonVueTemplate: LazyComponent<typeof import("../components/common/VueTemplate.vue")['default']>
 export const LazyComparisonDiffViewer: LazyComponent<typeof import("../components/comparison/DiffViewer.vue")['default']>
 export const LazyComparisonModelComparison: LazyComponent<typeof import("../components/comparison/ModelComparison.vue")['default']>
 export const LazyComparisonVersionTimeline: LazyComponent<typeof import("../components/comparison/VersionTimeline.vue")['default']>

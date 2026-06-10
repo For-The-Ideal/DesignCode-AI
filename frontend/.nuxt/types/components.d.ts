@@ -25,7 +25,9 @@ interface _GlobalComponents {
   CodeMonacoEditorCore: typeof import("../../components/code/MonacoEditorCore.vue")['default']
   CodeOptimizationPanel: typeof import("../../components/code/OptimizationPanel.vue")['default']
   CodeSyntaxHighlighter: typeof import("../../components/code/SyntaxHighlighter.vue")['default']
-  CommonPhoneMockup: typeof import("../../components/common/PhoneMockup.vue")['default']
+  CommonFlutterTemplate: typeof import("../../components/common/FlutterTemplate.vue")['default']
+  CommonReactTemplate: typeof import("../../components/common/ReactTemplate.vue")['default']
+  CommonVueTemplate: typeof import("../../components/common/VueTemplate.vue")['default']
   ComparisonDiffViewer: typeof import("../../components/comparison/DiffViewer.vue")['default']
   ComparisonModelComparison: typeof import("../../components/comparison/ModelComparison.vue")['default']
   ComparisonVersionTimeline: typeof import("../../components/comparison/VersionTimeline.vue")['default']
@@ -82,7 +84,9 @@ interface _GlobalComponents {
   LazyCodeMonacoEditorCore: LazyComponent<typeof import("../../components/code/MonacoEditorCore.vue")['default']>
   LazyCodeOptimizationPanel: LazyComponent<typeof import("../../components/code/OptimizationPanel.vue")['default']>
   LazyCodeSyntaxHighlighter: LazyComponent<typeof import("../../components/code/SyntaxHighlighter.vue")['default']>
-  LazyCommonPhoneMockup: LazyComponent<typeof import("../../components/common/PhoneMockup.vue")['default']>
+  LazyCommonFlutterTemplate: LazyComponent<typeof import("../../components/common/FlutterTemplate.vue")['default']>
+  LazyCommonReactTemplate: LazyComponent<typeof import("../../components/common/ReactTemplate.vue")['default']>
+  LazyCommonVueTemplate: LazyComponent<typeof import("../../components/common/VueTemplate.vue")['default']>
   LazyComparisonDiffViewer: LazyComponent<typeof import("../../components/comparison/DiffViewer.vue")['default']>
   LazyComparisonModelComparison: LazyComponent<typeof import("../../components/comparison/ModelComparison.vue")['default']>
   LazyComparisonVersionTimeline: LazyComponent<typeof import("../../components/comparison/VersionTimeline.vue")['default']>

@@ -68,7 +68,7 @@
               <span class="device-badge">iPhone 15 Pro</span>
             </div>
             <div class="panel-body preview-body">
-              <PhoneMockup :html="phoneHtml" :showBottomNav="false" />
+              <FlutterTemplate :html="phoneHtml" :showBottomNav="false" />
             </div>
           </div>
         </div>
@@ -83,7 +83,7 @@
 
 <script setup>
 import CodeEditor from '~/components/code/CodeEditor.vue'
-import PhoneMockup from '@/components/common/PhoneMockup.vue'
+import FlutterTemplate from '@/components/common/FlutterTemplate.vue'
 import OptimizationPanel from '~/components/code/OptimizationPanel.vue'
 import UploaderImage from '~/components/upload/UploaderImage.vue'
 

@@ -1,8 +1,8 @@
 <template>
-  <div class="phone-mock">
-    <div class="phone-screen">
+  <div class="flutter-mock">
+    <div class="flutter-screen">
       <!-- 固定：刘海区 -->
-      <div class="phone-notch-area">
+      <div class="flutter-notch-area">
         <span class="notch-time">{{ currentTime }}</span>
         <div class="notch-cutout"></div>
         <div class="notch-icons">
@@ -13,10 +13,10 @@
       </div>
 
       <!-- 动态：页面内容 -->
-      <div class="phone-page-content" v-html="html"></div>
+      <div class="flutter-page-content" v-html="html"></div>
 
       <!-- 固定：底部导航 -->
-      <div class="phone-bottom-nav" v-if="showBottomNav">
+      <div class="flutter-bottom-nav" v-if="showBottomNav">
         <div v-for="tab in bottomNav" :key="tab.label" class="tab-item" :class="{ active: tab.active }">
           <i :class="tab.icon"></i>
           <span>{{ tab.label }}</span>
@@ -24,7 +24,7 @@
       </div>
     </div>
     <!-- 固定：Home 指示条 -->
-    <div class="phone-home-bar"></div>
+    <div class="flutter-home-bar"></div>
   </div>
 </template>
 
@@ -53,7 +53,7 @@ const props = defineProps({
 
 <style lang="scss" scoped>
 /* ── 外壳 ── */
-.phone-mock {
+.flutter-mock {
   width: 100%;
   max-width: 375px;
   background: #010101;
@@ -69,7 +69,7 @@ const props = defineProps({
 }
 
 /* ── 屏幕 ── */
-.phone-screen {
+.flutter-screen {
   background: #f2f2f7;
   border-radius: 38px;
   overflow: hidden;
@@ -80,7 +80,7 @@ const props = defineProps({
 }
 
 /* ── 刘海 ── */
-.phone-notch-area {
+.flutter-notch-area {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -115,7 +115,7 @@ const props = defineProps({
 }
 
 /* ── 动态内容区 ── */
-.phone-page-content {
+.flutter-page-content {
   flex: 1;
   overflow: hidden;
   display: flex;
@@ -123,7 +123,7 @@ const props = defineProps({
 }
 
 /* ── 底部导航 ── */
-.phone-bottom-nav {
+.flutter-bottom-nav {
   display: flex;
   justify-content: space-around;
   background: #fff;
@@ -144,12 +144,12 @@ const props = defineProps({
 .tab-item.active { color: #1c1c1e; }
 
 /* ── Home 指示条 ── */
-.phone-home-bar {
+.flutter-home-bar {
   display: flex;
   justify-content: center;
   padding: 10px 0 6px;
 }
-.phone-home-bar::after {
+.flutter-home-bar::after {
   content: '';
   width: 120px;
   height: 5px;
@@ -158,6 +158,6 @@ const props = defineProps({
 }
 
 @media (max-width: 968px) {
-  .phone-mock { max-width: 320px; }
+  .flutter-mock { max-width: 320px; }
 }
 </style>
