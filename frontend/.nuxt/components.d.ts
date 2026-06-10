@@ -16,6 +16,7 @@ type LazyComponent<T> = DefineComponent<HydrationStrategies, {}, {}, {}, {}, {},
 
 export const AuthLogin: typeof import("../components/auth/Login.vue")['default']
 export const AuthLoginModal: typeof import("../components/auth/LoginModal.vue")['default']
+export const AuthPasswordModal: typeof import("../components/auth/PasswordModal.vue")['default']
 export const AuthRegister: typeof import("../components/auth/Register.vue")['default']
 export const CodeEditor: typeof import("../components/code/CodeEditor.vue")['default']
 export const CodePreview: typeof import("../components/code/CodePreview.vue")['default']
@@ -36,8 +37,13 @@ export const LayoutAppFooter: typeof import("../components/layout/AppFooter.vue"
 export const LayoutAppHeader: typeof import("../components/layout/AppHeader.vue")['default']
 export const LayoutCardsArea: typeof import("../components/layout/CardsArea.vue")['default']
 export const LayoutHeroSection: typeof import("../components/layout/HeroSection.vue")['default']
+export const LayoutParticlesBackground: typeof import("../components/layout/ParticlesBackground.vue")['default']
 export const OptimizationCompareModal: typeof import("../components/optimization/CompareModal.vue")['default']
 export const OptimizationProgressModal: typeof import("../components/optimization/ProgressModal.vue")['default']
+export const ScreenDiagnosticBubbles: typeof import("../components/screen/DiagnosticBubbles.vue")['default']
+export const ScreenHeroSection: typeof import("../components/screen/HeroSection.vue")['default']
+export const ScreenPhoneMockup: typeof import("../components/screen/PhoneMockup.vue")['default']
+export const ScreenSSEGenerator: typeof import("../components/screen/SSEGenerator.vue")['default']
 export const UploadDescEditorModal: typeof import("../components/upload/DescEditorModal.vue")['default']
 export const UploadDragDropZone: typeof import("../components/upload/DragDropZone.vue")['default']
 export const UploadPreviewImage: typeof import("../components/upload/PreviewImage.vue")['default']
@@ -68,6 +74,7 @@ export const Body: typeof import("../node_modules/nuxt/dist/head/runtime/compone
 export const NuxtIsland: typeof import("../node_modules/nuxt/dist/app/components/nuxt-island")['default']
 export const LazyAuthLogin: LazyComponent<typeof import("../components/auth/Login.vue")['default']>
 export const LazyAuthLoginModal: LazyComponent<typeof import("../components/auth/LoginModal.vue")['default']>
+export const LazyAuthPasswordModal: LazyComponent<typeof import("../components/auth/PasswordModal.vue")['default']>
 export const LazyAuthRegister: LazyComponent<typeof import("../components/auth/Register.vue")['default']>
 export const LazyCodeEditor: LazyComponent<typeof import("../components/code/CodeEditor.vue")['default']>
 export const LazyCodePreview: LazyComponent<typeof import("../components/code/CodePreview.vue")['default']>
@@ -88,8 +95,13 @@ export const LazyLayoutAppFooter: LazyComponent<typeof import("../components/lay
 export const LazyLayoutAppHeader: LazyComponent<typeof import("../components/layout/AppHeader.vue")['default']>
 export const LazyLayoutCardsArea: LazyComponent<typeof import("../components/layout/CardsArea.vue")['default']>
 export const LazyLayoutHeroSection: LazyComponent<typeof import("../components/layout/HeroSection.vue")['default']>
+export const LazyLayoutParticlesBackground: LazyComponent<typeof import("../components/layout/ParticlesBackground.vue")['default']>
 export const LazyOptimizationCompareModal: LazyComponent<typeof import("../components/optimization/CompareModal.vue")['default']>
 export const LazyOptimizationProgressModal: LazyComponent<typeof import("../components/optimization/ProgressModal.vue")['default']>
+export const LazyScreenDiagnosticBubbles: LazyComponent<typeof import("../components/screen/DiagnosticBubbles.vue")['default']>
+export const LazyScreenHeroSection: LazyComponent<typeof import("../components/screen/HeroSection.vue")['default']>
+export const LazyScreenPhoneMockup: LazyComponent<typeof import("../components/screen/PhoneMockup.vue")['default']>
+export const LazyScreenSSEGenerator: LazyComponent<typeof import("../components/screen/SSEGenerator.vue")['default']>
 export const LazyUploadDescEditorModal: LazyComponent<typeof import("../components/upload/DescEditorModal.vue")['default']>
 export const LazyUploadDragDropZone: LazyComponent<typeof import("../components/upload/DragDropZone.vue")['default']>
 export const LazyUploadPreviewImage: LazyComponent<typeof import("../components/upload/PreviewImage.vue")['default']>

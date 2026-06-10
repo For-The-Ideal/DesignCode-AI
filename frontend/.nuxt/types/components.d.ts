@@ -16,6 +16,7 @@ type LazyComponent<T> = DefineComponent<HydrationStrategies, {}, {}, {}, {}, {},
 interface _GlobalComponents {
   AuthLogin: typeof import("../../components/auth/Login.vue")['default']
   AuthLoginModal: typeof import("../../components/auth/LoginModal.vue")['default']
+  AuthPasswordModal: typeof import("../../components/auth/PasswordModal.vue")['default']
   AuthRegister: typeof import("../../components/auth/Register.vue")['default']
   CodeEditor: typeof import("../../components/code/CodeEditor.vue")['default']
   CodePreview: typeof import("../../components/code/CodePreview.vue")['default']
@@ -36,8 +37,13 @@ interface _GlobalComponents {
   LayoutAppHeader: typeof import("../../components/layout/AppHeader.vue")['default']
   LayoutCardsArea: typeof import("../../components/layout/CardsArea.vue")['default']
   LayoutHeroSection: typeof import("../../components/layout/HeroSection.vue")['default']
+  LayoutParticlesBackground: typeof import("../../components/layout/ParticlesBackground.vue")['default']
   OptimizationCompareModal: typeof import("../../components/optimization/CompareModal.vue")['default']
   OptimizationProgressModal: typeof import("../../components/optimization/ProgressModal.vue")['default']
+  ScreenDiagnosticBubbles: typeof import("../../components/screen/DiagnosticBubbles.vue")['default']
+  ScreenHeroSection: typeof import("../../components/screen/HeroSection.vue")['default']
+  ScreenPhoneMockup: typeof import("../../components/screen/PhoneMockup.vue")['default']
+  ScreenSSEGenerator: typeof import("../../components/screen/SSEGenerator.vue")['default']
   UploadDescEditorModal: typeof import("../../components/upload/DescEditorModal.vue")['default']
   UploadDragDropZone: typeof import("../../components/upload/DragDropZone.vue")['default']
   UploadPreviewImage: typeof import("../../components/upload/PreviewImage.vue")['default']
@@ -68,6 +74,7 @@ interface _GlobalComponents {
   NuxtIsland: typeof import("../../node_modules/nuxt/dist/app/components/nuxt-island")['default']
   LazyAuthLogin: LazyComponent<typeof import("../../components/auth/Login.vue")['default']>
   LazyAuthLoginModal: LazyComponent<typeof import("../../components/auth/LoginModal.vue")['default']>
+  LazyAuthPasswordModal: LazyComponent<typeof import("../../components/auth/PasswordModal.vue")['default']>
   LazyAuthRegister: LazyComponent<typeof import("../../components/auth/Register.vue")['default']>
   LazyCodeEditor: LazyComponent<typeof import("../../components/code/CodeEditor.vue")['default']>
   LazyCodePreview: LazyComponent<typeof import("../../components/code/CodePreview.vue")['default']>
@@ -88,8 +95,13 @@ interface _GlobalComponents {
   LazyLayoutAppHeader: LazyComponent<typeof import("../../components/layout/AppHeader.vue")['default']>
   LazyLayoutCardsArea: LazyComponent<typeof import("../../components/layout/CardsArea.vue")['default']>
   LazyLayoutHeroSection: LazyComponent<typeof import("../../components/layout/HeroSection.vue")['default']>
+  LazyLayoutParticlesBackground: LazyComponent<typeof import("../../components/layout/ParticlesBackground.vue")['default']>
   LazyOptimizationCompareModal: LazyComponent<typeof import("../../components/optimization/CompareModal.vue")['default']>
   LazyOptimizationProgressModal: LazyComponent<typeof import("../../components/optimization/ProgressModal.vue")['default']>
+  LazyScreenDiagnosticBubbles: LazyComponent<typeof import("../../components/screen/DiagnosticBubbles.vue")['default']>
+  LazyScreenHeroSection: LazyComponent<typeof import("../../components/screen/HeroSection.vue")['default']>
+  LazyScreenPhoneMockup: LazyComponent<typeof import("../../components/screen/PhoneMockup.vue")['default']>
+  LazyScreenSSEGenerator: LazyComponent<typeof import("../../components/screen/SSEGenerator.vue")['default']>
   LazyUploadDescEditorModal: LazyComponent<typeof import("../../components/upload/DescEditorModal.vue")['default']>
   LazyUploadDragDropZone: LazyComponent<typeof import("../../components/upload/DragDropZone.vue")['default']>
   LazyUploadPreviewImage: LazyComponent<typeof import("../../components/upload/PreviewImage.vue")['default']>
