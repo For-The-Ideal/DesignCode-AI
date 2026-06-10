@@ -128,10 +128,9 @@
 
     <!-- 描述编辑弹窗 -->
     <DescEditorModal
-      :visible="descModalVisible"
+      ref="descEditorRef"
       :images="images"
       :focus-index="editingIndex"
-      @update:visible="descModalVisible = $event"
       @save="handleSaveDescriptions"
       @close="closeDescModal"
     />
@@ -141,11 +140,9 @@
 <script setup>
 import { ref, computed } from 'vue'
 import DescEditorModal from './DescEditorModal.vue'
-import {useToastNotificationStore} from "~/stores/toastNotification"
 import { identifyApi } from "/api/identify"
 
 const emit = defineEmits(['generated'])
-const toastNotificationStore = useToastNotificationStore()
 
 // 图片列表
 const images = ref([])
@@ -162,7 +159,7 @@ const scoreDimensions = ref([])
 const generating = ref(false)
 
 // 描述弹窗
-const descModalVisible = ref(false)
+const descEditorRef = ref(null)
 const editingIndex = ref(null)
 
 
@@ -234,12 +231,12 @@ const clearAll = () => {
 // 打开描述弹窗（可指定索引）
 const openDescModal = (idx = null) => {
   editingIndex.value = idx
-  descModalVisible.value = true
+  descEditorRef.value?.open()
 }
 
 // 关闭描述弹窗
 const closeDescModal = () => {
-  descModalVisible.value = false
+  descEditorRef.value?.close()
   editingIndex.value = null
 }
 
@@ -275,7 +272,7 @@ const generateCode = async () => {
       framework: framework.value,
       quality: qualityValue.value
     }
-    toastNotificationStore.info('正在生成代码...')
+    ElMessage.info('正在生成代码...')
     console.log('payload:', payload)
     
     // 调用 API
@@ -296,11 +293,11 @@ const generateCode = async () => {
         score: result.score || 85,
         dimensions: result.dimensions || []
       })
-      toastNotificationStore.success('代码生成成功！')
+      ElMessage.success('代码生成成功！')
     }
   } catch (error) {
     console.error('生成失败:', error)
-    toastNotificationStore.error('生成失败，请稍后重试')
+    ElMessage.error('生成失败，请稍后重试')
   } finally {
     generating.value = false
   }

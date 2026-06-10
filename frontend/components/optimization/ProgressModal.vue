@@ -1,88 +1,79 @@
 <!-- components/optimization/ProgressModal.vue -->
 <template>
-  <Teleport to="body">
-    <div class="modal-overlay" v-if="visible" @click.self="handleClose">
-      <div class="modal-content progress-modal">
-        <div class="modal-header">
-          <div class="header-icon">
-            <i class="fas fa-microchip"></i>
-          </div>
-          <h3>AI 智能优化</h3>
-          <button class="close-btn" @click="handleClose" v-if="!optimizing">
-            <i class="fas fa-times"></i>
-          </button>
+  <DialogModel ref="dialogRef" width="500px" customClass="progress-dialog" @close="emit('close')">
+    <div class="modal-header">
+      <div class="header-icon">
+        <i class="fas fa-microchip"></i>
+      </div>
+      <h3>AI 智能优化</h3>
+      <button class="close-btn" @click="dialogRef.close()" v-if="!optimizing">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <!-- 进度信息 -->
+      <div class="progress-section">
+        <div class="progress-info">
+          <span class="progress-label">{{ progressMsg }}</span>
+          <span class="progress-percent">{{ progress }}%</span>
         </div>
-        
-        <div class="modal-body">
-          <!-- 进度信息 -->
-          <div class="progress-section">
-            <div class="progress-info">
-              <span class="progress-label">{{ progressMsg }}</span>
-              <span class="progress-percent">{{ progress }}%</span>
+        <div class="progress-bar-wrapper">
+          <div class="progress-bar">
+            <div class="progress-fill" :style="{ width: progress + '%' }">
+              <div class="progress-glow"></div>
             </div>
-            <div class="progress-bar-wrapper">
-              <div class="progress-bar">
-                <div class="progress-fill" :style="{ width: progress + '%' }">
-                  <div class="progress-glow"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <!-- 步骤指示器 -->
-          <div class="steps-container">
-            <div 
-              v-for="(step, index) in steps" 
-              :key="index"
-              class="step-item"
-              :class="{ 
-                active: progress >= step.progress, 
-                completed: progress > step.progress 
-              }"
-            >
-              <div class="step-dot">
-                <i v-if="progress > step.progress" class="fas fa-check"></i>
-                <span v-else>{{ index + 1 }}</span>
-              </div>
-              <div class="step-label">{{ step.label }}</div>
-              <div class="step-line" v-if="index < steps.length - 1"></div>
-            </div>
-          </div>
-          
-          <!-- 加载动画 -->
-          <div class="loading-animation" v-if="optimizing && progress < 100">
-            <div class="loader"></div>
-            <p>AI 正在分析优化中...</p>
           </div>
         </div>
       </div>
+
+      <!-- 步骤指示器 -->
+      <div class="steps-container">
+        <div
+          v-for="(step, index) in steps"
+          :key="index"
+          class="step-item"
+          :class="{
+            active: progress >= step.progress,
+            completed: progress > step.progress
+          }"
+        >
+          <div class="step-dot">
+            <i v-if="progress > step.progress" class="fas fa-check"></i>
+            <span v-else>{{ index + 1 }}</span>
+          </div>
+          <div class="step-label">{{ step.label }}</div>
+          <div class="step-line" v-if="index < steps.length - 1"></div>
+        </div>
+      </div>
+
+      <!-- 加载动画 -->
+      <div class="loading-animation" v-if="optimizing && progress < 100">
+        <div class="loader"></div>
+        <p>AI 正在分析优化中...</p>
+      </div>
     </div>
-  </Teleport>
+  </DialogModel>
 </template>
 
 <script setup>
 import { ref, watch } from 'vue'
+import DialogModel from '~/components/dialog/DialogModel.vue'
 
 const props = defineProps({
-  visible: {
-    type: Boolean,
-    default: false
-  },
-  progress: {
-    type: Number,
-    default: 0
-  },
-  progressMsg: {
-    type: String,
-    default: '正在分析代码...'
-  },
-  optimizing: {
-    type: Boolean,
-    default: true
-  }
+  progress: { type: Number, default: 0 },
+  progressMsg: { type: String, default: '正在分析代码...' },
+  optimizing: { type: Boolean, default: true }
 })
 
 const emit = defineEmits(['close', 'complete'])
+
+const dialogRef = ref(null)
+
+const open = () => { dialogRef.value.open() }
+const close = () => { dialogRef.value.close() }
+
+defineExpose({ open, close })
 
 const steps = [
   { label: '分析代码', progress: 20 },
@@ -92,13 +83,9 @@ const steps = [
   { label: '完成', progress: 100 }
 ]
 
-const handleClose = () => {
-  emit('close')
-}
-
 // 监听进度完成
 watch(() => props.progress, (newVal) => {
-  if (newVal >= 100 && props.optimizing === false) {
+  if (newVal >= 100 && !props.optimizing) {
     setTimeout(() => {
       emit('complete')
     }, 500)
@@ -107,48 +94,6 @@ watch(() => props.progress, (newVal) => {
 </script>
 
 <style scoped>
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(12px);
-  z-index: 1000;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  animation: fadeIn 0.3s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.modal-content {
-  background: rgba(10, 20, 30, 0.95);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(0, 255, 255, 0.3);
-  border-radius: 28px;
-  width: 500px;
-  max-width: 90%;
-  animation: slideUp 0.3s ease;
-  overflow: hidden;
-}
-
-@keyframes slideUp {
-  from {
-    transform: translateY(50px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
 .modal-header {
   display: flex;
   align-items: center;

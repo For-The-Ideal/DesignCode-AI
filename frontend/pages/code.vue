@@ -86,9 +86,6 @@ import CodeEditor from '~/components/code/CodeEditor.vue'
 import PhoneMockup from '~/components/screen/PhoneMockup.vue'
 import OptimizationPanel from '~/components/code/OptimizationPanel.vue'
 import UploaderImage from '~/components/upload/UploaderImage.vue'
-import { useToastNotificationStore } from '~/stores/toastNotification'
-
-const toast = useToastNotificationStore()
 
 // ═══ 生成状态 ═══
 const hasGenerated = ref(false)
@@ -177,8 +174,8 @@ const updatePreview = () => {
 }
 
 const handleCopy = async () => {
-  try { await navigator.clipboard.writeText(generatedCode.value); toast.success('已复制到剪贴板') }
-  catch { toast.error('复制失败') }
+  try { await navigator.clipboard.writeText(generatedCode.value); ElMessage.success('已复制到剪贴板') }
+  catch { ElMessage.error('复制失败') }
 }
 
 const handleFormat = () => {
@@ -191,7 +188,7 @@ const handleFormat = () => {
     if (/[({]$/.test(t)) indent++
     return r
   }).join('\n')
-  toast.success('代码已格式化')
+  ElMessage.success('代码已格式化')
 }
 
 const handleDownload = () => {
@@ -202,7 +199,7 @@ const handleDownload = () => {
   a.download = `generated.${ext}`
   a.click()
   URL.revokeObjectURL(a.href)
-  toast.success('已下载')
+  ElMessage.success('已下载')
 }
 
 const onOptimized = (code) => { generatedCode.value = code }

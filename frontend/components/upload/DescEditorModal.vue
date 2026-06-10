@@ -1,98 +1,81 @@
 <!-- components/DescEditorModal.vue -->
 <template>
-  <Teleport to="body">
-    <transition name="modal-fade">
-      <div v-if="visible" class="modal-overlay" @click.self="close">
-        <div class="modal-container desc-modal">
-          <div class="modal-header">
-            <h3><i class="fas fa-edit"></i> 设计稿描述</h3>
-            <button class="close-modal" @click="close">&times;</button>
+  <DialogModel ref="dialogRef" width="600px" customClass="desc-dialog" @close="emit('close')">
+    <div class="modal-header">
+      <h3><i class="fas fa-edit"></i> 设计稿描述</h3>
+      <button class="close-modal" @click="dialogRef.close()">&times;</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="desc-list">
+        <div
+          v-for="(img, idx) in images"
+          :key="img.id"
+          class="desc-item"
+          :class="{ focused: focusIndex === idx }"
+        >
+          <div class="desc-item-preview">
+            <img :src="img.preview" alt="预览" />
+            <span class="desc-item-index">{{ idx + 1 }}</span>
           </div>
-          
-          <div class="modal-body">
-            <div class="desc-list">
-              <div 
-                v-for="(img, idx) in images" 
-                :key="img.id" 
-                class="desc-item"
-                :class="{ focused: focusIndex === idx }"
-              >
-                <div class="desc-item-preview">
-                  <img :src="img.preview" alt="预览" />
-                  <span class="desc-item-index">{{ idx + 1 }}</span>
-                </div>
-                <div class="desc-item-input">
-                  <label>{{ img.type || '设计稿' }}</label>
-                  <textarea
-                    :ref="el => setTextareaRef(el, idx)"
-                    v-model="tempDescriptions[idx]"
-                    @focus="changeFocusIndex(idx)"
-                    :placeholder="`描述第 ${idx + 1} 张设计稿的用途和关键元素...`"
-                    rows="3"
-                  ></textarea>
-                  <div class="desc-item-footer">
-                    <span class="char-count">{{ (tempDescriptions[idx] || '').length }}/500</span>
-                    <span class="desc-tip">帮助 AI 理解设计意图</span>
-                  </div>
-                </div>
-              </div>
+          <div class="desc-item-input">
+            <label>{{ img.type || '设计稿' }}</label>
+            <textarea
+              :ref="el => setTextareaRef(el, idx)"
+              v-model="tempDescriptions[idx]"
+              @focus="changeFocusIndex(idx)"
+              :placeholder="`描述第 ${idx + 1} 张设计稿的用途和关键元素...`"
+              rows="3"
+            ></textarea>
+            <div class="desc-item-footer">
+              <span class="char-count">{{ (tempDescriptions[idx] || '').length }}/500</span>
+              <span class="desc-tip">帮助 AI 理解设计意图</span>
             </div>
-          </div>
-          
-          <div class="modal-footer">
-            <button class="btn-cancel" @click="close">取消</button>
-            <button class="btn-save" @click="save">保存描述</button>
           </div>
         </div>
       </div>
-    </transition>
-  </Teleport>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-cancel" @click="dialogRef.close()">取消</button>
+      <button class="btn-save" @click="save">保存描述</button>
+    </div>
+  </DialogModel>
 </template>
 
 <script setup>
 import { ref, watch, nextTick } from 'vue'
+import DialogModel from '~/components/dialog/DialogModel.vue'
 
 const props = defineProps({
-  visible: {
-    type: Boolean,
-    default: false
-  },
-  images: {
-    type: Array,
-    default: () => []
-  },
-  focusIndex: {
-    type: Number,
-    default: null
-  }
+  images: { type: Array, default: () => [] },
+  focusIndex: { type: Number, default: null }
 })
 
-const emit = defineEmits(['update:visible', 'save', 'close', 'update:focusIndex'])
+const emit = defineEmits(['save', 'close', 'update:focusIndex'])
 
-// 临时描述数组
+const dialogRef = ref(null)
 const tempDescriptions = ref([])
-
-// textarea refs
 const textareaRefs = ref({})
 
-// 设置 textarea ref
+const open = () => { dialogRef.value.open() }
+const close = () => { dialogRef.value.close() }
+
+defineExpose({ open, close })
+
 const setTextareaRef = (el, idx) => {
-  if (el) {
-    textareaRefs.value[idx] = el
-  }
+  if (el) textareaRefs.value[idx] = el
 }
 
-// 监听 visible 变化，初始化临时数据并自动聚焦
-watch(() => props.visible, async (newVal) => {
+// 监听 dialog 打开状态，初始化数据
+watch(() => dialogRef.value?.visible, (newVal) => {
   if (newVal) {
-    // 初始化临时描述数组
     tempDescriptions.value = props.images.map(img => img.description || '')
-    await nextTick()
-    
-    // 自动聚焦到指定索引的 textarea
-    if (props.focusIndex !== null && textareaRefs.value[props.focusIndex]) {
-      textareaRefs.value[props.focusIndex].focus()
-    }
+    nextTick(() => {
+      if (props.focusIndex !== null && textareaRefs.value[props.focusIndex]) {
+        textareaRefs.value[props.focusIndex].focus()
+      }
+    })
   }
 })
 
@@ -103,12 +86,6 @@ watch(() => props.focusIndex, async (newIdx) => {
     textareaRefs.value[newIdx].focus()
   }
 })
-
-// 关闭弹窗
-const close = () => {
-  emit('update:visible', false)
-  emit('close')
-}
 
 // 保存描述
 const save = () => {
@@ -125,43 +102,6 @@ const changeFocusIndex = (idx) => {
 </script>
 
 <style scoped>
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.desc-modal {
-  width: 600px;
-  max-width: 90%;
-  max-height: 80vh;
-  background: rgba(15, 25, 35, 0.98);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(0, 255, 255, 0.4);
-  border-radius: 24px;
-  overflow: hidden;
-  animation: modalSlideIn 0.3s ease;
-}
-
-@keyframes modalSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 .modal-header {
   display: flex;
   justify-content: space-between;
@@ -331,15 +271,5 @@ const changeFocusIndex = (idx) => {
 .btn-save:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 15px rgba(0, 255, 255, 0.3);
-}
-
-.modal-fade-enter-active,
-.modal-fade-leave-active {
-  transition: opacity 0.2s;
-}
-
-.modal-fade-enter-from,
-.modal-fade-leave-to {
-  opacity: 0;
 }
 </style>

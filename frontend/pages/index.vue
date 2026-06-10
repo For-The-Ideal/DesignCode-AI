@@ -2,7 +2,7 @@
   <div class="app">
     <div class="screens-container">
       <!-- 第一屏 -->
-      <HeroSection @get-started="scrollToSecond" @watch-demo="playDemo" />
+      <HeroSection @getStarted="scrollToSecond" @watchDemo="playDemo" />
 
       <!-- 第二屏 -->
       <SSEGenerator ref="secondScreenRef" />
@@ -10,18 +10,19 @@
       <!-- 第三屏 -->
       <DiagnosticBubbles ref="thirdScreenRef" />
     </div>
-    <ParticlesBackground />
+    <ClientOnly>
+      <ParticlesBackground />
+    </ClientOnly>
   </div>
 </template>
 
 <script setup>
-import AppHeader from "~/components/layout/AppHeader.vue";
+import { ElMessage } from 'element-plus'
+import { defineAsyncComponent } from "vue";
 import HeroSection from "~/components/screen/HeroSection.vue";
 import SSEGenerator from "~/components/screen/SSEGenerator.vue";
 import DiagnosticBubbles from "~/components/screen/DiagnosticBubbles.vue";
-import ParticlesBackground from "~/components/layout/ParticlesBackground.vue";
-const secondScreenRef = ref(null);
-const thirdScreenRef = ref(null);
+const ParticlesBackground = defineAsyncComponent(() => import("~/components/layout/ParticlesBackground.vue"));
 
 const scrollToSecond = () => {
   const container = document.querySelector(".screens-container");
@@ -29,7 +30,7 @@ const scrollToSecond = () => {
 };
 
 const playDemo = () => {
-  alert("演示视频即将上线");
+  ElMessage.warning('演示视频即将上线')
 };
 </script>
 

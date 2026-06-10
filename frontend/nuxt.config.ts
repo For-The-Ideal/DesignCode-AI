@@ -1,53 +1,112 @@
 import monacoEditorPlugin from 'vite-plugin-monaco-editor'
+
 export default defineNuxtConfig({
-  compatibilityDate: '2025-07-15',
-  devtools: { enabled: false },  // 关键：关闭 devtools
-  ssr: false,  // 关闭 SSR 测试
-  css: [
-    '~/assets/css/main.css',  // 这里配置全局样式
-     '@fortawesome/fontawesome-free/css/all.min.css'  // 添加 Font Awesome
-  ],
-   modules: [
+  ssr: true,
+  devtools: { enabled: false },
+
+  future: {
+    compatibilityVersion: 4,
+  },
+
+  // ========== 自动导入配置 ==========
+  imports: {
+    dirs: ['composables/**'],
+  },
+
+  modules: [
     '@pinia/nuxt',
+    '@nuxt/image',
+    '@nuxtjs/tailwindcss',
+    '@nuxtjs/color-mode',
   ],
-  runtimeConfig: {
-    // 只能在服务端访问的私有变量
-    apiSecret: '', 
-    // public: {
-    //   // 暴露给客户端的变量
-    //   apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:8080',
-    //   wsBase: process.env.NUXT_PUBLIC_WS_BASE || 'ws://localhost:8080/ws',
-    //   siteTitle: process.env.NUXT_PUBLIC_SITE_TITLE || 'Design2Code AI',
-    //   debug: process.env.NUXT_PUBLIC_DEBUG === 'true',
-    //   cryptoSecret: process.env.NUXT_PUBLIC_CRYPTO_SECRET || 'design2code-ai-secret-key-2025'
-    // }
+
+  css: [
+    '~/assets/css/main.css',
+    '@fortawesome/fontawesome-free/css/all.min.css',
+  ],
+
+
+  build: {
+    transpile: ['monaco-editor'],
   },
-  app: {
-    head: {
-      link: [
-        { rel: 'stylesheet', href: 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css' }
-      ]
-    }
-  },
-  typescript: {
-    typeCheck: false
-  },
-   build: {
-    transpile: ['monaco-editor']
-  },
-  
-  // vite: {
-  //   optimizeDeps: {
-  //     include: ['monaco-editor']
-  //   },
-    
-  // },
-   vite: {
+
+  // ========== Vite 配置 ==========
+  vite: {
+    optimizeDeps: {
+      include: [
+        'element-plus',
+        'element-plus/dist/locale/zh-cn.mjs',
+        // 'swiper',
+        // 'swiper/vue',
+        // 'video.js',
+        // 'vue-color',
+        // 'vue-video-player',
+        // 'vue3-seamless-scroll',
+      ],
+      // exclude: ['@vueuse/core'],
+    },
     plugins: [
       monacoEditorPlugin({
-        // 可选：指定需要的语言特性，减少打包体积
         languageWorkers: ['editorWorkerService', 'typescript', 'json', 'css', 'html'],
-      })
-    ]
-  }
+      }),
+    ],
+    build: {
+      sourcemap: false,
+      chunkSizeWarningLimit: 2 * 1024,
+      rollupOptions: {
+        onwarn(warning, warn) {
+          if (warning.code === 'INVALID_ANNOTATION' && warning.message.includes('__PURE__')) return
+          if (warning.message?.includes('module-preload-polyfill') && warning.message?.includes('Sourcemap')) return
+          if (warning.code === 'FILE_SIZE_EXCEEDS_LIMIT') return
+          warn(warning)
+        },
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules')) {
+              // // ECharts 核心库
+              // if (id.includes('echarts') || id.includes('zrender')) {
+              //   if (id.includes('vue-echarts')) return
+              //   return 'echarts'
+              // }
+              // // Swiper 核心库
+              // if (id.includes('swiper')) {
+              //   if (id.includes('vue-awesome-swiper')) return
+              //   return 'swiper'
+              // }
+              // 工具库（独立、无 Vue 依赖）
+              if (id.includes('crypto-js')) {
+                return 'utils'
+              }
+              // // 后续安装 moment / jszip / clipboard 时可取消注释
+              // if (id.includes('moment') || id.includes('jszip') || id.includes('clipboard')) {
+              //   return 'utils'
+              // }
+              // // 动画库
+              // if (id.includes('gsap')) return 'gsap'
+            }
+          },
+        },
+      },
+    },
+    // css: {
+    //   preprocessorOptions: {
+    //     scss: {
+    //       additionalData: `@use "~/assets/scss/variables.scss" as *;@use "~/assets/scss/config.scss" as *;`
+    //     }
+    //   }
+    // },
+    server: {
+      warmup: {
+        clientFiles: ['./pages/**/*.vue', './layouts/**/*.vue'],
+      },
+    },
+    logLevel: 'warn',
+  },
+
+  // ========== Nitro 服务端配置 ==========
+  nitro: {
+    sourceMap: false,
+  },
+
+  compatibilityDate: '2026-03-31',
 })

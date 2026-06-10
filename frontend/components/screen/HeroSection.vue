@@ -24,8 +24,8 @@
         <div class="stat-item"><div class="stat-number">3+</div><div class="stat-label">框架支持</div></div>
       </div>
       <div class="hero-actions">
-        <button class="btn-primary" @click="$emit('get-started')"><i class="fas fa-arrow-right"></i> 立即开始</button>
-        <button class="btn-secondary" @click="$emit('watch-demo')"><i class="fas fa-play"></i> 观看演示</button>
+        <button class="btn-primary" @click="$emit('getStarted')"><i class="fas fa-arrow-right"></i> 立即开始</button>
+        <button class="btn-secondary" @click="$emit('watchDemo')"><i class="fas fa-play"></i> 观看演示</button>
       </div>
     </div>
     <div class="scroll-hint"><span>▼ 滚动探索 AI 代码生成 ▼</span></div>
@@ -33,6 +33,7 @@
 </template>
 
 <script setup>
+defineEmits(['getStarted', 'watchDemo'])
 </script>
 
 <style scoped>

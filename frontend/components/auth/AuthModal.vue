@@ -1,0 +1,371 @@
+<!-- components/auth/AuthModal.vue -->
+<template>
+  <DialogModel ref="dialogRef" @close="emit('close')" v-border-gradient>
+    <button class="close-btn" @click="handleClose">
+      <i v-if="isForgotPassword" class="fas fa-arrow-left"></i>
+      <i v-else class="fas fa-times"></i>
+    </button>
+
+    <div class="modal-icon">
+      <div class="icon-ring">
+        <i class="fas fa-microchip"></i>
+      </div>
+    </div>
+
+    <h2 class="modal-title">
+      {{ isForgotPassword ? '忘记密码' : isLogin ? '登录账户' : '注册账户' }}
+    </h2>
+    <p class="modal-subtitle">
+      {{ isForgotPassword ? '输入邮箱地址，我们将发送重置链接' : isLogin ? '欢迎回来，登录继续你的创作' : '创建账户，开启 AI 设计转代码之旅' }}
+    </p>
+
+    <!-- 登录 / 注册 / 忘记密码 三态切换 -->
+    <Login v-if="isLogin" @success="onLoginSuccess" @forgotPassword="goToForgotPassword" />
+    <Register v-if="isRegister" @success="onRegisterSuccess" />
+    <div v-if="isForgotPassword" class="forgot-form">
+      <form @submit.prevent="submitForgotPassword" >
+        <div class="input-field" :class="{ focused: forgotFocused }">
+          <i class="fas fa-envelope input-icon"></i>
+          <input
+            v-model="forgotEmail"
+            type="email"
+            placeholder="邮箱地址"
+            maxlength="50"
+            @focus="forgotFocused = true"
+            @blur="forgotFocused = false"
+          />
+          <svg class="border-svg" :class="{ animate: forgotFocused }">
+            <rect x="0" y="0" rx="26" ry="26" width="100%" height="100%" pathLength="100" class="border-bg" />
+            <rect x="0" y="0" rx="26" ry="26" width="100%" height="100%" pathLength="100" class="moving-stroke" />
+          </svg>
+        </div>
+        <button type="submit" class="submit-btn" :disabled="forgotLoading">
+          <span v-if="!forgotLoading">发送重置链接</span>
+          <span v-else class="loading-spinner"></span>
+        </button>
+      </form>
+    </div>
+
+    <div class="switch-mode">
+      <p v-if="isForgotPassword">
+        <a href="#" @click.prevent="goToLogin">← 返回登录</a>
+      </p>
+      <p class="switch-status" v-else>
+        {{ isLogin ? '还没有账户？' : '已有账户？' }}
+        <a href="#" @click.prevent="toggleMode">
+          {{ isLogin ? '立即注册' : '立即登录' }}
+        </a>
+      </p>
+    </div>
+  </DialogModel>
+</template>
+
+<script setup>
+import { ref } from 'vue'
+import DialogModel from '@/components/dialog/DialogModel.vue'
+import Login from './Login.vue'
+import Register from './Register.vue'
+
+const emit = defineEmits(['loginSuccess', 'registerSuccess', 'close'])
+
+const dialogRef = ref(null)
+const isLogin = ref(true)
+const isRegister = ref(false)
+const isForgotPassword = ref(false)
+
+// 忘记密码表单
+const forgotEmail = ref('')
+const forgotFocused = ref(false)
+const forgotLoading = ref(false)
+
+const open = () => {
+  dialogRef.value?.open()
+  goToLogin()
+}
+const close = () => { dialogRef.value?.close() }
+
+const handleClose = () => {
+  if (isForgotPassword.value) {
+    goToLogin()
+  } else {
+    close()
+  }
+}
+
+const goToLogin = () => {
+  isLogin.value = true
+  isRegister.value = false
+  isForgotPassword.value = false
+}
+const goToRegister = () => {
+  isLogin.value = false
+  isRegister.value = true
+  isForgotPassword.value = false
+}
+const goToForgotPassword = () => {
+  isLogin.value = false
+  isRegister.value = false
+  isForgotPassword.value = true
+}
+const toggleMode = () => {
+  if (isLogin.value) goToRegister()
+  else goToLogin()
+}
+
+const onLoginSuccess = (data) => {
+  emit('loginSuccess', data)
+  close()
+}
+const onRegisterSuccess = (data) => {
+  emit('registerSuccess', data)
+  close()
+}
+const submitForgotPassword = async () => {
+  if (!forgotEmail.value) return
+  forgotLoading.value = true
+  // TODO: 对接真实忘记密码 API
+  await new Promise(resolve => setTimeout(resolve, 800))
+  forgotLoading.value = false
+  alert('重置链接已发送，请检查邮箱')
+  goToLogin()
+  forgotEmail.value = ''
+}
+
+const socialLogin = (provider) => {
+  alert(`${provider.toUpperCase()} 登录功能开发中...`)
+}
+
+defineExpose({ open, close })
+</script>
+
+<style scoped>
+.close-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 50%;
+  color: #888;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.close-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  transform: rotate(90deg);
+}
+
+.modal-icon {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+.icon-ring {
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, rgba(0, 255, 255, 0.15), rgba(255, 0, 255, 0.15));
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  animation: pulse 2s ease-in-out infinite;
+}
+.icon-ring i {
+  font-size: 28px;
+  color: #00ffff;
+}
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 255, 255, 0.2); }
+  50% { box-shadow: 0 0 0 8px rgba(0, 255, 255, 0); }
+}
+
+.modal-title {
+  font-size: 28px;
+  font-weight: 700;
+  text-align: center;
+  background: linear-gradient(135deg, #fff, #00ffff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  margin-bottom: 8px;
+}
+.modal-subtitle {
+  font-size: 13px;
+  color: #888;
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.divider {
+  text-align: center;
+  margin: 24px 0 20px;
+  position: relative;
+}
+.divider::before,
+.divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: calc(50% - 30px);
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.3), transparent);
+}
+.divider::before { left: 0; }
+.divider::after { right: 0; }
+.divider span {
+  background: rgba(12, 20, 28, 0.8);
+  padding: 0 16px;
+  font-size: 12px;
+  color: #666;
+  position: relative;
+  z-index: 1;
+}
+
+.social-btn {
+  width: 44px;
+  height: 44px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  color: #aaa;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-size: 20px;
+}
+.social-btn:hover {
+  transform: translateY(-2px);
+  background: rgba(0, 255, 255, 0.1);
+  color: #00ffff;
+  border-color: rgba(0, 255, 255, 0.3);
+}
+
+.switch-mode {
+  text-align: center;
+  font-size: 13px;
+  color: #888;
+}
+.switch-status{
+  margin-top: 20px;
+}
+.switch-mode a {
+  color: #00ffff;
+  text-decoration: none;
+  font-weight: 500;
+  margin-left: 4px;
+}
+
+/* 忘记密码表单 */
+.forgot-form {
+  margin-bottom: 24px;
+}
+.forgot-form .input-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 28px;
+  padding: 0 18px;
+  height: 52px;
+  transition: all 0.3s;
+  margin-bottom: 18px;
+}
+.forgot-form .input-field.focused {
+  background: rgba(255, 255, 255, 0.08);
+}
+.forgot-form .input-field input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #e5e7eb;
+  font-size: 15px;
+  padding: 0 8px;
+}
+.forgot-form .input-field input::placeholder {
+  color: #4b5563;
+}
+.forgot-form .input-icon {
+  color: #6b7280;
+  font-size: 16px;
+  width: 20px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.forgot-form .input-field.focused .input-icon {
+  color: #00ffff;
+}
+.forgot-form .submit-btn {
+  width: 100%;
+  height: 50px;
+  background: linear-gradient(135deg, rgba(0, 255, 255, 0.2), rgba(255, 0, 255, 0.2));
+  border: 1px solid rgba(0, 255, 255, 0.4);
+  border-radius: 28px;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+.forgot-form .submit-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(0, 255, 255, 0.3), rgba(255, 0, 255, 0.3));
+  box-shadow: 0 0 24px rgba(0, 255, 255, 0.25);
+  transform: translateY(-1px);
+}
+.forgot-form .submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 忘记密码 SVG 光带边框 */
+.forgot-form .border-svg {
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  width: calc(100% + 4px);
+  height: calc(100% + 4px);
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0;
+  transition: opacity 0.2s;
+  overflow: visible;
+}
+.forgot-form .border-svg.animate { opacity: 1; }
+.forgot-form .border-bg {
+  fill: none;
+  stroke: rgba(0, 255, 255, 0.1);
+  stroke-width: 1.5;
+}
+.forgot-form .moving-stroke {
+  fill: none;
+  stroke: url(#borderGradient);
+  stroke-width: 2;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 4px rgba(0, 255, 255, 0.6));
+  stroke-dasharray: 30 70;
+  animation: forgotStrokeMove 3s linear infinite;
+}
+@keyframes forgotStrokeMove {
+  from { stroke-dashoffset: 100; }
+  to   { stroke-dashoffset: 0; }
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #00ffff;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+</style>

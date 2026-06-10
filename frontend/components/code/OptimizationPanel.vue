@@ -96,7 +96,7 @@
 
     <!-- 进度弹窗 -->
     <ProgressModal
-      :visible="showProgressModal"
+      ref="progressModalRef"
       :progress="progress"
       :progress-msg="progressMsg"
       :optimizing="isOptimizing"
@@ -116,9 +116,6 @@
       @accept="onAcceptOptimize"
       @reject="onRejectOptimize"
     />
-
-    <!-- 提示组件 -->
-    <ToastNotification ref="toastRef" />
   </div>
 </template>
 
@@ -126,7 +123,6 @@
 import { ref, computed } from "vue";
 import CompareModal from "/components/optimization/CompareModal.vue";
 import ProgressModal from "/components/optimization/ProgressModal.vue";
-import ToastNotification from "/components/common/ToastNotification.vue";
 
 const props = defineProps({
   originalCode: { type: String, default: "" }
@@ -140,7 +136,7 @@ const customText = ref("");
 const checkedIssues = ref([]);
 const optimizedCode = ref("");
 
-const showProgressModal = ref(false);
+const progressModalRef = ref(null);
 const showCompareModal = ref(false);
 const isOptimizing = ref(false);
 const progress = ref(0);
@@ -248,7 +244,7 @@ const toggleIssue = (text) => {
 };
 
 const startOptimization = async () => {
-  showProgressModal.value = true;
+  progressModalRef.value?.open();
   isOptimizing.value = true;
   progress.value = 0;
   progressMsg.value = "正在分析代码...";
@@ -279,12 +275,12 @@ const startOptimization = async () => {
 };
 
 const onProgressComplete = () => {
-  showProgressModal.value = false;
+  progressModalRef.value?.close();
   showCompareModal.value = true;
 };
 
 const closeProgressModal = () => {
-  showProgressModal.value = false;
+  progressModalRef.value?.close();
   isOptimizing.value = false;
 };
 

@@ -37,19 +37,19 @@
         <!-- 已登录：头像 + 下拉菜单 -->
         <div v-else class="user-menu" @mouseenter="showDropdown = true" @mouseleave="showDropdown = false">
           <div class="user-avatar">
-            <span class="avatar-text">{{ userInfo?.username?.charAt(0)?.toUpperCase() || 'U' }}</span>
+            <span class="avatar-text">{{ (userInfo?.username || userInfo?.email)?.charAt(0)?.toUpperCase() || 'U' }}</span>
           </div>
-          <span class="user-name">{{ userInfo?.username }}</span>
+          <span class="user-name">{{ userInfo?.username || userInfo?.email }}</span>
 
           <!-- 下拉菜单 -->
           <transition name="dropdown-fade">
             <div v-if="showDropdown" class="dropdown-panel">
               <div class="dropdown-header">
                 <div class="dropdown-avatar">
-                  <span>{{ userInfo?.username?.charAt(0)?.toUpperCase() || 'U' }}</span>
+                  <span>{{ (userInfo?.username || userInfo?.email)?.charAt(0)?.toUpperCase() || 'U' }}</span>
                 </div>
                 <div class="dropdown-user-info">
-                  <span class="dropdown-username">{{ userInfo?.username }}</span>
+                  <span class="dropdown-username">{{ userInfo?.username || userInfo?.email }}</span>
                   <span class="dropdown-email">{{ userInfo?.email }}</span>
                 </div>
               </div>
@@ -68,22 +68,26 @@
       </div>
     </div>
 
-    <LoginModal 
+   
+
+  </header>
+
+  
+    <AuthModal 
       ref="loginModalRef" 
-      @login-success="handleLoginSuccess"
-      @register-success="handleRegisterSuccess"
+      @loginSuccess="handleLoginSuccess"
+      @registerSuccess="handleRegisterSuccess"
       @close="handleModalClose"
     />
 
-    <PasswordModal ref="passwordModalRef" />
+    <Password ref="passwordModalRef" :backToLogin="passwordBackToLogin" @back="handlePasswordBack" />
 
-  </header>
 </template>
 
 <script setup>
-import { computed } from "vue"
-import LoginModal from '~/components/auth/LoginModal.vue'
-import PasswordModal from '~/components/auth/PasswordModal.vue'
+import { computed, ref } from "vue"
+import AuthModal from '~/components/auth/AuthModal.vue'
+import Password from '~/components/auth/Password.vue'
 import { useUserStore } from '~/stores/user'
 import { storeToRefs } from 'pinia'
 
@@ -92,6 +96,7 @@ const route = useRoute()
 const userStore = useUserStore()
 const loginModalRef = ref()
 const passwordModalRef = ref()
+const passwordBackToLogin = ref(false)
 const showDropdown = ref(false)
 const { isLogin, userInfo } = storeToRefs(userStore)
 const navList = ref([
@@ -113,8 +118,8 @@ const navList = ref([
   }
 ])
 
-const handleLoginSuccess = async(user) => {
-  await userStore.login({ username: user.username, password: '' })
+const handleLoginSuccess = async (user) => {
+  await userStore.setUserInfo(user)
 }
 
 const handleRegisterSuccess = () => {}
@@ -133,7 +138,12 @@ const handleNavClick = (link) => {
 
 const openPasswordModal = () => {
   showDropdown.value = false
+  passwordBackToLogin.value = false
   passwordModalRef.value?.open()
+}
+
+const handlePasswordBack = () => {
+  loginModalRef.value?.open()
 }
 
 </script>

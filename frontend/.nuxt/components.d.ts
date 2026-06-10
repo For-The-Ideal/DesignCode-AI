@@ -14,9 +14,9 @@ type HydrationStrategies = {
 type LazyComponent<T> = DefineComponent<HydrationStrategies, {}, {}, {}, {}, {}, {}, { hydrated: () => void }> & T
 
 
+export const AuthModal: typeof import("../components/auth/AuthModal.vue")['default']
 export const AuthLogin: typeof import("../components/auth/Login.vue")['default']
-export const AuthLoginModal: typeof import("../components/auth/LoginModal.vue")['default']
-export const AuthPasswordModal: typeof import("../components/auth/PasswordModal.vue")['default']
+export const AuthPassword: typeof import("../components/auth/Password.vue")['default']
 export const AuthRegister: typeof import("../components/auth/Register.vue")['default']
 export const CodeEditor: typeof import("../components/code/CodeEditor.vue")['default']
 export const CodePreview: typeof import("../components/code/CodePreview.vue")['default']
@@ -26,17 +26,15 @@ export const CodeOptimizationPanel: typeof import("../components/code/Optimizati
 export const CodeSyntaxHighlighter: typeof import("../components/code/SyntaxHighlighter.vue")['default']
 export const CommonLoadingSpinner: typeof import("../components/common/LoadingSpinner.vue")['default']
 export const CommonModalDialog: typeof import("../components/common/ModalDialog.vue")['default']
-export const CommonToastNotification: typeof import("../components/common/ToastNotification.vue")['default']
 export const ComparisonDiffViewer: typeof import("../components/comparison/DiffViewer.vue")['default']
 export const ComparisonModelComparison: typeof import("../components/comparison/ModelComparison.vue")['default']
 export const ComparisonVersionTimeline: typeof import("../components/comparison/VersionTimeline.vue")['default']
+export const DialogModel: typeof import("../components/dialog/DialogModel.vue")['default']
 export const EvaluationQualityGauge: typeof import("../components/evaluation/QualityGauge.vue")['default']
 export const EvaluationScoreCard: typeof import("../components/evaluation/ScoreCard.vue")['default']
 export const EvaluationSuggestionList: typeof import("../components/evaluation/SuggestionList.vue")['default']
 export const LayoutAppFooter: typeof import("../components/layout/AppFooter.vue")['default']
 export const LayoutAppHeader: typeof import("../components/layout/AppHeader.vue")['default']
-export const LayoutCardsArea: typeof import("../components/layout/CardsArea.vue")['default']
-export const LayoutHeroSection: typeof import("../components/layout/HeroSection.vue")['default']
 export const LayoutParticlesBackground: typeof import("../components/layout/ParticlesBackground.vue")['default']
 export const OptimizationCompareModal: typeof import("../components/optimization/CompareModal.vue")['default']
 export const OptimizationProgressModal: typeof import("../components/optimization/ProgressModal.vue")['default']
@@ -59,8 +57,9 @@ export const NuxtLoadingIndicator: typeof import("../node_modules/nuxt/dist/app/
 export const NuxtTime: typeof import("../node_modules/nuxt/dist/app/components/nuxt-time.vue")['default']
 export const NuxtRouteAnnouncer: typeof import("../node_modules/nuxt/dist/app/components/nuxt-route-announcer")['default']
 export const NuxtAnnouncer: typeof import("../node_modules/nuxt/dist/app/components/nuxt-announcer")['default']
-export const NuxtImg: typeof import("../node_modules/nuxt/dist/app/components/nuxt-stubs")['NuxtImg']
-export const NuxtPicture: typeof import("../node_modules/nuxt/dist/app/components/nuxt-stubs")['NuxtPicture']
+export const NuxtImg: typeof import("../node_modules/@nuxt/image/dist/runtime/components/NuxtImg.vue")['default']
+export const NuxtPicture: typeof import("../node_modules/@nuxt/image/dist/runtime/components/NuxtPicture.vue")['default']
+export const ColorScheme: typeof import("../node_modules/@nuxtjs/color-mode/dist/runtime/component.vue")['default']
 export const NuxtPage: typeof import("../node_modules/nuxt/dist/pages/runtime/page")['default']
 export const NoScript: typeof import("../node_modules/nuxt/dist/head/runtime/components")['NoScript']
 export const Link: typeof import("../node_modules/nuxt/dist/head/runtime/components")['Link']
@@ -72,9 +71,9 @@ export const Head: typeof import("../node_modules/nuxt/dist/head/runtime/compone
 export const Html: typeof import("../node_modules/nuxt/dist/head/runtime/components")['Html']
 export const Body: typeof import("../node_modules/nuxt/dist/head/runtime/components")['Body']
 export const NuxtIsland: typeof import("../node_modules/nuxt/dist/app/components/nuxt-island")['default']
+export const LazyAuthModal: LazyComponent<typeof import("../components/auth/AuthModal.vue")['default']>
 export const LazyAuthLogin: LazyComponent<typeof import("../components/auth/Login.vue")['default']>
-export const LazyAuthLoginModal: LazyComponent<typeof import("../components/auth/LoginModal.vue")['default']>
-export const LazyAuthPasswordModal: LazyComponent<typeof import("../components/auth/PasswordModal.vue")['default']>
+export const LazyAuthPassword: LazyComponent<typeof import("../components/auth/Password.vue")['default']>
 export const LazyAuthRegister: LazyComponent<typeof import("../components/auth/Register.vue")['default']>
 export const LazyCodeEditor: LazyComponent<typeof import("../components/code/CodeEditor.vue")['default']>
 export const LazyCodePreview: LazyComponent<typeof import("../components/code/CodePreview.vue")['default']>
@@ -84,17 +83,15 @@ export const LazyCodeOptimizationPanel: LazyComponent<typeof import("../componen
 export const LazyCodeSyntaxHighlighter: LazyComponent<typeof import("../components/code/SyntaxHighlighter.vue")['default']>
 export const LazyCommonLoadingSpinner: LazyComponent<typeof import("../components/common/LoadingSpinner.vue")['default']>
 export const LazyCommonModalDialog: LazyComponent<typeof import("../components/common/ModalDialog.vue")['default']>
-export const LazyCommonToastNotification: LazyComponent<typeof import("../components/common/ToastNotification.vue")['default']>
 export const LazyComparisonDiffViewer: LazyComponent<typeof import("../components/comparison/DiffViewer.vue")['default']>
 export const LazyComparisonModelComparison: LazyComponent<typeof import("../components/comparison/ModelComparison.vue")['default']>
 export const LazyComparisonVersionTimeline: LazyComponent<typeof import("../components/comparison/VersionTimeline.vue")['default']>
+export const LazyDialogModel: LazyComponent<typeof import("../components/dialog/DialogModel.vue")['default']>
 export const LazyEvaluationQualityGauge: LazyComponent<typeof import("../components/evaluation/QualityGauge.vue")['default']>
 export const LazyEvaluationScoreCard: LazyComponent<typeof import("../components/evaluation/ScoreCard.vue")['default']>
 export const LazyEvaluationSuggestionList: LazyComponent<typeof import("../components/evaluation/SuggestionList.vue")['default']>
 export const LazyLayoutAppFooter: LazyComponent<typeof import("../components/layout/AppFooter.vue")['default']>
 export const LazyLayoutAppHeader: LazyComponent<typeof import("../components/layout/AppHeader.vue")['default']>
-export const LazyLayoutCardsArea: LazyComponent<typeof import("../components/layout/CardsArea.vue")['default']>
-export const LazyLayoutHeroSection: LazyComponent<typeof import("../components/layout/HeroSection.vue")['default']>
 export const LazyLayoutParticlesBackground: LazyComponent<typeof import("../components/layout/ParticlesBackground.vue")['default']>
 export const LazyOptimizationCompareModal: LazyComponent<typeof import("../components/optimization/CompareModal.vue")['default']>
 export const LazyOptimizationProgressModal: LazyComponent<typeof import("../components/optimization/ProgressModal.vue")['default']>
@@ -117,8 +114,9 @@ export const LazyNuxtLoadingIndicator: LazyComponent<typeof import("../node_modu
 export const LazyNuxtTime: LazyComponent<typeof import("../node_modules/nuxt/dist/app/components/nuxt-time.vue")['default']>
 export const LazyNuxtRouteAnnouncer: LazyComponent<typeof import("../node_modules/nuxt/dist/app/components/nuxt-route-announcer")['default']>
 export const LazyNuxtAnnouncer: LazyComponent<typeof import("../node_modules/nuxt/dist/app/components/nuxt-announcer")['default']>
-export const LazyNuxtImg: LazyComponent<typeof import("../node_modules/nuxt/dist/app/components/nuxt-stubs")['NuxtImg']>
-export const LazyNuxtPicture: LazyComponent<typeof import("../node_modules/nuxt/dist/app/components/nuxt-stubs")['NuxtPicture']>
+export const LazyNuxtImg: LazyComponent<typeof import("../node_modules/@nuxt/image/dist/runtime/components/NuxtImg.vue")['default']>
+export const LazyNuxtPicture: LazyComponent<typeof import("../node_modules/@nuxt/image/dist/runtime/components/NuxtPicture.vue")['default']>
+export const LazyColorScheme: LazyComponent<typeof import("../node_modules/@nuxtjs/color-mode/dist/runtime/component.vue")['default']>
 export const LazyNuxtPage: LazyComponent<typeof import("../node_modules/nuxt/dist/pages/runtime/page")['default']>
 export const LazyNoScript: LazyComponent<typeof import("../node_modules/nuxt/dist/head/runtime/components")['NoScript']>
 export const LazyLink: LazyComponent<typeof import("../node_modules/nuxt/dist/head/runtime/components")['Link']>

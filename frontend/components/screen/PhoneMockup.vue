@@ -1,4 +1,3 @@
-<!-- components/screen/PhoneMockup.vue -->
 <template>
   <div class="phone-mock">
     <div class="phone-screen">
