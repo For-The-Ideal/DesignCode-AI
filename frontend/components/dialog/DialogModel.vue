@@ -8,8 +8,8 @@
     :close-on-press-escape="closeOnPressEscape"
     class="auth-dialog"
     :before-close="handleBeforeClose">
-    <template #title>
-      <slot name="title" />
+    <template #header>
+      <slot name="header" />
     </template>
     <template #default>
       <slot name="default" />
@@ -21,23 +21,30 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref } from "vue";
 const props = defineProps({
-  width: { type: String, default: '460px' },
+  width: { type: String, default: "460px" },
   closeOnClickModal: { type: Boolean, default: true },
   closeOnPressEscape: { type: Boolean, default: true },
-})
-const emit = defineEmits(['close'])
+});
+const emit = defineEmits(["close"]);
 
-const visible = ref(false)
+const visible = ref(false);
 
-const open = () => { visible.value = true }
-const close = () => { visible.value = false; emit('close') }
-const handleBeforeClose = (done) => { done(); emit('close') }
+const open = () => {
+  visible.value = true;
+};
+const close = () => {
+  visible.value = false;
+  emit("close");
+};
+const handleBeforeClose = (done) => {
+  done();
+  emit("close");
+};
 
-defineExpose({ open, close, visible })
+defineExpose({ open, close, visible });
 </script>
-
 
 <style>
 .auth-dialog {

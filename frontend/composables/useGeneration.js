@@ -1,72 +1,133 @@
-import { ref, readonly } from 'vue'
-
-// ═══ 模块级共享状态（所有组件共享同一份） ═══
-const generating = ref(false)
-const progress = ref(0)
-
-let timer = null
+import { ref } from 'vue'
+import { loginApi } from '~/api/login'
+import { useSSE } from './useSSE'
 
 /**
  * 代码生成流程管理 composable
  *
- * 职责：集中管理 "生成中" 状态 + 进度，支持模拟定时器与 SSE 注入
+ * 职责：
+ *   1. initTemplateData() — 调用接口加载模板 → 流式代码输出 + 预览 HTML
  *
- * 用法：
- *   const { generating, progress, start, setProgress, complete, reset } = useGeneration()
- *
- * 后期 SSE 接入：SSE 回调中直接调用 setProgress(val)，替代模拟定时器
+ * SSE 实例、回调映射、连接守卫 全部收拢在 useSSE.js 中。
  */
-export function useGeneration() {
-  /** 开始生成（含模拟进度，SSE 接入后可移除） */
-  function start() {
-    generating.value = true
-    progress.value = 0
-    if (timer) clearInterval(timer)
+export function useGeneration () {
+  // ═══ 响应式状态 ═══
+  const template = ref({
+    templateCode: '',
+    previewCode: '',
+    id: 0,
+  })
 
-    let current = 0
-    const stepDuration = 8000 / 100 // 8 秒走完 100%
-    timer = setInterval(() => {
-      current++
-      if (current <= 100) {
-        progress.value = current
+  const generating = ref(false)
+
+  // ═══ 内部状态（模板初始化用） ═══
+  let fullTemplateCode = ''
+  let dataLoaded = false
+
+  let streamInterval = null
+  let currentIndex = 0
+  let generationStarted = false
+  let isPaused = false
+
+  // ═══ SSE 客户端（立即创建，不连线） ═══
+  const sse = useSSE({ template, generating })
+
+  // ═══ 流式渲染（本地模拟分片输出） ═══
+
+  const stopStreamInterval = () => {
+    if (streamInterval) { clearInterval(streamInterval); streamInterval = null }
+  }
+
+  const startStreaming = (fromIndex) => {
+    if (!fullTemplateCode) return
+    isPaused = false
+    let index = fromIndex
+    streamInterval = setInterval(() => {
+      if (index < fullTemplateCode.length) {
+        template.value.templateCode += fullTemplateCode.slice(index, index + 12)
+        index += 12
+        currentIndex = index
       } else {
-        stopTimer()
+        stopStreamInterval()
+        isPaused = false
       }
-    }, stepDuration)
+    }, 25)
   }
 
-  /** SSE / 外部手动设置进度 0-100 */
-  function setProgress(val) {
-    progress.value = Math.min(Math.max(val, 0), 100)
+  const resumeStreaming = () => {
+    if (isPaused && currentIndex < fullTemplateCode.length) {
+      startStreaming(currentIndex)
+    }
   }
 
-  /** 生成完成 */
-  function complete() {
-    stopTimer()
-    progress.value = 100
-    setTimeout(() => {
-      generating.value = false
-      progress.value = 0
-    }, 600)
+  const pauseStreaming = () => {
+    if (streamInterval) {
+      stopStreamInterval()
+      isPaused = true
+    }
   }
 
-  /** 重置（失败 / 取消） */
-  function reset() {
-    stopTimer()
-    generating.value = false
-    progress.value = 0
+  const startGeneration = () => {
+    if (generationStarted && !isPaused) return
+    if (!generationStarted) {
+      generationStarted = true
+      template.value.templateCode = ''
+      currentIndex = 0
+    }
+    if (isPaused) {
+      resumeStreaming()
+    } else {
+      startStreaming(0)
+    }
   }
 
-  function stopTimer() {
-    if (timer) { clearInterval(timer); timer = null }
+  // ═══ 模板初始化 ═══
+
+  const initTemplateData = async () => {
+    if (!dataLoaded) {
+      const id = 1
+      try {
+        const { data } = await loginApi.template({ template: id })
+        if (data.id) {
+          template.value = {
+            templateCode: data.template_code || '',
+            previewCode: data.preview_code || '',
+            id: data.id || id,
+          }
+          fullTemplateCode = template.value.templateCode
+          dataLoaded = true
+        }
+      } catch {
+        // 接口不可用时静默降级
+      }
+    }
+    if (fullTemplateCode) {
+      startGeneration()
+    }
+  }
+
+  const setGenerating = (value) => {
+    generating.value = value
+  }
+
+  const cleanup = () => {
+    stopStreamInterval()
+    sse.disconnect()
   }
 
   return {
-    generating: readonly(generating),
-    progress: readonly(progress),
-    start,
-    setProgress,
-    complete,
-    reset,
+    template,
+    generating,
+    sseStatus: sse.status,
+    sseError: sse.error,
+    sseRetry: sse.retry,
+    isAvailable: sse.isAvailable,
+    isAlive: sse.isAlive,
+    connectSSE: sse.connect,
+    initTemplateData,
+    startGeneration,
+    pauseStreaming,
+    cleanup,
+    setGenerating,
   }
 }

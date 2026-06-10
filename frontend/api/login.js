@@ -40,4 +40,14 @@ export const loginApi = {
     let result = await httpRequest.post(options);
     return result;
   },
+  async template(params = {}, server = true) {
+    let options = {
+      url: `/api/template`,
+      method: "get",
+      params,
+      server,
+    };
+    let result = await httpRequest.get(options);
+    return result;
+  },
 };

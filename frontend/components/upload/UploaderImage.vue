@@ -105,7 +105,7 @@
     <button class="generate-btn" @click="generateCode" :disabled="images.length === 0 || generating">
       <i v-if="generating" class="fas fa-spinner fa-spin"></i>
       <i v-else class="fas fa-play"></i>
-      {{ generating ? '正在生成...' : '开始生成代码' }}
+      {{ generating ? '正在生成...' : '开始生成' }}
     </button>
 
     <!-- 描述编辑弹窗 -->
@@ -120,11 +120,10 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, inject } from 'vue'
 import DescEditorModal from './DescEditorModal.vue'
-import { identifyApi } from "/api/identify"
+import { identifyApi } from "~/api/identify.js"
 import { ElMessage } from 'element-plus'
-import { useGeneration } from '~/composables/useGeneration'
 const emit = defineEmits(['generated'])
 
 // 图片列表
@@ -138,8 +137,8 @@ const maxLen = ref(5) // 最多5张
 // 评分数据
 const score = ref(0)
 const scoreDimensions = ref([])
-// 生成状态
-const { generating, start: genStart, complete: genComplete, reset: genReset } = useGeneration()
+// 生成状态 — 从父组件注入，和编辑器共享同一 SSE 实例
+const { generating, setGenerating, isAvailable } = inject('generation')
 
 // 描述弹窗
 const descEditorRef = ref(null)
@@ -238,7 +237,13 @@ const truncateText = (text, maxLen) => {
 
 const generateCode = async () => {
   if (generating.value) return
-  genStart()
+
+  // SSE 连接状态前置校验
+  if (!isAvailable()) {
+    ElMessage.error('SSE 连接不可用，请刷新页面后重试')
+    return
+  }
+
   try {
     // 构建设计稿数组 - 图片和描述在同一个对象里
     const designs = await Promise.all(
@@ -255,35 +260,30 @@ const generateCode = async () => {
       framework: framework.value,
       quality: qualityValue.value
     }
-    // ElMessage.info('正在生成代码...')
-    console.log('payload:', payload)
-    
-    // 调用 API
+
+    console.log('[Uploader] payload:', payload)
+    console.log('[Uploader] SSE isAvailable:', isAvailable())
+
+    // 通知后端开始生成 → 后端通过 Broker → SSE 推送前端
+    setGenerating(true)
     const result = await identifyApi.sendFile(payload)
-    
-    // 如果 API 返回了代码，设置评分并通知父组件
-    // if (result && result.code) {
-      score.value = result.score || 85
-      scoreDimensions.value = result.dimensions || [
-        { name: '视觉还原度', score: 85, icon: 'fas fa-palette' },
-        { name: '代码质量', score: 82, icon: 'fas fa-code' },
-        { name: '响应式设计', score: 78, icon: 'fas fa-mobile-alt' },
-        { name: '性能优化', score: 75, icon: 'fas fa-tachometer-alt' }
-      ]
-      emit('generated', {
-        code: result.code,
-        framework: framework.value,
-        score: result.score || 85,
-        dimensions: result.dimensions || []
-      })
-      genComplete()
-      ElMessage.success('代码生成成功！')
-    // } else {
-    //   genComplete()
-    // }
+    console.log('[Uploader] result:', result)
+
+    if (!result || !result.data || result.data.status !== 'generating') {
+      setGenerating(false)
+      ElMessage.error('AI 启动失败，请稍后重试')
+      return
+    }
+
+    // ElMessage.success('AI 已接收请求，正在生成代码...')
+    // 后续流程由 SSE 事件驱动：
+    //   event:message/preview/score → template 实时更新 → CodeEditor + FlutterTemplate 渲染
+    //   event:done → generating=false → code.vue watch → hasGenerated=true
+    //   无需在此处 emit('generated')，避免与 SSE done 事件冲突
+
   } catch (error) {
-    console.error('生成失败:', error)
-    genReset()
+    console.error('[Uploader] 生成失败:', error)
+    setGenerating(false)
     ElMessage.error('生成失败，请稍后重试')
   }
 }

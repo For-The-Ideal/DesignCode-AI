@@ -79,7 +79,12 @@ const props = defineProps({
   placeholder: {
     type: String,
     default: '// 代码将显示在这里...'
-  }
+  },
+  // 流式渲染时是否自动滚动到底部
+  autoScroll: {
+    type: Boolean,
+    default: false
+  },
 })
 
 const emit = defineEmits(['update:value', 'change', 'focus', 'blur', 'ready'])
@@ -112,6 +117,11 @@ const getMonacoLanguage = () => {
 const editorContainer = ref(null)
 let editor = null
 let monaco = null
+
+// ═══ 流式滚动跟随状态 ═══
+let rafId = null
+let userScrolled = false  // 用户手动滚动时暂停自动跟随
+let lastUserScrollTop = 0
 
 // 初始化编辑器
 const initEditor = async () => {
@@ -159,6 +169,34 @@ const initEditor = async () => {
       const value = editor.getValue()
       emit('update:value', value)
       emit('change', value)
+
+      // 流式渲染自动滚动到底部
+      if (props.autoScroll && !userScrolled) {
+        scheduleScrollToBottom()
+      }
+    })
+
+    // 检测用户手动滚动：向上滚动时暂停自动跟随
+    editor.onDidScrollChange((e) => {
+      if (!props.autoScroll) return
+      const currentScrollTop = e.scrollTop
+      // 用户向上滚动（远离底部）→ 暂停自动跟随
+      if (currentScrollTop < lastUserScrollTop) {
+        userScrolled = true
+      }
+      // 用户滚回底部 → 恢复自动跟随
+      const model = editor.getModel()
+      if (model) {
+        const lastLine = model.getLineCount()
+        const visibleRange = editor.getVisibleRanges()
+        if (visibleRange.length > 0) {
+          const lastVisibleLine = visibleRange[visibleRange.length - 1].endLineNumber
+          if (lastVisibleLine >= lastLine - 1) {
+            userScrolled = false
+          }
+        }
+      }
+      lastUserScrollTop = currentScrollTop
     })
     
     // 监听焦点事件
@@ -176,6 +214,26 @@ const initEditor = async () => {
   } catch (error) {
     console.error('Monaco Editor 加载失败:', error)
   }
+}
+
+// ═══ 流式滚动核心 ═══
+
+/** 使用 RAF 节流滚动，避免高频调用卡顿 */
+const scheduleScrollToBottom = () => {
+  if (rafId) return // 已有待执行的滚动，跳过
+  rafId = requestAnimationFrame(() => {
+    rafId = null
+    doScrollToBottom()
+  })
+}
+
+/** 滚动到编辑器最后一行 */
+const doScrollToBottom = () => {
+  if (!editor) return
+  const model = editor.getModel()
+  if (!model) return
+  const lastLine = model.getLineCount()
+  editor.revealLine(lastLine, 1) // 平滑滚动到末尾（1 = Immediate）
 }
 
 // 监听外部值变化
@@ -249,7 +307,11 @@ defineExpose({
   setValue,
   format,
   focus,
-  getEditor: () => editor
+  getEditor: () => editor,
+  scrollToBottom: () => {
+    userScrolled = false
+    doScrollToBottom()
+  },
 })
 
 onMounted(() => {
@@ -257,6 +319,10 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  if (rafId) {
+    cancelAnimationFrame(rafId)
+    rafId = null
+  }
   if (editor) {
     editor.dispose()
   }

@@ -4,7 +4,7 @@ import httpRequest from "~/utils/request"
 export const identifyApi = {
  async sendFile(params = {}, server = true) {
     let options = {
-        url: `/api/identify/send`,
+        url: `/api/generate/send`,
         method: "post",
         params,
         server,

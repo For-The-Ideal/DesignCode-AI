@@ -2,8 +2,10 @@ package controllers
 
 import (
 	"frontend_api/config"
+	"frontend_api/mockdata"
 	"frontend_api/models"
 	"frontend_api/utils"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -139,4 +141,44 @@ func (a *AuthController) Login(c *gin.Context) {
 		"nickname": user.Nickname,
 		"avatar":   user.Avatar,
 	}, "登录成功")
+}
+
+// TemplateRequest 模板请求参数
+type TemplateRequest struct {
+	Template int `form:"template" json:"template"`
+}
+
+// Template 获取模板数据
+//
+// 前端传参方式:
+//
+//	GET /api/template?template=1
+//
+// 当前仅支持 template:1（电商商品模板），后续可扩展更多模板套件
+func (a *AuthController) Template(c *gin.Context) {
+	var req TemplateRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		utils.BadRequest(c, "参数解析失败: "+err.Error())
+		return
+	}
+
+	if req.Template == 0 {
+		utils.BadRequest(c, "缺少必要参数: template")
+		return
+	}
+
+	// 🔌 当前阶段：从 mockdata 获取模拟数据
+	// 后期数据库接入：此处替换为数据库查询逻辑
+	templateID := req.Template
+	data, err := mockdata.GetTemplate(templateID)
+	if err != nil {
+		utils.Error(c, 404, "模板不存在: "+strconv.Itoa(templateID))
+		return
+	}
+
+	utils.Success(c, gin.H{
+		"template_code": data.TemplateCode,
+		"preview_code":  data.PreviewCode,
+		"id":            templateID,
+	}, "模板获取成功")
 }

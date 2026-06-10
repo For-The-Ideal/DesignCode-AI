@@ -233,7 +233,7 @@ defineEmits(['getStarted', 'watchDemo'])
 }
 .scroll-hint {
   position: absolute;
-  bottom: 20px;
+  bottom: 5px;
   left: 50%;
   transform: translateX(-50%);
   font-size: 0.8rem;

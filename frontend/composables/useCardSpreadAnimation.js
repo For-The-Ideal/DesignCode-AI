@@ -25,7 +25,7 @@ export function useCardSpreadAnimation(options = {}) {
   const cards = ref([])
 
   /** 初始化卡片：全部归位到中心点 */
-  function initCards(configs, cx, cy) {
+  const initCards = (configs, cx, cy) => {
     const shuffled = [...configs].sort(() => Math.random() - 0.5)
     const list = []
     for (let i = 0; i < shuffled.length; i++) {
@@ -50,7 +50,7 @@ export function useCardSpreadAnimation(options = {}) {
   }
 
   /** 从中心向外扩散 */
-  function spreadBubbles() {
+  const spreadBubbles = () => {
     cards.value.forEach(c => { c.isVisible = true })
 
     setTimeout(() => {
@@ -67,7 +67,7 @@ export function useCardSpreadAnimation(options = {}) {
   }
 
   /** 一步到位初始化 + 扩散 */
-  async function start(configs, cx, cy) {
+  const start = async (configs, cx, cy) => {
     initCards(configs, cx, cy)
     await nextTick()
     requestAnimationFrame(() => spreadBubbles())

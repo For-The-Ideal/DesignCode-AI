@@ -2,7 +2,9 @@ package main
 
 import (
 	"frontend_api/config"
+	"frontend_api/middleware"
 	"frontend_api/routes"
+	"frontend_api/utils"
 	"log"
 
 	"github.com/gin-gonic/gin"
@@ -13,10 +15,16 @@ func main() {
 	config.InitConfig()
 
 	// // // 2. 初始化数据库
-	// utils.InitDB()
+	utils.InitDB()
 
 	// // 3. 设置 Gin 路由
 	r := gin.Default()
+
+	// 信任代理（修复 "don't trust all proxies" 警告）
+	r.SetTrustedProxies(nil)
+
+	// 全局 CORS 中间件（必须最先执行，处理 OPTIONS 预检）
+	r.Use(middleware.CORSMiddleware())
 
 	// // 4. 初始化路由
 	routes.InitRoutes(r)

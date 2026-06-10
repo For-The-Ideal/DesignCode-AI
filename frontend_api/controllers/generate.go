@@ -1,7 +1,12 @@
 package controllers
 
 import (
+	"fmt"
+	"frontend_api/mockdata"
+	"frontend_api/models"
+	"frontend_api/services"
 	"frontend_api/utils"
+	"log"
 
 	"github.com/gin-gonic/gin"
 )
@@ -9,213 +14,79 @@ import (
 // GenerateController AI 代码生成控制器
 type GenerateController struct{}
 
-// DesignItem 设计稿项
-type DesignItem struct {
-	Image       string `json:"image" binding:"required"`
-	Type        string `json:"type"`
-	Description string `json:"description"`
-}
-
-// GenerateRequest AI 代码生成请求
-type GenerateRequest struct {
-	Designs   []DesignItem `json:"designs" binding:"required,min=1"`
-	Framework string       `json:"framework" binding:"required"`
-	Quality   int          `json:"quality" binding:"required,min=1,max=100"`
-}
-
-// ScoreDimension 评分维度
-type ScoreDimension struct {
-	Name  string `json:"name"`
-	Score int    `json:"score"`
-	Icon  string `json:"icon"`
-}
-
-// GenerateResponse AI 代码生成响应
-type GenerateResponse struct {
-	Code       string           `json:"code"`
-	Score      int              `json:"score"`
-	Dimensions []ScoreDimension `json:"dimensions"`
-}
-
-// Generate 处理代码生成请求
+// Generate 处理代码生成请求（阻塞式）
+//
+// 流程：
+//  1. 参数校验 & 结构化解析
+//  2. 调用模型生成目标业务数据（当前为 mock）
+//  3. 通过 Broker 将数据分批次推送给已连接的 SSE 客户端
+//  4. 按原协议返回最终结果
 func (g *GenerateController) Generate(c *gin.Context) {
-	var req GenerateRequest
+	var req models.GenerateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
+		log.Printf("[Generate] 参数校验失败: %v", err)
 		utils.BadRequest(c, "参数校验失败: "+err.Error())
 		return
 	}
 
+	// 参数合法性校验
+	if len(req.Designs) == 0 {
+		utils.BadRequest(c, "至少需要上传一张设计稿")
+		return
+	}
+	if req.Framework == "" {
+		utils.BadRequest(c, "请选择目标框架（flutter/react/vue）")
+		return
+	}
+	if req.Quality < 1 || req.Quality > 100 {
+		utils.BadRequest(c, "质量参数需在 1-100 之间")
+		return
+	}
+
+	log.Printf("[Generate] 收到请求: framework=%s, quality=%d, designs=%d",
+		req.Framework, req.Quality, len(req.Designs))
+
 	// TODO: 接入 AI 服务 (OpenAI / Claude / 自定义模型)
 	// aiService := services.NewAIService()
 	// result, err := aiService.GenerateCode(req.Designs, req.Framework, req.Quality)
-	// if err != nil {
-	//     utils.InternalError(c, "AI 代码生成失败: "+err.Error())
-	//     return
-	// }
 
-	resp := GenerateResponse{
-		Code:  getMockCode(req.Framework),
-		Score: getMockScore(req.Quality),
-		Dimensions: []ScoreDimension{
-			{Name: "视觉还原度", Score: calcDimScore(req.Quality, 0), Icon: "fas fa-palette"},
-			{Name: "代码质量", Score: calcDimScore(req.Quality, -3), Icon: "fas fa-code"},
-			{Name: "响应式设计", Score: calcDimScore(req.Quality, -5), Icon: "fas fa-mobile-alt"},
-			{Name: "性能优化", Score: calcDimScore(req.Quality, -2), Icon: "fas fa-tachometer-alt"},
-		},
+	// ═══ 评分数据生成 ═══
+	score := mockdata.GetMockScore(req.Quality)
+	dims := []models.ScoreDimension{
+		{Name: "视觉还原度", Score: mockdata.CalcDimScore(req.Quality, 0), Icon: "fas fa-palette"},
+		{Name: "代码质量", Score: mockdata.CalcDimScore(req.Quality, -3), Icon: "fas fa-code"},
+		{Name: "响应式设计", Score: mockdata.CalcDimScore(req.Quality, -5), Icon: "fas fa-mobile-alt"},
+		{Name: "性能优化", Score: mockdata.CalcDimScore(req.Quality, -2), Icon: "fas fa-tachometer-alt"},
 	}
 
-	utils.Success(c, resp, "代码生成成功")
-}
+	// ═══ 通过 Broker → SSE 逐片推送 ═══
+	broker := services.GetBroker()
 
-// getMockCode 生成示例代码（实际应替换为 AI 返回结果）
-func getMockCode(framework string) string {
-	switch framework {
-	case "flutter":
-		return `import 'package:flutter/material.dart';
-
-void main() {
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'DesignCode AI',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-        useMaterial3: true,
-      ),
-      home: const HomePage(),
-    );
-  }
-}
-
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
-
-  @override
-  State<HomePage> createState() => _HomePageState();
-}
-
-class _HomePageState extends State<HomePage> {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('DesignCode AI'),
-        centerTitle: true,
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.auto_awesome,
-              size: 80,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'AI 生成的 Flutter 代码',
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}`
-	case "react":
-		return `import React, { useState } from 'react';
-import './App.css';
-
-const App: React.FC = () => {
-  const [count, setCount] = useState(0);
-
-  return (
-    <div className="app">
-      <header className="app-header">
-        <h1>DesignCode AI</h1>
-        <p className="subtitle">AI 生成的 React 代码</p>
-      </header>
-      <main className="app-main">
-        <div className="card">
-          <button onClick={() => setCount(count + 1)}>
-            点击次数: {count}
-          </button>
-          <p className="hint">
-            编辑 <code>src/App.tsx</code> 并保存以热更新
-          </p>
-        </div>
-      </main>
-    </div>
-  );
-};
-
-export default App;`
-	case "vue":
-		return `<template>
-  <div class="app">
-    <header class="app-header">
-      <h1>DesignCode AI</h1>
-      <p class="subtitle">AI 生成的 Vue 代码</p>
-    </header>
-    <main class="app-main">
-      <div class="card">
-        <button @click="count++">
-          点击次数: {{ count }}
-        </button>
-        <p class="hint">
-          编辑 <code>App.vue</code> 并保存以热更新
-        </p>
-      </div>
-    </main>
-  </div>
-</template>
-
-<script setup lang="ts">
-import { ref } from 'vue';
-
-const count = ref(0);
-</script>
-
-<style scoped>
-.app { text-align: center; }
-.app-header { padding: 40px 0; }
-.card { margin: 20px; padding: 30px; border-radius: 12px; border: 1px solid #e0e0e0; }
-button { padding: 12px 24px; font-size: 16px; cursor: pointer; border-radius: 8px; }
-</style>`
-	default:
-		return "// 请选择框架: flutter, react, vue"
+	// 流式推送代码（template_1.go 通过 goroutine channel 逐块产出）
+	for chunk := range mockdata.StreamTemplateCode() {
+		broker.Publish(services.SSEEvent{Event: "message", Data: chunk})
 	}
-}
 
-// getMockScore 根据质量参数计算总分
-func getMockScore(quality int) int {
-	base := 75
-	bonus := (quality - 50) * 30 / 50
-	score := base + bonus
-	if score > 98 {
-		return 98
-	}
-	if score < 60 {
-		return 60
-	}
-	return score
-}
+	// 推送预览（template_1.go 的真实商品卡片 HTML）
+	previewHTML := mockdata.GetTemplatePreviewHTML()
+	broker.Publish(services.SSEEvent{Event: "preview", Data: previewHTML})
 
-// calcDimScore 计算单项维度分数
-func calcDimScore(quality int, offset int) int {
-	score := getMockScore(quality) + offset
-	if score > 98 {
-		return 98
-	}
-	if score < 50 {
-		return 50
-	}
-	return score
+	// 推送评分
+	scoreJSON := fmt.Sprintf(
+		`{"score":%d,"dimensions":[{"name":"%s","score":%d,"icon":"%s"},{"name":"%s","score":%d,"icon":"%s"},{"name":"%s","score":%d,"icon":"%s"},{"name":"%s","score":%d,"icon":"%s"}]}`,
+		score,
+		dims[0].Name, dims[0].Score, dims[0].Icon,
+		dims[1].Name, dims[1].Score, dims[1].Icon,
+		dims[2].Name, dims[2].Score, dims[2].Icon,
+		dims[3].Name, dims[3].Score, dims[3].Icon,
+	)
+	broker.Publish(services.SSEEvent{Event: "score", Data: scoreJSON})
+
+	// 推送完成信号
+	broker.Publish(services.SSEEvent{Event: "done", Data: "ok"})
+
+	log.Printf("[Generate] 已通过 Broker 推送所有事件")
+
+	// 仅返回生成状态，不做业务数据响应（数据走 SSE）
+	utils.Success(c, gin.H{"status": "generating"}, "代码生成中，请通过 SSE 接收实时数据")
 }

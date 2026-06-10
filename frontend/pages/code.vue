@@ -50,9 +50,10 @@
             </div>
             <div class="panel-body editor-body">
               <CodeEditor
-                v-model="generatedCode"
+                v-model="template.templateCode"
                 :language="codeLanguage"
                 :readonly="false"
+                :auto-scroll="sseStatus === 'streaming'"
                 height="700px"
                 placeholder="// AI 生成的代码将在这里展示..."
               />
@@ -65,122 +66,106 @@
                 <i class="fas fa-mobile-alt"></i>
                 <span>实时预览</span>
               </div>
-              <span class="device-badge">iPhone 15 Pro</span>
+              <span class="device-badge" v-if="generatedFramework">iPhone 15 Pro</span>
             </div>
             <div class="panel-body preview-body">
-              <FlutterTemplate :html="phoneHtml" :showBottomNav="false" />
+              <FlutterTemplate :html="template.previewCode" :showBottomNav="false" />
             </div>
           </div>
         </div>
-
-        <!-- <div class="optimization-section">
-          <OptimizationPanel :original-code="generatedCode" @accepted="onOptimized" />
-        </div> -->
       </template>
     </main>
   </div>
 </template>
 
 <script setup>
+import { ref, computed, watch, onMounted, onUnmounted, provide } from 'vue'
 import CodeEditor from '~/components/code/CodeEditor.vue'
 import FlutterTemplate from '@/components/common/FlutterTemplate.vue'
-import OptimizationPanel from '~/components/code/OptimizationPanel.vue'
 import UploaderImage from '~/components/upload/UploaderImage.vue'
+import { useGeneration } from '~/composables/useGeneration'
+import { ElMessage } from 'element-plus'
+// ═══ 生成流程 composable ═══
+const gen = useGeneration()
+const {
+  template,
+  sseStatus,
+  sseError,
+  connectSSE,
+  cleanup,
+} = gen
 
-// ═══ 生成状态 ═══
+// 提供给子组件（UploaderImage）共享同一 SSE 实例
+provide('generation', {
+  generating: gen.generating,
+  setGenerating: gen.setGenerating,
+  isAvailable: gen.isAvailable,
+})
+
+// ═══ 页面状态 ═══
 const hasGenerated = ref(false)
-const generatedCode = ref('')
 const generatedLang = ref('Dart')
+const generatedFramework = ref('')
 const codeLanguage = ref('dart')
 
 const langMap = {
   flutter: { label: 'Dart', lang: 'dart' },
   react: { label: 'TypeScript', lang: 'typescript' },
-  vue: { label: 'Vue', lang: 'html' }
+  vue: { label: 'Vue', lang: 'html' },
 }
 
-const onGenerated = (result) => {
+// ═══ 监听 SSE 流式输出 → 驱动视图更新 ═══
+
+/** 监听代码内容变化，自动标记为已生成 */
+watch(() => template.value.templateCode, (code) => {
+  if (code && code.length > 0 && !hasGenerated.value) {
+    hasGenerated.value = true
+  }
+})
+
+/** 监听 SSE 状态变化 */
+watch(sseStatus, (status) => {
+  if (status === 'done' && template.value.templateCode) {
+    hasGenerated.value = true
+  }
+})
+
+// ═══ 上传组件回调 ═══
+
+const onGenerated = async (result) => {
   hasGenerated.value = true
-  generatedCode.value = result.code
+  generatedFramework.value = result.framework
   if (result.framework && langMap[result.framework]) {
     generatedLang.value = langMap[result.framework].label
     codeLanguage.value = langMap[result.framework].lang
   }
-  updatePreview()
 }
 
-// ═══ 手机预览 ═══
-const phoneStyles = `<style>
-.phone-header{background:#fff;padding:10px 14px 8px;border-bottom:1px solid #e5e5ea;flex-shrink:0}
-.header-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-.logo-text{font-size:18px;font-weight:800;color:#1c1c1e;letter-spacing:-0.3px}
-.header-actions{display:flex;gap:14px}
-.header-actions i{font-size:16px;color:#1c1c1e}
-.search-bar{background:#f2f2f7;border-radius:10px;padding:8px 14px;display:flex;align-items:center;gap:8px;color:#8e8e93;font-size:13px}
-.search-bar i{color:#8e8e93;font-size:14px}
-.category-tabs{display:flex;gap:4px;margin-top:8px;overflow-x:auto;scrollbar-width:none}
-.category-tabs::-webkit-scrollbar{display:none}
-.cat-item{padding:5px 14px;border-radius:16px;font-size:12px;color:#8e8e93;white-space:nowrap;transition:0.2s}
-.cat-item.active{background:#1c1c1e;color:#fff;font-weight:600}
-.phone-body{flex:1;overflow-y:auto;padding:12px;background:#f2f2f7;scrollbar-width:none}
-.phone-body::-webkit-scrollbar{display:none}
-.hero-banner{background:linear-gradient(135deg,#ff3b6e,#ff6b3d);border-radius:14px;padding:16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;overflow:hidden;position:relative}
-.hero-banner::after{content:'';position:absolute;right:-30px;top:-30px;width:100px;height:100px;border-radius:50%;background:rgba(255,255,255,0.12)}
-.banner-content{position:relative;z-index:1}
-.banner-tag{display:inline-block;background:rgba(255,255,255,0.25);border-radius:4px;padding:2px 8px;font-size:10px;font-weight:700;color:#fff;margin-bottom:6px}
-.hero-banner h4{font-size:18px;font-weight:800;color:#fff;margin:0 0 2px}
-.hero-banner p{font-size:11px;color:rgba(255,255,255,0.85);margin:0 0 10px}
-.banner-btn{background:#fff;border:none;border-radius:14px;padding:5px 14px;font-size:11px;font-weight:700;color:#ff3b6e;cursor:default}
-.banner-visual{position:relative;z-index:1;width:64px;height:64px;border-radius:10px;overflow:hidden;background:rgba(255,255,255,0.18);flex-shrink:0}
-.banner-visual img{width:100%;height:100%;object-fit:cover}
-.section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
-.section-title{font-size:15px;font-weight:700;color:#1c1c1e}
-.section-more{font-size:12px;color:#8e8e93}
-.product-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.product-card{background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
-.product-img{width:100%;aspect-ratio:4/5;overflow:hidden;background:#f2f2f7}
-.product-img img{width:100%;height:100%;object-fit:cover}
-.product-info{padding:8px 10px 10px}
-.product-name{font-size:12px;color:#1c1c1e;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.product-price-row{display:flex;justify-content:space-between;align-items:baseline;margin-top:4px}
-.product-price{font-size:15px;font-weight:800;color:#ff3b6e}
-.product-sold{font-size:10px;color:#c7c7cc}
-<\\/style>`
+// ═══ 生命周期 ═══
 
-const products = [
-  { name: 'Air Max 270', price: '¥899', img: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=200&h=250&fit=crop' },
-  { name: '简约白T恤', price: '¥159', img: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=200&h=250&fit=crop' },
-  { name: '智能手表', price: '¥1299', img: 'https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=200&h=250&fit=crop' },
-  { name: '降噪耳机', price: '¥599', img: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=200&h=250&fit=crop' },
-]
+onMounted(() => {
+  // 建立 SSE 长连接，订阅 Broker，等待事件推送
+  connectSSE()
+})
 
-const buildProductsHtml = () => products.map(p => `
-  <div class="product-card">
-    <div class="product-img"><img src="${p.img}" alt="${p.name}" loading="lazy" /></div>
-    <div class="product-info">
-      <div class="product-name">${p.name}</div>
-      <div class="product-price-row">
-        <span class="product-price">${p.price}</span>
-        <span class="product-sold">已售1.2k</span>
-      </div>
-    </div>
-  </div>
-`).join('')
+onUnmounted(() => {
+  cleanup()
+})
 
-const phoneHtml = ref('')
-
-const updatePreview = () => {
-  phoneHtml.value = `${phoneStyles}<div class="phone-header"><div class="header-top"><div class="logo-text">StyleHub</div><div class="header-actions"><i class="fas fa-bell"></i><i class="fas fa-shopping-bag"></i></div></div><div class="search-bar"><i class="fas fa-search"></i><span>搜索潮流好物...</span></div><div class="category-tabs"><span class="cat-item active">推荐</span><span class="cat-item">服饰</span><span class="cat-item">鞋靴</span><span class="cat-item">数码</span><span class="cat-item">家居</span></div></div><div class="phone-body"><div class="hero-banner"><div class="banner-content"><div class="banner-tag">限时特惠</div><h4>夏日焕新季</h4><p>全场低至 5 折 · 满299包邮</p><button class="banner-btn">立即抢购 →</button></div><div class="banner-visual"><img src="https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=140&h=140&fit=crop" alt="" /></div></div><div class="section-header"><span class="section-title">🔥 为你推荐</span><span class="section-more">查看更多 →</span></div><div class="product-grid">${buildProductsHtml()}</div></div>`
-}
+// ═══ 工具栏操作 ═══
 
 const handleCopy = async () => {
-  try { await navigator.clipboard.writeText(generatedCode.value); ElMessage.success('已复制到剪贴板') }
-  catch { ElMessage.error('复制失败') }
+  try {
+    await navigator.clipboard.writeText(template.value.templateCode)
+    ElMessage.success('已复制到剪贴板')
+  } catch {
+    ElMessage.error('复制失败')
+  }
 }
 
 const handleFormat = () => {
   let indent = 0
-  generatedCode.value = generatedCode.value.split('\n').map(line => {
+  template.value.templateCode = template.value.templateCode.split('\n').map(line => {
     const t = line.trim()
     if (!t) return ''
     if (/^[})]/.test(t)) indent = Math.max(0, indent - 1)
@@ -193,7 +178,7 @@ const handleFormat = () => {
 
 const handleDownload = () => {
   const ext = codeLanguage.value === 'dart' ? 'dart' : codeLanguage.value === 'typescript' ? 'tsx' : 'vue'
-  const blob = new Blob([generatedCode.value], { type: 'text/plain' })
+  const blob = new Blob([template.value.templateCode], { type: 'text/plain' })
   const a = document.createElement('a')
   a.href = URL.createObjectURL(blob)
   a.download = `generated.${ext}`
@@ -201,8 +186,6 @@ const handleDownload = () => {
   URL.revokeObjectURL(a.href)
   ElMessage.success('已下载')
 }
-
-const onOptimized = (code) => { generatedCode.value = code }
 </script>
 
 <style scoped>
@@ -232,6 +215,38 @@ const onOptimized = (code) => { generatedCode.value = code }
 .page-header p {
   color: #6b7280;
   font-size: 15px;
+}
+
+/* ═══ SSE 状态栏 ═══ */
+.sse-status-bar {
+  display: flex;
+  justify-content: center;
+  padding: 12px 0;
+  margin-top: -8px;
+}
+.sse-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.sse-badge.connecting {
+  background: rgba(0, 255, 255, 0.08);
+  border: 1px solid rgba(0, 255, 255, 0.25);
+  color: #00cfff;
+}
+.sse-badge.streaming {
+  background: rgba(0, 255, 100, 0.08);
+  border: 1px solid rgba(0, 255, 100, 0.3);
+  color: #00ff88;
+}
+.sse-badge.error {
+  background: rgba(255, 60, 60, 0.08);
+  border: 1px solid rgba(255, 60, 60, 0.3);
+  color: #ff5555;
 }
 
 /* ═══ 空状态 ═══ */
@@ -372,8 +387,6 @@ const onOptimized = (code) => { generatedCode.value = code }
   background: rgba(0, 0, 0, 0.15);
   overflow-y: auto;
 }
-
-.optimization-section { margin-top: 8px; }
 
 @media (max-width: 1100px) {
   .core-layout { flex-direction: column; height: auto; }

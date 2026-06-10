@@ -13,7 +13,10 @@ func InitRoutes(r *gin.Engine) {
 		// 用户模块路由 (个人信息等)
 		InitUserRoutes(api)
 
-		// AI 代码生成路由
+		// AI 代码生成路由（阻塞式）
 		InitGenerateRoutes(api)
+
+		// SSE 流式代码生成路由
+		InitSSERoutes(api)
 	}
 }

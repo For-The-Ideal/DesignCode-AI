@@ -1,10 +1,9 @@
 <!-- components/DescEditorModal.vue -->
 <template>
   <DialogModel ref="dialogRef" width="600px" customClass="desc-dialog" @close="emit('close')">
-    <template #title>
+    <template #header>
      <div class="modal-header">
       <h3><i class="fas fa-edit"></i> 设计稿描述</h3>
-      <!-- <button class="close-modal" @click="dialogRef.close()">&times;</button> -->
     </div>
     </template>
     

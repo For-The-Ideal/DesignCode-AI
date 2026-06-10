@@ -13,6 +13,7 @@ func InitAuthRoutes(rg *gin.RouterGroup) {
 	auth := rg.Group("/")
 	{
 		auth.GET("/captcha", authController.Captcha)
+		auth.GET("/template", authController.Template)
 		auth.POST("/register", authController.Register)
 		auth.POST("/login", authController.Login)
 	}
