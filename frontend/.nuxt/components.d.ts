@@ -25,8 +25,7 @@ export const CodeGeneratingOverlay: typeof import("../components/code/Generating
 export const CodeMonacoEditorCore: typeof import("../components/code/MonacoEditorCore.vue")['default']
 export const CodeOptimizationPanel: typeof import("../components/code/OptimizationPanel.vue")['default']
 export const CodeSyntaxHighlighter: typeof import("../components/code/SyntaxHighlighter.vue")['default']
-export const CommonLoadingSpinner: typeof import("../components/common/LoadingSpinner.vue")['default']
-export const CommonModalDialog: typeof import("../components/common/ModalDialog.vue")['default']
+export const CommonPhoneMockup: typeof import("../components/common/PhoneMockup.vue")['default']
 export const ComparisonDiffViewer: typeof import("../components/comparison/DiffViewer.vue")['default']
 export const ComparisonModelComparison: typeof import("../components/comparison/ModelComparison.vue")['default']
 export const ComparisonVersionTimeline: typeof import("../components/comparison/VersionTimeline.vue")['default']
@@ -41,11 +40,11 @@ export const OptimizationCompareModal: typeof import("../components/optimization
 export const OptimizationProgressModal: typeof import("../components/optimization/ProgressModal.vue")['default']
 export const ScreenDiagnosticBubbles: typeof import("../components/screen/DiagnosticBubbles.vue")['default']
 export const ScreenHeroSection: typeof import("../components/screen/HeroSection.vue")['default']
-export const ScreenPhoneMockup: typeof import("../components/screen/PhoneMockup.vue")['default']
 export const ScreenSSEGenerator: typeof import("../components/screen/SSEGenerator.vue")['default']
 export const UploadDescEditorModal: typeof import("../components/upload/DescEditorModal.vue")['default']
 export const UploadDragDropZone: typeof import("../components/upload/DragDropZone.vue")['default']
 export const UploadPreviewImage: typeof import("../components/upload/PreviewImage.vue")['default']
+export const UploadScoreCard: typeof import("../components/upload/ScoreCard.vue")['default']
 export const UploadUploaderImage: typeof import("../components/upload/UploaderImage.vue")['default']
 export const NuxtWelcome: typeof import("../node_modules/nuxt/dist/app/components/welcome.vue")['default']
 export const NuxtLayout: typeof import("../node_modules/nuxt/dist/app/components/nuxt-layout")['default']
@@ -83,8 +82,7 @@ export const LazyCodeGeneratingOverlay: LazyComponent<typeof import("../componen
 export const LazyCodeMonacoEditorCore: LazyComponent<typeof import("../components/code/MonacoEditorCore.vue")['default']>
 export const LazyCodeOptimizationPanel: LazyComponent<typeof import("../components/code/OptimizationPanel.vue")['default']>
 export const LazyCodeSyntaxHighlighter: LazyComponent<typeof import("../components/code/SyntaxHighlighter.vue")['default']>
-export const LazyCommonLoadingSpinner: LazyComponent<typeof import("../components/common/LoadingSpinner.vue")['default']>
-export const LazyCommonModalDialog: LazyComponent<typeof import("../components/common/ModalDialog.vue")['default']>
+export const LazyCommonPhoneMockup: LazyComponent<typeof import("../components/common/PhoneMockup.vue")['default']>
 export const LazyComparisonDiffViewer: LazyComponent<typeof import("../components/comparison/DiffViewer.vue")['default']>
 export const LazyComparisonModelComparison: LazyComponent<typeof import("../components/comparison/ModelComparison.vue")['default']>
 export const LazyComparisonVersionTimeline: LazyComponent<typeof import("../components/comparison/VersionTimeline.vue")['default']>
@@ -99,11 +97,11 @@ export const LazyOptimizationCompareModal: LazyComponent<typeof import("../compo
 export const LazyOptimizationProgressModal: LazyComponent<typeof import("../components/optimization/ProgressModal.vue")['default']>
 export const LazyScreenDiagnosticBubbles: LazyComponent<typeof import("../components/screen/DiagnosticBubbles.vue")['default']>
 export const LazyScreenHeroSection: LazyComponent<typeof import("../components/screen/HeroSection.vue")['default']>
-export const LazyScreenPhoneMockup: LazyComponent<typeof import("../components/screen/PhoneMockup.vue")['default']>
 export const LazyScreenSSEGenerator: LazyComponent<typeof import("../components/screen/SSEGenerator.vue")['default']>
 export const LazyUploadDescEditorModal: LazyComponent<typeof import("../components/upload/DescEditorModal.vue")['default']>
 export const LazyUploadDragDropZone: LazyComponent<typeof import("../components/upload/DragDropZone.vue")['default']>
 export const LazyUploadPreviewImage: LazyComponent<typeof import("../components/upload/PreviewImage.vue")['default']>
+export const LazyUploadScoreCard: LazyComponent<typeof import("../components/upload/ScoreCard.vue")['default']>
 export const LazyUploadUploaderImage: LazyComponent<typeof import("../components/upload/UploaderImage.vue")['default']>
 export const LazyNuxtWelcome: LazyComponent<typeof import("../node_modules/nuxt/dist/app/components/welcome.vue")['default']>
 export const LazyNuxtLayout: LazyComponent<typeof import("../node_modules/nuxt/dist/app/components/nuxt-layout")['default']>

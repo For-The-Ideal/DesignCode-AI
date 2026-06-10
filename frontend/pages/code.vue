@@ -53,7 +53,7 @@
                 v-model="generatedCode"
                 :language="codeLanguage"
                 :readonly="false"
-                height="100%"
+                height="700px"
                 placeholder="// AI 生成的代码将在这里展示..."
               />
             </div>
@@ -68,14 +68,14 @@
               <span class="device-badge">iPhone 15 Pro</span>
             </div>
             <div class="panel-body preview-body">
-              <PhoneMockup :html="phoneHtml" />
+              <PhoneMockup :html="phoneHtml" :showBottomNav="false" />
             </div>
           </div>
         </div>
 
-        <div class="optimization-section">
+        <!-- <div class="optimization-section">
           <OptimizationPanel :original-code="generatedCode" @accepted="onOptimized" />
-        </div>
+        </div> -->
       </template>
     </main>
   </div>
@@ -83,7 +83,7 @@
 
 <script setup>
 import CodeEditor from '~/components/code/CodeEditor.vue'
-import PhoneMockup from '~/components/screen/PhoneMockup.vue'
+import PhoneMockup from '@/components/common/PhoneMockup.vue'
 import OptimizationPanel from '~/components/code/OptimizationPanel.vue'
 import UploaderImage from '~/components/upload/UploaderImage.vue'
 
@@ -297,7 +297,6 @@ const onOptimized = (code) => { generatedCode.value = code }
 .core-layout {
   display: flex;
   gap: 24px;
-  height: 620px;
   margin-top: 24px;
   margin-bottom: 32px;
 }

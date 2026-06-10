@@ -5,60 +5,55 @@
         <i class="fas fa-cloud-upload-alt"></i>
         <span>上传设计稿</span>
       </div>
-      <div 
-        class="dropzone" 
-        :class="{ 'dropzone-disabled': isMaxReached, 'drag-over': isDragging }"
-        @click="!isMaxReached && triggerFileInput()" 
-        @dragover.prevent="!isMaxReached && (isDragging = true)" 
-        @dragleave.prevent="isDragging = false" 
-        @drop.prevent="!isMaxReached && handleDrop($event)">
-        <div class="dropzone-icon">
-          <i class="fas fa-file-image"></i>
+      <div class="upload-content">
+        <div 
+          class="dropzone" 
+          :class="{ 'dropzone-disabled': isMaxReached, 'drag-over': isDragging }"
+          @click="!isMaxReached && triggerFileInput()" 
+          @dragover.prevent="!isMaxReached && (isDragging = true)" 
+          @dragleave.prevent="isDragging = false" 
+          @drop.prevent="!isMaxReached && handleDrop($event)">
+          <div class="dropzone-icon">
+            <i class="fas fa-file-image"></i>
+          </div>
+          <p v-if="!isMaxReached">点击或拖拽上传设计稿</p>
+          <p v-else class="max-warning">已达到上传上限 ({{ maxLen }}/{{ maxLen }})</p>
+          <span>支持 PNG、JPG、JPEG，最多 {{ maxLen }} 张</span>
+          <input type="file" ref="fileInput" :disabled="isMaxReached" multiple 
+          accept="image/*" style="display: none" @change="handleFileSelect" />
         </div>
-        <p v-if="!isMaxReached">点击或拖拽上传设计稿</p>
-        <p v-else class="max-warning">已达到上传上限 ({{ maxLen }}/{{ maxLen }})</p>
-        <span>支持 PNG、JPG、JPEG，最多 {{ maxLen }} 张</span>
-        <input type="file" ref="fileInput" :disabled="isMaxReached" multiple 
-        accept="image/*" style="display: none" @change="handleFileSelect" />
-      </div>
 
-      <!-- 预览区域（每行最多3张） -->
-      <div class="preview-area" v-if="images.length > 0">
-        <div class="preview-header">
-          <span><i class="fas fa-images"></i> 已上传 ({{ images.length }}/{{ maxLen }})</span>
-          <button class="clear-btn" @click="clearAll">清空全部</button>
-        </div>
-        <div class="preview-grid">
-          <div v-for="(img, idx) in images" :key="img.id" class="preview-item">
-            <img :src="img.preview" alt="预览" />
-            <div class="preview-remove" @click="removeImage(idx)">×</div>
-            <!-- 描述显示区域 -->
-            <div class="image-description" v-if="img.description" @click="openDescModal(idx)">
-              <div class="desc-content">
-                <i class="fas fa-quote-left"></i>
-                <span class="desc-text">{{ truncateText(img.description, 40) }}</span>
+        <!-- 预览区域 -->
+        <div class="preview-area" v-if="images.length > 0">
+          <div class="preview-header">
+            <span><i class="fas fa-images"></i> 已上传 ({{ images.length }}/{{ maxLen }})</span>
+            <button class="clear-btn" @click="clearAll">清空全部</button>
+          </div>
+          <div class="preview-grid">
+            <div v-for="(img, idx) in images" :key="img.id" class="preview-item">
+              <img :src="img.preview" alt="预览" />
+              <div class="preview-remove" @click="removeImage(idx)">×</div>
+              <!-- 描述显示区域 -->
+              <div class="image-description" v-if="img.description" @click="openDescModal(idx)">
+                <div class="desc-content">
+                  <i class="fas fa-quote-left"></i>
+                  <span class="desc-text">{{ truncateText(img.description, 40) }}</span>
+                </div>
+                <div class="desc-footer">
+                  <span class="desc-type">{{ img.type || '设计稿' }}</span>
+                  <span class="desc-edit"><i class="fas fa-pen"></i> 编辑</span>
+                </div>
               </div>
-              <div class="desc-footer">
-                <span class="desc-type">{{ img.type || '设计稿' }}</span>
-                <span class="desc-edit"><i class="fas fa-pen"></i> 编辑</span>
+              <div class="image-description empty" v-else @click="openDescModal(idx)">
+                <i class="fas fa-plus-circle"></i>
+                <span>添加描述</span>
               </div>
-            </div>
-            <div class="image-description empty" v-else @click="openDescModal(idx)">
-              <i class="fas fa-plus-circle"></i>
-              <span>添加描述</span>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- AI 智能分析提示 -->
-      <div v-if="images.length > 0" class="ai-tip">
-        <i class="fas fa-robot"></i>
-        <span>AI 将结合图片和描述生成更精准的代码，描述越详细效果越好</span>
-      </div>
-    </div>
-
-    <!-- 配置卡片 -->
+      <!-- 配置卡片 -->
     <div class="tech-card config-card">
       <div class="card-title">
         <i class="fas fa-sliders-h"></i>
@@ -96,6 +91,15 @@
         </div>
       </div>
     </div>
+    
+      <!-- AI 智能分析提示 -->
+      <div v-if="images.length > 0" class="ai-tip">
+        <i class="fas fa-robot"></i>
+        <span>AI 将结合图片和描述生成更精准的代码，描述越详细效果越好</span>
+      </div>
+    </div>
+
+    
 
     <!-- 生成按钮 -->
     <button class="generate-btn" @click="generateCode" :disabled="images.length === 0 || generating">
@@ -103,28 +107,6 @@
       <i v-else class="fas fa-play"></i>
       {{ generating ? '正在生成...' : '开始生成代码' }}
     </button>
-
-    <!-- 评分卡片 -->
-    <div class="score-card" v-if="score > 0">
-      <div class="score-header">
-        <div>
-          <h3>质量评分</h3>
-          <p class="score-sub">AI 多维评估</p>
-        </div>
-        <div class="score-value">{{ score }}</div>
-      </div>
-      <div class="score-dimensions">
-        <div v-for="dim in scoreDimensions" :key="dim.name" class="dimension-item">
-          <div class="dimension-label">
-            <span><i :class="dim.icon"></i> {{ dim.name }}</span>
-            <span>{{ dim.score }}</span>
-          </div>
-          <div class="progress-bar">
-            <div class="progress-fill" :style="{ width: dim.score + '%' }"></div>
-          </div>
-        </div>
-      </div>
-    </div>
 
     <!-- 描述编辑弹窗 -->
     <DescEditorModal
@@ -141,7 +123,7 @@
 import { ref, computed } from 'vue'
 import DescEditorModal from './DescEditorModal.vue'
 import { identifyApi } from "/api/identify"
-
+import { ElMessage } from 'element-plus'
 const emit = defineEmits(['generated'])
 
 // 图片列表
@@ -336,15 +318,29 @@ const generateCode = async () => {
   color: #00ffff;
 }
 
+/* 上传区 + 预览区 左右布局 */
+.upload-content {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
 /* 拖拽上传区 */
 .dropzone {
+  width: 260px;
+  min-height: 260px;
+  flex-shrink: 0;
   border: 2px dashed rgba(0, 255, 255, 0.4);
   border-radius: 20px;
-  padding: 40px;
+  padding: 32px 20px;
   text-align: center;
   background: rgba(0, 0, 0, 0.3);
   cursor: pointer;
   transition: all 0.3s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .dropzone.drag-over {
@@ -371,8 +367,8 @@ const generateCode = async () => {
 }
 
 .dropzone-icon {
-  width: 70px;
-  height: 70px;
+  width: 56px;
+  height: 56px;
   background: linear-gradient(135deg, rgba(0, 255, 255, 0.2), rgba(255, 0, 255, 0.2));
   border-radius: 50%;
   display: flex;
@@ -382,7 +378,7 @@ const generateCode = async () => {
 }
 
 .dropzone-icon i {
-  font-size: 28px;
+  font-size: 24px;
   color: #00ffff;
 }
 
@@ -397,7 +393,16 @@ const generateCode = async () => {
 
 /* 预览区域 */
 .preview-area {
-  margin-top: 20px;
+  flex: 1;
+  min-width: 0;
+  max-height: 420px;
+  overflow-y: auto;
+}
+.preview-area::-webkit-scrollbar { width: 4px; }
+.preview-area::-webkit-scrollbar-track { background: transparent; }
+.preview-area::-webkit-scrollbar-thumb {
+  background: rgba(0, 255, 255, 0.2);
+  border-radius: 2px;
 }
 
 .preview-header {
@@ -421,11 +426,20 @@ const generateCode = async () => {
 
 .preview-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+  grid-template-columns: repeat(5, 1fr);
 }
 
 @media (max-width: 768px) {
+  .upload-content {
+    flex-direction: column;
+  }
+  .dropzone {
+    width: 100%;
+    min-height: 160px;
+  }
+  .preview-area {
+    max-height: none;
+  }
   .preview-grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -440,6 +454,7 @@ const generateCode = async () => {
 .preview-item {
   position: relative;
   border-radius: 12px;
+  max-width: 200px;
   overflow: hidden;
   background: rgba(0, 0, 0, 0.3);
   transition: transform 0.2s;
@@ -451,7 +466,7 @@ const generateCode = async () => {
 
 .preview-item img {
   width: 100%;
-  aspect-ratio: 1;
+  max-height: 185px;
   object-fit: cover;
 }
 
@@ -475,6 +490,10 @@ const generateCode = async () => {
 
 .preview-item:hover .preview-remove {
   opacity: 1;
+}
+
+.config-card{
+  margin-top: 20px;
 }
 
 /* 描述显示区域 */
@@ -683,69 +702,5 @@ const generateCode = async () => {
 .generate-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-/* 评分卡片 */
-.score-card {
-  background: rgba(15, 20, 30, 0.6);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(0, 255, 255, 0.2);
-  border-radius: 24px;
-  overflow: hidden;
-  margin: 24px 0px;
-}
-
-.score-header {
-  background: linear-gradient(135deg, rgba(0, 255, 255, 0.2), rgba(255, 0, 255, 0.2));
-  padding: 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.score-header h3 {
-  font-size: 18px;
-}
-
-.score-sub {
-  font-size: 12px;
-  opacity: 0.7;
-  margin-top: 4px;
-}
-
-.score-value {
-  font-size: 48px;
-  font-weight: 700;
-  color: #00ffff;
-}
-
-.score-dimensions {
-  padding: 20px;
-}
-
-.dimension-item {
-  margin-bottom: 16px;
-}
-
-.dimension-label {
-  display: flex;
-  justify-content: space-between;
-  font-size: 14px;
-  margin-bottom: 8px;
-  color: #aaa;
-}
-
-.progress-bar {
-  width: 100%;
-  height: 6px;
-  background: #333;
-  border-radius: 3px;
-  overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #00ffff, #ff00ff);
-  border-radius: 3px;
 }
 </style>

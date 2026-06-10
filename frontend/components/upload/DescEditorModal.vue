@@ -1,10 +1,13 @@
 <!-- components/DescEditorModal.vue -->
 <template>
   <DialogModel ref="dialogRef" width="600px" customClass="desc-dialog" @close="emit('close')">
-    <div class="modal-header">
+    <template #title>
+     <div class="modal-header">
       <h3><i class="fas fa-edit"></i> 设计稿描述</h3>
-      <button class="close-modal" @click="dialogRef.close()">&times;</button>
+      <!-- <button class="close-modal" @click="dialogRef.close()">&times;</button> -->
     </div>
+    </template>
+    
 
     <div class="modal-body">
       <div class="desc-list">
@@ -23,6 +26,7 @@
             <textarea
               :ref="el => setTextareaRef(el, idx)"
               v-model="tempDescriptions[idx]"
+              maxlength="500"
               @focus="changeFocusIndex(idx)"
               :placeholder="`描述第 ${idx + 1} 张设计稿的用途和关键元素...`"
               rows="3"
@@ -103,12 +107,11 @@ const changeFocusIndex = (idx) => {
 
 <style scoped>
 .modal-header {
+  position: relative;
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
-  padding: 16px 20px;
-  background: linear-gradient(135deg, rgba(0, 255, 255, 0.1), rgba(255, 0, 255, 0.1));
-  border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+  padding: 10px 20px;
 }
 
 .modal-header h3 {
@@ -120,6 +123,8 @@ const changeFocusIndex = (idx) => {
 }
 
 .close-modal {
+  position: absolute;
+  right: 20px;
   background: none;
   border: none;
   color: #888;
@@ -241,7 +246,7 @@ const changeFocusIndex = (idx) => {
   justify-content: flex-end;
   gap: 12px;
   padding: 16px 20px;
-  border-top: 1px solid rgba(0, 255, 255, 0.2);
+  /* border-top: 1px solid rgba(0, 255, 255, 0.2); */
 }
 
 .btn-cancel, .btn-save {

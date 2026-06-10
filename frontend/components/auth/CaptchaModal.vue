@@ -1,4 +1,3 @@
-<!-- components/auth/CaptchaModal.vue -->
 <template>
   <div class="captcha-form">
     <button class="back-btn" @click="$emit('back')" type="button">

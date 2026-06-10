@@ -3,7 +3,7 @@
     <div class="phone-screen">
       <!-- 固定：刘海区 -->
       <div class="phone-notch-area">
-        <span class="notch-time">9:41</span>
+        <span class="notch-time">{{ currentTime }}</span>
         <div class="notch-cutout"></div>
         <div class="notch-icons">
           <i class="fas fa-signal"></i>
@@ -16,11 +16,11 @@
       <div class="phone-page-content" v-html="html"></div>
 
       <!-- 固定：底部导航 -->
-      <div class="phone-bottom-nav">
-        <div class="tab-item active"><i class="fas fa-home"></i><span>首页</span></div>
-        <div class="tab-item"><i class="fas fa-compass"></i><span>发现</span></div>
-        <div class="tab-item"><i class="fas fa-shopping-bag"></i><span>购物袋</span></div>
-        <div class="tab-item"><i class="fas fa-user-circle"></i><span>我的</span></div>
+      <div class="phone-bottom-nav" v-if="showBottomNav">
+        <div v-for="tab in bottomNav" :key="tab.label" class="tab-item" :class="{ active: tab.active }">
+          <i :class="tab.icon"></i>
+          <span>{{ tab.label }}</span>
+        </div>
       </div>
     </div>
     <!-- 固定：Home 指示条 -->
@@ -29,8 +29,25 @@
 </template>
 
 <script setup>
-defineProps({
-  html: { type: String, default: '' }
+import { computed } from 'vue'
+
+const currentTime = computed(() => {
+  const now = new Date()
+  return now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0')
+})
+
+const props = defineProps({
+  html: { type: String, default: '' },
+  showBottomNav: { type: Boolean, default: true },
+  bottomNav: {
+    type: Array,
+    default: () => [
+      { icon: 'fas fa-home', label: '首页', active: true },
+      { icon: 'fas fa-compass', label: '发现', active: false },
+      { icon: 'fas fa-shopping-bag', label: '购物袋', active: false },
+      { icon: 'fas fa-user-circle', label: '我的', active: false },
+    ],
+  },
 })
 </script>
 

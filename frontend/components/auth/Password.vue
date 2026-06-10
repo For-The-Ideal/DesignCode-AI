@@ -1,4 +1,3 @@
-<!-- components/auth/Password.vue -->
 <template>
   <DialogModel ref="dialogRef" width="440px" v-border-gradient>
     <button class="close-btn" @click="handleClose">

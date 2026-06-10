@@ -35,6 +35,3 @@ export { useCardSpreadAnimation } from '../composables/useCardSpreadAnimation';
 export { showElectronNotification, setEncrypt, getDecrypt } from '../utils/index';
 export { default as request } from '../utils/request';
 export { useUserStore } from '../stores/user';
-export { defineStore, acceptHMRUpdate, usePinia, storeToRefs } from '../node_modules/@pinia/nuxt/dist/runtime/composables';
-export { useImage } from '../node_modules/@nuxt/image/dist/runtime/composables';
-export { useColorMode } from '../node_modules/@nuxtjs/color-mode/dist/runtime/composables';

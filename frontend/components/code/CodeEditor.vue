@@ -13,7 +13,7 @@
      
 
 
-      <div v-show="isLoading || !modelValue" class="code-editor-loading">
+      <div v-show="isLoading || !modelValue"  class="code-editor-loading">
         <div class="loading-spinner"></div>
         <span>加载编辑器中...</span>
       </div>
@@ -436,10 +436,9 @@ defineExpose({
 .code-editor-loading {
   z-index: 10;
   background: #0a0a0f;
-  border: 1px solid rgba(0, 255, 255, 0.3);
   border-radius: 16px;
   display: flex;
-  height: 650px;
+  height: v-bind(height);
   flex-direction: column;
   align-items: center;
   justify-content: center;

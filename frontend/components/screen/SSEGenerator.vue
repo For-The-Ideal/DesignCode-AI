@@ -11,7 +11,7 @@
             v-model="generatedCode"
             language="dart"
             :readonly="true"
-            height="100%"
+            height="700px"
             placeholder="// 滚动到此处将自动开始流式生成 Flutter 代码..."
           />
         </div>
@@ -28,7 +28,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
 import CodeEditor from '@/components/code/CodeEditor.vue';
-import PhoneMockup from './PhoneMockup.vue';
+import PhoneMockup from '@/components/common/PhoneMockup.vue';
 
 const screenRef = ref(null);
 const generatedCode = ref('');

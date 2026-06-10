@@ -8,7 +8,15 @@
     :close-on-press-escape="closeOnPressEscape"
     class="auth-dialog"
     :before-close="handleBeforeClose">
-      <slot />
+    <template #title>
+      <slot name="title" />
+    </template>
+    <template #default>
+      <slot name="default" />
+    </template>
+    <template #footer>
+      <slot name="footer" />
+    </template>
   </el-dialog>
 </template>
 
@@ -32,7 +40,6 @@ defineExpose({ open, close, visible })
 
 
 <style>
-/* ========== DialogModel 暗色弹窗全局样式 ========== */
 .auth-dialog {
   background: rgba(12, 20, 28, 0.35) !important;
   backdrop-filter: blur(20px);
@@ -40,25 +47,5 @@ defineExpose({ open, close, visible })
   border-radius: 32px !important;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
   overflow: hidden;
-}
-.auth-dialog .el-dialog__header {
-  display: none;
-}
-.auth-dialog .el-dialog__body {
-  padding: 40px 32px;
-}
-
-.progress-dialog .el-dialog__header {
-  display: none;
-}
-.progress-dialog .el-dialog__body {
-  padding: 0 !important;
-}
-
-.desc-dialog .el-dialog__header {
-  display: none;
-}
-.desc-dialog .el-dialog__body {
-  padding: 0 !important;
 }
 </style>
