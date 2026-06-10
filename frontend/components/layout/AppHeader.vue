@@ -26,7 +26,7 @@
       <!-- 右侧区域 -->
       <div class="auth-area">
         <!-- 未登录：登录按钮 -->
-        <button v-if="!authStore.isLoggedIn" class="btn-login" @click="loginModalRef.open()">
+        <button v-if="!isLogin" class="btn-login" @click="loginModalRef.open()">
           <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M20 21V19C20 16.8 18.2 15 16 15H8C5.8 15 4 16.8 4 19V21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
             <path d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z" stroke="currentColor" stroke-width="1.5"/>
@@ -37,20 +37,20 @@
         <!-- 已登录：头像 + 下拉菜单 -->
         <div v-else class="user-menu" @mouseenter="showDropdown = true" @mouseleave="showDropdown = false">
           <div class="user-avatar">
-            <span class="avatar-text">{{ authStore.userInfo?.username?.charAt(0)?.toUpperCase() || 'U' }}</span>
+            <span class="avatar-text">{{ userInfo?.username?.charAt(0)?.toUpperCase() || 'U' }}</span>
           </div>
-          <span class="user-name">{{ authStore.userInfo?.username }}</span>
+          <span class="user-name">{{ userInfo?.username }}</span>
 
           <!-- 下拉菜单 -->
           <transition name="dropdown-fade">
             <div v-if="showDropdown" class="dropdown-panel">
               <div class="dropdown-header">
                 <div class="dropdown-avatar">
-                  <span>{{ authStore.userInfo?.username?.charAt(0)?.toUpperCase() || 'U' }}</span>
+                  <span>{{ userInfo?.username?.charAt(0)?.toUpperCase() || 'U' }}</span>
                 </div>
                 <div class="dropdown-user-info">
-                  <span class="dropdown-username">{{ authStore.userInfo?.username }}</span>
-                  <span class="dropdown-email">{{ authStore.userInfo?.email }}</span>
+                  <span class="dropdown-username">{{ userInfo?.username }}</span>
+                  <span class="dropdown-email">{{ userInfo?.email }}</span>
                 </div>
               </div>
               <div class="dropdown-divider"></div>
@@ -84,15 +84,16 @@
 import { computed } from "vue"
 import LoginModal from '~/components/auth/LoginModal.vue'
 import PasswordModal from '~/components/auth/PasswordModal.vue'
-import { useAuthStore } from '~/stores/auth'
+import { useUserStore } from '~/stores/user'
+import { storeToRefs } from 'pinia'
 
 const router = useRouter()
 const route = useRoute()
-const authStore = useAuthStore()
+const userStore = useUserStore()
 const loginModalRef = ref()
 const passwordModalRef = ref()
 const showDropdown = ref(false)
-
+const { isLogin, userInfo } = storeToRefs(userStore)
 const navList = ref([
   {
     name:"首页",
@@ -112,9 +113,8 @@ const navList = ref([
   }
 ])
 
-const handleLoginSuccess = (user) => {
-  authStore.login({ username: user.username, password: '' })
-  if (user.username) localStorage.setItem('user', JSON.stringify(user))
+const handleLoginSuccess = async(user) => {
+  await userStore.login({ username: user.username, password: '' })
 }
 
 const handleRegisterSuccess = () => {}
@@ -123,7 +123,7 @@ const handleModalClose = () => {}
 
 const handleLogout = () => {
   showDropdown.value = false
-  authStore.logout()
+  userStore.logout()
 }
 
 const handleNavClick = (link) => {
@@ -136,9 +136,6 @@ const openPasswordModal = () => {
   passwordModalRef.value?.open()
 }
 
-onMounted(() => {
-  authStore.checkAuth()
-})
 </script>
 
 

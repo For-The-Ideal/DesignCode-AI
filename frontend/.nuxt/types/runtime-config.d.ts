@@ -17,15 +17,7 @@ import { RuntimeConfig as UserRuntimeConfig, PublicRuntimeConfig as UserPublicRu
    },
   }
   interface SharedPublicRuntimeConfig {
-   apiBase: string,
 
-   wsBase: string,
-
-   siteTitle: string,
-
-   debug: boolean,
-
-   cryptoSecret: string,
   }
 declare module '@nuxt/schema' {
   interface RuntimeConfig extends UserRuntimeConfig {}

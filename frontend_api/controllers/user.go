@@ -16,8 +16,8 @@ type ChangePasswordRequest struct {
 	NewPassword string `json:"newPassword" binding:"required,min=6"`
 }
 
-// GetProfile 获取当前登录用户信息
-func (u *UserController) GetProfile(c *gin.Context) {
+// GetUserInfo 获取当前登录用户信息
+func (u *UserController) GetUserInfo(c *gin.Context) {
 	userID, _ := c.Get("user_id")
 	var user *models.User
 	if err := utils.DB.First(&user, userID).Error; err != nil {
@@ -28,8 +28,8 @@ func (u *UserController) GetProfile(c *gin.Context) {
 	utils.Success(c, user, "获取用户信息成功")
 }
 
-// ChangePassword 修改密码
-func (u *UserController) ChangePassword(c *gin.Context) {
+// UpdateUserPassword 修改密码
+func (u *UserController) UpdateUserPassword(c *gin.Context) {
 	userID, _ := c.Get("user_id")
 
 	var req ChangePasswordRequest

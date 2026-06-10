@@ -1,6 +1,6 @@
-import { getDecrypt } from "./utils/helps.js";
 import { readBody, getRequestHeaders } from "h3";
-import { getData } from "./utils/request.js";
+import { getData } from "../utils/request.js";
+import { getDecrypt } from "../utils/helps.js";
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event);

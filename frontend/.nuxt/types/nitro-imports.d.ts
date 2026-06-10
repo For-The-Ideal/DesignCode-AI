@@ -1,4 +1,5 @@
 declare global {
+  const CSRF_CONSTANTS: typeof import('../../server/utils/csrf').CSRF_CONSTANTS
   const H3Error: typeof import('../../node_modules/h3').H3Error
   const H3Event: typeof import('../../node_modules/h3').H3Event
   const __buildAssetsURL: typeof import('../../node_modules/@nuxt/nitro-server/dist/runtime/utils/paths').buildAssetsURL
@@ -45,7 +46,12 @@ declare global {
   const fromNodeMiddleware: typeof import('../../node_modules/h3').fromNodeMiddleware
   const fromPlainHandler: typeof import('../../node_modules/h3').fromPlainHandler
   const fromWebHandler: typeof import('../../node_modules/h3').fromWebHandler
+  const generateCsrfToken: typeof import('../../server/utils/csrf').generateCsrfToken
   const getCookie: typeof import('../../node_modules/h3').getCookie
+  const getCsrfCookieToken: typeof import('../../server/utils/csrf').getCsrfCookieToken
+  const getCsrfHeaderToken: typeof import('../../server/utils/csrf').getCsrfHeaderToken
+  const getData: typeof import('../../server/utils/request').getData
+  const getDecrypt: typeof import('../../server/utils/helps').getDecrypt
   const getHeader: typeof import('../../node_modules/h3').getHeader
   const getHeaders: typeof import('../../node_modules/h3').getHeaders
   const getMethod: typeof import('../../node_modules/h3').getMethod
@@ -105,6 +111,7 @@ declare global {
   const sendWebResponse: typeof import('../../node_modules/h3').sendWebResponse
   const serveStatic: typeof import('../../node_modules/h3').serveStatic
   const setCookie: typeof import('../../node_modules/h3').setCookie
+  const setCsrfCookie: typeof import('../../server/utils/csrf').setCsrfCookie
   const setHeader: typeof import('../../node_modules/h3').setHeader
   const setHeaders: typeof import('../../node_modules/h3').setHeaders
   const setResponseHeader: typeof import('../../node_modules/h3').setResponseHeader
@@ -125,6 +132,7 @@ declare global {
   const useRuntimeConfig: typeof import('../../node_modules/nitropack/dist/runtime/internal/config').useRuntimeConfig
   const useSession: typeof import('../../node_modules/h3').useSession
   const useStorage: typeof import('../../node_modules/nitropack/dist/runtime/internal/storage').useStorage
+  const verifyCsrfToken: typeof import('../../server/utils/csrf').verifyCsrfToken
   const writeEarlyHints: typeof import('../../node_modules/h3').writeEarlyHints
 }
 // for type re-export
@@ -147,3 +155,6 @@ export { defineTask, runTask } from 'nitropack/runtime/internal/task';
 export { defineNitroErrorHandler } from 'nitropack/runtime/internal/error/utils';
 export { buildAssetsURL as __buildAssetsURL, publicAssetsURL as __publicAssetsURL } from 'E:/DesignCode-AI/frontend/node_modules/@nuxt/nitro-server/dist/runtime/utils/paths';
 export { defineAppConfig } from 'E:/DesignCode-AI/frontend/node_modules/@nuxt/nitro-server/dist/runtime/utils/config';
+export { generateCsrfToken, verifyCsrfToken, setCsrfCookie, getCsrfCookieToken, getCsrfHeaderToken, CSRF_CONSTANTS } from 'E:/DesignCode-AI/frontend/server/utils/csrf';
+export { getDecrypt } from 'E:/DesignCode-AI/frontend/server/utils/helps';
+export { getData } from 'E:/DesignCode-AI/frontend/server/utils/request';

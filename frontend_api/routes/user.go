@@ -13,7 +13,7 @@ func InitUserRoutes(rg *gin.RouterGroup) {
 	user := rg.Group("/")
 	user.Use(middleware.AuthMiddleware())
 	{
-		user.GET("/profile", userController.GetProfile)
-		user.POST("/changePassword", userController.ChangePassword)
+		user.GET("/user/info", userController.GetUserInfo)
+		user.POST("/user/updatepassword", userController.UpdateUserPassword)
 	}
 }

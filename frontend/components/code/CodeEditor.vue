@@ -163,6 +163,7 @@ const getMonacoLanguage = () => {
 
 // ========== 初始化 Monaco Editor ==========
 const initMonaco = async () => {
+  console.log(process)
   if (!process.client) return
   
   try {
