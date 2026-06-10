@@ -1,6 +1,15 @@
 import httpRequest from "~/utils/request";
 
 export const loginApi = {
+  async captcha(server = true) {
+    let options = {
+      url: `/api/captcha`,
+      method: "get",
+      server,
+    };
+    let result = await httpRequest.get(options);
+    return result;
+  },
   async login(params = {}, server = true) {
     let options = {
       url: `/api/login`,

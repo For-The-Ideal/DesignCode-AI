@@ -10,10 +10,10 @@ import (
 func InitUserRoutes(rg *gin.RouterGroup) {
 	userController := &controllers.UserController{}
 
-	user := rg.Group("/")
+	user := rg.Group("/user")
 	user.Use(middleware.AuthMiddleware())
 	{
-		user.GET("/user/info", userController.GetUserInfo)
-		user.POST("/user/updatepassword", userController.UpdateUserPassword)
+		user.GET("/info", userController.GetUserInfo)
+		user.POST("/updatepassword", userController.UpdateUserPassword)
 	}
 }

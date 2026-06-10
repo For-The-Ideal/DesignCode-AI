@@ -33,6 +33,19 @@ type LoginRequest struct {
 	Password string `json:"password" binding:"required"`
 }
 
+type CaptchaResponse struct {
+	CaptchaID string `json:"captcha_id"`
+	Captcha   string `json:"captcha"`
+}
+
+// Captcha 获取验证码
+func (a *AuthController) Captcha(c *gin.Context) {
+	utils.Success(c, CaptchaResponse{
+		CaptchaID: utils.GenerateCaptcha()["captcha_id"], // 生成验证码ID
+		Captcha:   utils.GenerateCaptcha()["captcha"],    // 生成验证码
+	}, "验证码获取成功")
+}
+
 // Register 用户注册
 func (a *AuthController) Register(c *gin.Context) {
 	var req RegisterRequest

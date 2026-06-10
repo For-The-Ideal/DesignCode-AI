@@ -21,7 +21,7 @@
           
           <!-- 登录表单 -->
           <form v-if="isLogin" @submit.prevent="handleLogin" class="auth-form">
-            <div class="input-field" :class="{ focused: focusedInput === 'login-username' }">
+            <div class="input-field" :class="{ focused: focusedInput === 'login-username', error: loginErrors.username }">
               <i class="fas fa-user input-icon"></i>
               <input 
                 type="text" 
@@ -30,6 +30,7 @@
                 maxlength="20"
                 @focus="handleFocus('login-username')"
                 @blur="handleBlur('login-username')"
+                @input="clearLoginError('username')"
               >
               <!-- SVG 光带边框层 -->
               <svg class="border-svg" :class="{ animate: animatedInput === 'login-username' }">
@@ -37,8 +38,9 @@
                 <rect x="0" y="0" rx="26" ry="26" width="100%" height="100%" pathLength="100" class="moving-stroke" />
               </svg>
             </div>
+            <p v-if="loginErrors.username" class="field-error">{{ loginErrors.username }}</p>
             
-            <div class="input-field" :class="{ focused: focusedInput === 'login-password' }">
+            <div class="input-field" :class="{ focused: focusedInput === 'login-password', error: loginErrors.password }">
               <i class="fas fa-lock input-icon"></i>
               <input 
                 :type="showLoginPassword ? 'text' : 'password'" 
@@ -47,6 +49,7 @@
                 maxlength="20"
                 @focus="handleFocus('login-password')"
                 @blur="handleBlur('login-password')"
+                @input="clearLoginError('password')"
                 @keyup.enter="handleLogin"
               >
               <button type="button" class="password-eye" @click="showLoginPassword = !showLoginPassword">
@@ -57,6 +60,7 @@
                 <rect x="0" y="0" rx="26" ry="26" width="100%" height="100%" pathLength="100" class="moving-stroke" />
               </svg>
             </div>
+            <p v-if="loginErrors.password" class="field-error">{{ loginErrors.password }}</p>
             
             <div class="form-options">
               <label class="checkbox">
@@ -75,7 +79,7 @@
           
           <!-- 注册表单 -->
           <form v-else @submit.prevent="handleRegister" class="auth-form">
-            <div class="input-field" :class="{ focused: focusedInput === 'reg-username' }">
+            <div class="input-field" :class="{ focused: focusedInput === 'reg-username', error: registerErrors.username }">
               <i class="fas fa-user input-icon"></i>
               <input 
                 type="text" 
@@ -84,14 +88,16 @@
                 maxlength="20"
                 @focus="handleFocus('reg-username')"
                 @blur="handleBlur('reg-username')"
+                @input="clearRegisterError('username')"
               >
               <svg class="border-svg" :class="{ animate: animatedInput === 'reg-username' }">
                 <rect x="0" y="0" rx="26" ry="26" width="100%" height="100%" pathLength="100" class="border-bg" />
                 <rect x="0" y="0" rx="26" ry="26" width="100%" height="100%" pathLength="100" class="moving-stroke" />
               </svg>
             </div>
+            <p v-if="registerErrors.username" class="field-error">{{ registerErrors.username }}</p>
             
-            <div class="input-field" :class="{ focused: focusedInput === 'reg-email' }">
+            <div class="input-field" :class="{ focused: focusedInput === 'reg-email', error: registerErrors.email }">
               <i class="fas fa-envelope input-icon"></i>
               <input 
                 type="email" 
@@ -100,14 +106,16 @@
                 maxlength="20"
                 @focus="handleFocus('reg-email')"
                 @blur="handleBlur('reg-email')"
+                @input="clearRegisterError('email')"
               >
               <svg class="border-svg" :class="{ animate: animatedInput === 'reg-email' }">
                 <rect x="0" y="0" rx="26" ry="26" width="100%" height="100%" pathLength="100" class="border-bg" />
                 <rect x="0" y="0" rx="26" ry="26" width="100%" height="100%" pathLength="100" class="moving-stroke" />
               </svg>
             </div>
+            <p v-if="registerErrors.email" class="field-error">{{ registerErrors.email }}</p>
             
-            <div class="input-field" :class="{ focused: focusedInput === 'reg-password' }">
+            <div class="input-field" :class="{ focused: focusedInput === 'reg-password', error: registerErrors.password }">
               <i class="fas fa-lock input-icon"></i>
               <input 
                 :type="showRegisterPassword ? 'text' : 'password'" 
@@ -116,6 +124,7 @@
                 maxlength="20"
                 @focus="handleFocus('reg-password')"
                 @blur="handleBlur('reg-password')"
+                @input="clearRegisterError('password')"
               >
               <button type="button" class="password-eye" @click="showRegisterPassword = !showRegisterPassword">
                 <i :class="showRegisterPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
@@ -125,8 +134,9 @@
                 <rect x="0" y="0" rx="26" ry="26" width="100%" height="100%" pathLength="100" class="moving-stroke" />
               </svg>
             </div>
+            <p v-if="registerErrors.password" class="field-error">{{ registerErrors.password }}</p>
             
-            <div class="input-field" :class="{ focused: focusedInput === 'reg-confirm' }">
+            <div class="input-field" :class="{ focused: focusedInput === 'reg-confirm', error: registerErrors.confirm }">
               <i class="fas fa-check-circle input-icon"></i>
               <input 
                 :type="showRegisterConfirm ? 'text' : 'password'" 
@@ -135,6 +145,7 @@
                 maxlength="20"
                 @focus="handleFocus('reg-confirm')"
                 @blur="handleBlur('reg-confirm')"
+                @input="clearRegisterError('confirm')"
               >
               <button type="button" class="password-eye" @click="showRegisterConfirm = !showRegisterConfirm">
                 <i :class="showRegisterConfirm ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
@@ -144,6 +155,7 @@
                 <rect x="0" y="0" rx="26" ry="26" width="100%" height="100%" pathLength="100" class="moving-stroke" />
               </svg>
             </div>
+            <p v-if="registerErrors.confirm" class="field-error">{{ registerErrors.confirm }}</p>
             
             <button type="submit" class="submit-btn" :disabled="loading">
               <span v-if="!loading">注册</span>
@@ -168,10 +180,6 @@
             </p>
           </div>
           
-          <div class="demo-hint">
-            <i class="fas fa-info-circle"></i>
-            <span>演示账号: demo / 123456</span>
-          </div>
         </div>
       </div>
     </transition>
@@ -180,7 +188,7 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-
+import { loginApi } from '@/api/login'
 const emit = defineEmits(['login-success', 'register-success', 'close'])
 
 // 状态
@@ -198,6 +206,14 @@ const showRegisterConfirm = ref(false)
 // 表单数据
 const loginForm = reactive({ username: '', password: '' })
 const registerForm = reactive({ username: '', email: '', password: '', confirm: '' })
+
+// 字段校验错误
+const loginErrors = reactive({ username: '', password: '' })
+const registerErrors = reactive({ username: '', email: '', password: '', confirm: '' })
+
+// 清除单个字段错误
+const clearLoginError = (field) => { loginErrors[field] = '' }
+const clearRegisterError = (field) => { registerErrors[field] = '' }
 
 // 聚焦处理：记录聚焦输入框，并启动边框动画
 const handleFocus = (inputId) => {
@@ -225,10 +241,16 @@ const close = () => {
 const resetForms = () => {
   loginForm.username = ''
   loginForm.password = ''
+  loginErrors.username = ''
+  loginErrors.password = ''
   registerForm.username = ''
   registerForm.email = ''
   registerForm.password = ''
   registerForm.confirm = ''
+  registerErrors.username = ''
+  registerErrors.email = ''
+  registerErrors.password = ''
+  registerErrors.confirm = ''
   loading.value = false
   focusedInput.value = null
   animatedInput.value = null
@@ -243,32 +265,34 @@ const toggleMode = () => {
 
 // 登录/注册逻辑
 const handleLogin = async () => {
-  if (!loginForm.username || !loginForm.password) {
-    alert('请输入用户名和密码')
-    return
-  }
+  let valid = true
+  if (!loginForm.username) { loginErrors.username = '请输入用户名'; valid = false }
+  if (!loginForm.password) { loginErrors.password = '请输入密码'; valid = false }
+  if (!valid) return
   loading.value = true
-  await new Promise(resolve => setTimeout(resolve, 800))
-  if (loginForm.username === 'demo' && loginForm.password === '123456') {
-    const user = { username: loginForm.username, email: 'demo@example.com' }
-    if (rememberMe.value) localStorage.setItem('user', JSON.stringify(user))
-    emit('login-success', user)
-    close()
-  } else {
-    alert('用户名或密码错误 (演示账号: demo / 123456)')
-  }
-  loading.value = false
+  let res = await loginApi.captcha()
+  // await new Promise(resolve => setTimeout(resolve, 800))
+ 
+  //   const user = { username: loginForm.username, email: 'demo@example.com' }
+  //   if (rememberMe.value) localStorage.setItem('user', JSON.stringify(user))
+  //   emit('login-success', user)
+  //   close()
+ 
+  // loading.value = false
 }
 
 const handleRegister = async () => {
-  if (!registerForm.username || !registerForm.email || !registerForm.password) {
-    alert('请填写完整信息'); return
-  }
+  let valid = true
+  if (!registerForm.username)  { registerErrors.username  = '请输入用户名'; valid = false }
+  if (!registerForm.email)     { registerErrors.email     = '请输入邮箱'; valid = false }
+  if (!registerForm.password)  { registerErrors.password  = '请输入密码'; valid = false }
+  if (!registerForm.confirm)   { registerErrors.confirm   = '请确认密码'; valid = false }
+  if (!valid) return
   if (registerForm.password !== registerForm.confirm) {
-    alert('两次输入的密码不一致'); return
+    registerErrors.confirm = '两次输入的密码不一致'; return
   }
   if (registerForm.password.length < 6) {
-    alert('密码长度至少6位'); return
+    registerErrors.password = '密码长度至少6位'; return
   }
   loading.value = true
   await new Promise(resolve => setTimeout(resolve, 800))
@@ -452,6 +476,27 @@ defineExpose({ open, close })
 /* 聚焦时边框高亮 */
 .input-field.focused input {
   box-shadow: 0 0 0 1px rgba(0, 255, 255, 0.3);
+}
+
+/* 校验错误状态 */
+.input-field.error input {
+  border-color: rgba(255, 71, 87, 0.6);
+  box-shadow: 0 0 0 1px rgba(255, 71, 87, 0.3);
+}
+.input-field.error .input-icon {
+  color: #ff4757;
+}
+
+.field-error {
+  color: #ff4757;
+  font-size: 12px;
+  margin: -14px 0 0 16px;
+  animation: errorFadeIn 0.25s ease;
+}
+
+@keyframes errorFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .input-field input:focus ~ .input-icon {

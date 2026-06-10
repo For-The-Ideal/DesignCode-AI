@@ -11,7 +11,7 @@ import (
 func InitGenerateRoutes(rg *gin.RouterGroup) {
 	generateController := &controllers.GenerateController{}
 
-	generate := rg.Group("/")
+	generate := rg.Group("/generate")
 	generate.Use(middleware.AuthMiddleware())
 	{
 		generate.POST("/send", generateController.Generate)
