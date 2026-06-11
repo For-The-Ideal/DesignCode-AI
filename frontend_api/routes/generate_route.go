@@ -42,8 +42,11 @@ func InitGenerateRoutes(v1 *gin.RouterGroup,
 	// GET /api/v1/task/:id → 查询任务状态
 	v1.GET("/task/:id", taskHandler.GetTask)
 
-	// GET /api/v1/task/:id/events → SSE 事件流
+	// GET /api/v1/task/:id/events → SSE 事件流（按任务订阅）
 	v1.GET("/task/:id/events", sseHandler.StreamTask)
+
+	// POST /api/v1/task/sse → SSE Broker 连接（不绑定任务，前端先连上）
+	v1.POST("/task/sse", sseHandler.StreamBroker)
 
 	// POST /api/v1/upload → 图片上传（占位）
 	v1.POST("/upload", uploadHandler.Upload)

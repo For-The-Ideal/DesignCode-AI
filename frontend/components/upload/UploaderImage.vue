@@ -102,10 +102,11 @@
     
 
     <!-- 生成按钮 -->
-    <button class="generate-btn" @click="generateCode" :disabled="images.length === 0 || generating">
-      <i v-if="generating" class="fas fa-spinner fa-spin"></i>
+    <button class="generate-btn" @click="generateCode" :disabled="images.length === 0 || generating || isBusy">
+      <i v-if="isBusy" class="fas fa-hourglass-half"></i>
+      <i v-else-if="generating" class="fas fa-spinner fa-spin"></i>
       <i v-else class="fas fa-play"></i>
-      {{ generating ? '正在生成...' : '开始生成' }}
+      {{ isBusy ? '任务执行中...' : generating ? '正在生成...' : '开始生成' }}
     </button>
 
     <!-- 描述编辑弹窗 -->
@@ -125,7 +126,15 @@ import DescEditorModal from './DescEditorModal.vue'
 import { commonApi } from "~/api/common.js"
 import { ElMessage } from 'element-plus'
 import { useSSE } from '~/composables/useSSE'
+import { useGeneration } from '~/composables/useGeneration'
 const emit = defineEmits(['generated'])
+
+const props = defineProps({
+  isBusy: {
+    type: Boolean,
+    default: false,
+  },
+})
 
 // 图片列表
 const images = ref([])
@@ -139,7 +148,8 @@ const maxLen = ref(5) // 最多5张
 const score = ref(0)
 const scoreDimensions = ref([])
 
-const { isAvailable, isAlive, status } = useSSE()
+const { isAvailable, isAlive, status, connect } = useSSE()
+const { saveActiveTask } = useGeneration()
 // 本地按钮锁（点击→SSE connected 之间防连点）
 const generating = ref(false)
 
@@ -269,23 +279,25 @@ const generateCode = async () => {
     console.log('[Uploader] payload:', payload)
     console.log('[Uploader] SSE isAvailable:', isAvailable())
 
-    // 通知后端开始生成 → 后端通过 Broker → SSE 推送前端
+    // 通知后端开始生成 → 拿到 task_id → 连接 SSE
     const result = await commonApi.generateUi(payload)
     console.log('[Uploader] result:', result)
 
-    if (!result || !result.data || result.data.status !== 'generating') {
+    if (!result || !result.data || !result.data.task_id) {
       generating.value = false
       ElMessage.error('AI 启动失败，请稍后重试')
       return
     }
 
-    // 请求成功，释放按钮锁
-    // SSE streaming 期间的防连点由 template 中的 status === 'streaming' 接管
-    generating.value = false
+    // 用 task_id 连接 SSE，订阅该任务的实时事件
+    console.log('[Uploader] 连接 SSE, task_id:', result.data.task_id)
+    await connect(result.data.task_id)
 
-    // 后续流程由 SSE 事件驱动：
-    //   event:message → sseData.templateCode 实时累加 → CodeEditor + FlutterTemplate 渲染
-    //   event:done   → status='idle' → 按钮恢复可点击
+    // 保存任务信息到 localStorage（刷新后可恢复）
+    saveActiveTask(result.data.task_id, framework.value)
+
+    // 通知父组件（code.vue）框架类型
+    emit('generated', { framework: framework.value })
 
   } catch (error) {
     console.error('[Uploader] 生成失败:', error)

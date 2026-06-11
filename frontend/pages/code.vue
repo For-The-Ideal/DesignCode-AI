@@ -8,10 +8,10 @@
       </div>
 
       <!-- ═══ 上传区 ═══ -->
-      <UploaderImage @generated="onGenerated" />
+      <UploaderImage @generated="onGenerated" :isBusy="isBusy" />
 
       <!-- ═══ 未生成时的占位 ═══ -->
-      <div v-if="!hasGenerated" class="empty-state">
+      <div v-if="!hasGenerated && !isBusy" class="empty-state">
         <div class="empty-icon">
           <i class="fas fa-code"></i>
         </div>
@@ -31,6 +31,17 @@
             <span>一键生成 Flutter / React / Vue 代码</span>
           </div>
         </div>
+      </div>
+
+      <!-- ═══ 任务进行中（等待 SSE 数据） ═══ -->
+      <div v-if="isBusy && !hasGenerated" class="busy-state">
+        <div class="busy-spinner"><i class="fas fa-spinner fa-spin"></i></div>
+        <h3>AI 生成中...</h3>
+        <div class="busy-progress-bar">
+          <div class="busy-progress-fill" :style="{ width: taskProgress + '%' }"></div>
+        </div>
+        <p class="busy-step">{{ taskCurrentStep || '正在连接...' }}</p>
+        <p class="busy-hint">生成完成后下方将展示代码与预览，请勿关闭页面</p>
       </div>
 
       <!-- ═══ 生成结果展示 ═══ -->
@@ -93,6 +104,11 @@ const {
   connectSSE,
   disconnectSSE,
   cleanup,
+  isBusy,
+  taskStatus,
+  taskProgress,
+  taskCurrentStep,
+  restoreTask,
 } = useGeneration()
 
 // ═══ 页面状态 ═══
@@ -136,9 +152,32 @@ const onGenerated = async (result) => {
 
 // ═══ 生命周期 ═══
 
-onMounted(() => {
-  // 建立 SSE 长连接，订阅 Broker，等待事件推送
-  connectSSE()
+onMounted(async () => {
+  // 检查是否有之前未完成的任务，恢复进度
+  const restored = await restoreTask()
+  if (restored) {
+    if (restored.status === 'pending' || restored.status === 'running') {
+      // 有任务正在执行中，复现生成的框架配置
+      if (restored.framework && langMap[restored.framework]) {
+        generatedFramework.value = restored.framework
+        generatedLang.value = langMap[restored.framework].label
+        codeLanguage.value = langMap[restored.framework].lang
+      }
+      // SSE 已由 restoreTask 内部重连，等待推送即可
+      ElMessage.info('检测到正在执行中的任务，已恢复进度监听')
+    } else if (restored.status === 'success') {
+      // 已完成的任务，展示结果
+      hasGenerated.value = true
+      if (restored.framework && langMap[restored.framework]) {
+        generatedFramework.value = restored.framework
+        generatedLang.value = langMap[restored.framework].label
+        codeLanguage.value = langMap[restored.framework].lang
+      }
+    } else if (restored.status === 'failed') {
+      ElMessage.error('上轮任务执行失败，请重新生成')
+    }
+  }
+  // 没有已存在的任务 → 保持空状态等待用户操作
 })
 
 onUnmounted(() => {
@@ -300,6 +339,54 @@ const handleDownload = () => {
 .hint-item i {
   color: #00cfff;
   font-size: 16px;
+}
+
+/* ═══ 进行中状态 ═══ */
+.busy-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+  background: rgba(15, 20, 30, 0.35);
+  border: 1px solid rgba(0, 255, 255, 0.1);
+  border-radius: 24px;
+  margin-top: 24px;
+}
+.busy-spinner {
+  font-size: 36px;
+  color: #00ffff;
+  margin-bottom: 16px;
+}
+.busy-state h3 {
+  font-size: 20px;
+  color: #ccc;
+  margin-bottom: 16px;
+}
+.busy-progress-bar {
+  width: 280px;
+  max-width: 80%;
+  height: 6px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+.busy-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #00ffff, #00ff88);
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+.busy-step {
+  font-size: 13px;
+  color: #00cfff;
+  margin-bottom: 8px;
+}
+.busy-hint {
+  font-size: 12px;
+  color: #6b7280;
 }
 
 /* ═══ 核心区 ═══ */

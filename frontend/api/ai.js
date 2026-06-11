@@ -2,16 +2,14 @@ import { localUrl } from '~/config/index.js'
 
 export const aiApi = {
   /**
-   * 建立 SSE 长连接（订阅 Broker，不传业务参数）
+   * 建立 SSE 长连接（按 taskID 订阅事件）
    */
-  async connect (signal = null) {
-    return fetch(`${localUrl}/api/v1/ai/sse`, {
-      method: 'POST',
+  async connect (taskId, signal = null) {
+    return fetch(`${localUrl}/api/v1/task/${taskId}/events`, {
+      method: 'GET',
       headers: {
-        'Content-Type': 'application/json',
         'Accept': 'text/event-stream',
       },
-      body: '{}',
       signal,
     })
   },

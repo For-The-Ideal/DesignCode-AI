@@ -1,4 +1,4 @@
-import { reactive, watch, onUnmounted } from 'vue'
+import { reactive, ref, computed, watch, onUnmounted } from 'vue'
 import { useSSE } from './useSSE'
 import { useStreamRenderer } from './useStreamRenderer'
 import { commonApi } from '~/api/common'
@@ -7,9 +7,10 @@ import { commonApi } from '~/api/common'
  * useGeneration — 代码生成流程编排 composable
  *
  * 职责：
- *   1. 协调 SSE 数据源 → 渲染输出
- *   2. 模板数据初始化（API）→ 流式渲染
- *   3. 向外暴露统一的 template 接口
+ *   1. 任务生命周期管理（创建、恢复、清理）
+ *   2. 协调 SSE 数据源 → 渲染输出
+ *   3. 模板数据初始化（API）→ 流式渲染
+ *   4. 向外暴露统一的 template 接口
  *
  * 数据流：
  *   SSE 推送  ──→ useSSE.sseData ──→ watch ──→ template.templateCode
@@ -18,13 +19,25 @@ import { commonApi } from '~/api/common'
  * 两个数据源通过 status 判断互斥：SSE streaming 时不处理渲染器输出
  */
 
+// ═══ 模块级任务状态 ═══
+const activeTaskId = ref(null)
+const activeTaskFramework = ref('')   // flutter | vue3 | react
+const taskStatus = ref('idle')        // idle | pending | running | success | failed
+const taskProgress = ref(0)
+const taskCurrentStep = ref('')
+const taskErrorMsg = ref('')
+const RESTORE_KEY = 'gen_active_task'
+
+const isBusy = computed(() =>
+  taskStatus.value === 'pending' || taskStatus.value === 'running'
+)
+
 export function useGeneration () {
   // ═══ 子系统 ═══
   const sse = useSSE()
   const renderer = useStreamRenderer()
 
   // ═══ 统一数据出口 ═══
-  // 结构对齐 auth.go Template 接口: { template_code, preview_code, id }
   const template = reactive({
     templateCode: '',
     previewCode: '',
@@ -37,21 +50,18 @@ export function useGeneration () {
 
   // ═══ SSE 数据 → template =================================================
 
-  // SSE 流式推送代码 → 直接写入 template（SSE 本身就是流式的）
   watch(() => sse.sseData.templateCode, (code) => {
     if (sse.status.value === 'streaming') {
       template.templateCode = code
     }
   })
 
-  // SSE 推送预览 HTML → 写入 template
   watch(() => sse.sseData.previewCode, (code) => {
     if (code) {
       template.previewCode = code
     }
   })
 
-  // SSE 推送 id → 写入 template（对齐 auth.go 模板接口）
   watch(() => sse.sseData.id, (val) => {
     if (val != null) {
       template.id = val
@@ -65,17 +75,85 @@ export function useGeneration () {
     }
   })
 
-  // ═══ 模板数据初始化（首页 SSEGenerator 用）══════════════════════════
+  // ═══ 任务生命周期 ═════════════════════════════════════
 
   /**
-   * 加载模板 → 流式渲染
-   *
-   * 首次调用：请求 API 获取模板数据 → renderer.start(code) → 逐字输出
-   * 再次进入可视区：renderer.resume() 继续
-   * 已输出完毕：无操作
+   * 保存当前任务（生成成功后调用）
+   * 写入 localStorage 以便页面刷新后恢复
    */
+  const saveActiveTask = (taskId, framework) => {
+    activeTaskId.value = taskId
+    activeTaskFramework.value = framework
+    taskStatus.value = 'running'
+    localStorage.setItem(RESTORE_KEY, JSON.stringify({ taskId, framework }))
+  }
+
+  /**
+   * 清除当前任务（用户手动清除或任务结束）
+   */
+  const clearActiveTask = () => {
+    activeTaskId.value = null
+    activeTaskFramework.value = ''
+    taskStatus.value = 'idle'
+    taskProgress.value = 0
+    taskCurrentStep.value = ''
+    taskErrorMsg.value = ''
+    sse.disconnect()
+    localStorage.removeItem(RESTORE_KEY)
+  }
+
+  /**
+   * 从 localStorage 恢复任务状态
+   * 页面挂载时调用，用于用户刷新后恢复进度
+   */
+  const restoreTask = async () => {
+    const saved = localStorage.getItem(RESTORE_KEY)
+    if (!saved) return null
+
+    try {
+      const { taskId, framework } = JSON.parse(saved)
+      activeTaskId.value = taskId
+      activeTaskFramework.value = framework || ''
+
+      const res = await commonApi.getTaskById(taskId)
+      if (!res || !res.data) {
+        localStorage.removeItem(RESTORE_KEY)
+        return null
+      }
+
+      const data = res.data
+      taskProgress.value = data.progress || 0
+      taskCurrentStep.value = data.current_step || ''
+      activeTaskFramework.value = data.target || framework || ''
+
+      if (data.status === 'pending' || data.status === 'running') {
+        // 任务还在执行 → 重连 SSE
+        taskStatus.value = data.status
+        sse.connect(taskId)
+        return { taskId, status: data.status, framework: activeTaskFramework.value }
+
+      } else if (data.status === 'success' && data.result) {
+        // 任务已完成 → 展示结果
+        taskStatus.value = 'success'
+        template.templateCode = data.result.code || ''
+        template.previewCode = data.result.preview || ''
+        template.id = data.result.id || null
+        return { taskId, status: 'success', framework: activeTaskFramework.value }
+
+      } else if (data.status === 'failed') {
+        taskStatus.value = 'failed'
+        taskErrorMsg.value = '任务执行失败'
+        return { taskId, status: 'failed', framework: activeTaskFramework.value }
+      }
+    } catch {
+      localStorage.removeItem(RESTORE_KEY)
+    }
+    return null
+  }
+
+  // ═══ 模板数据初始化 ═════════════════════════════════════
+
   const initTemplateData = async (id = 1) => {
-    // SSE 活跃时跳过（避免覆盖实时生成的数据）
     if (sse.status.value === 'streaming') return
 
     if (!dataLoaded) {
@@ -94,7 +172,6 @@ export function useGeneration () {
         // 接口不可用时静默降级
       }
     } else if (renderer.isPaused.value) {
-      // 已加载但暂停中（离开可视区后再次进入）
       renderer.resume()
     } else if (!renderer.isActive.value) {
       // 流式已结束，无需操作
@@ -117,6 +194,17 @@ export function useGeneration () {
     // ── 统一数据出口 ──
     template,
 
+    // ── 任务生命周期 ──
+    activeTaskId,
+    taskStatus,
+    taskProgress,
+    taskCurrentStep,
+    taskErrorMsg,
+    isBusy,
+    saveActiveTask,
+    clearActiveTask,
+    restoreTask,
+
     // ── 模板加载（SSEGenerator 用）──
     initTemplateData,
     pauseStreaming: renderer.pause,
@@ -126,7 +214,7 @@ export function useGeneration () {
     sseStatus: sse.status,
     sseError: sse.error,
     sseData: sse.sseData,
-    connectSSE: sse.connect,
+    connectSSE: (taskId) => sse.connect(taskId),
     disconnectSSE: sse.disconnect,
     isAvailable: sse.isAvailable,
     isAlive: sse.isAlive,

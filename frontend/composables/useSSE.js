@@ -103,8 +103,8 @@ export function useSSE () {
     }
   }
 
-  // ═══ 建立裸 SSE 长连接（订阅 Broker） ═══
-  const connect = async () => {
+  // ═══ 建立 SSE 长连接（按 taskID 订阅） ═══
+  const connect = async (taskId) => {
     if (status.value === 'connecting' || status.value === 'streaming') {
       log('已有活跃连接，跳过:', status.value)
       return
@@ -125,7 +125,7 @@ export function useSSE () {
     }, timeout)
 
     try {
-      const response = await aiApi.connect(abortController.signal)
+      const response = await aiApi.connect(taskId, abortController.signal)
       clearTimeout(timeoutId)
 
       if (!response.ok) {

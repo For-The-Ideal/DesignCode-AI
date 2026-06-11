@@ -44,12 +44,14 @@ type Task struct {
 // TaskStatusResponse GET /api/v1/task/:id 的完整响应
 //   task_id       - 任务唯一标识
 //   status        - pending | running | success | failed
+//   target        - flutter | vue3 | react
 //   progress      - 执行进度 0-100
 //   current_step  - 当前执行步骤，如 VisionAnalyzeSkill / FlutterGenerateSkill
 //   can_sse       - 是否可以连接 SSE（true=运行中可连，false=已结束无需连）
 //   result        - 生成结果（仅 success 时有值）
 type TaskStatusResponse struct {
 	TaskID      string     `json:"task_id"`
+	Target      string     `json:"target"`
 	Status      TaskStatus `json:"status"`
 	Progress    int        `json:"progress"`
 	CurrentStep string     `json:"current_step"`
@@ -62,6 +64,7 @@ func (t *Task) ToTaskStatusResponse(result *Result) *TaskStatusResponse {
 	canSSE := t.Status == TaskStatusPending || t.Status == TaskStatusRunning
 	return &TaskStatusResponse{
 		TaskID:      t.ID,
+		Target:      t.Target,
 		Status:      t.Status,
 		Progress:    t.Progress,
 		CurrentStep: t.CurrentStep,

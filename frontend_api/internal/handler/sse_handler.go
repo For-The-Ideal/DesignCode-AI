@@ -5,6 +5,7 @@ import (
 	"frontend_api/internal/sse"
 	"frontend_api/pkg/logger"
 	"log"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -12,6 +13,9 @@ import (
 // ═══════════════════════════════════════════════
 //  SSEHandler — GET /api/v1/task/:id/events
 //  职责：建立 SSE 长连接，按 taskID 订阅事件并推送给前端
+//
+//  POST /api/v1/task/sse — Broker 连接
+//  职责：建立裸 SSE 长连接，等待后续任务事件推送
 // ═══════════════════════════════════════════════
 
 // SSEHandler SSE 事件流处理器
@@ -74,6 +78,42 @@ func (h *SSEHandler) StreamTask(c *gin.Context) {
 
 		case <-c.Request.Context().Done():
 			log.Printf("[SSE] task %s: client disconnected", taskID)
+			return
+		}
+	}
+}
+
+// StreamBroker 建立裸 SSE 长连接（Broker 模式，不绑定具体任务）
+// POST /api/v1/task/sse
+func (h *SSEHandler) StreamBroker(c *gin.Context) {
+	// 设置 SSE 响应头
+	c.Header("Content-Type", "text/event-stream")
+	c.Header("Cache-Control", "no-cache")
+	c.Header("Connection", "keep-alive")
+	c.Header("X-Accel-Buffering", "no")
+	c.Status(200)
+
+	flusher, ok := c.Writer.(interface{ Flush() })
+	if !ok {
+		fmt.Fprintf(c.Writer, "event: error\ndata: 服务端不支持流式传输\n\n")
+		return
+	}
+
+	h.log.Infof("[SSE Broker] client connected")
+
+	// 发送 connected 事件
+	writeSSEEvent(c, flusher, "connected", "ok")
+
+	// 保持连接，定时发送心跳防止断开
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			writeSSEEvent(c, flusher, "heartbeat", "")
+		case <-c.Request.Context().Done():
+			log.Printf("[SSE Broker] client disconnected")
 			return
 		}
 	}
