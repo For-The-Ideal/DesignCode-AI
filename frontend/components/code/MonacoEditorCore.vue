@@ -236,12 +236,12 @@ const doScrollToBottom = () => {
   editor.revealLine(lastLine, 1) // 平滑滚动到末尾（1 = Immediate）
 }
 
-// 监听外部值变化
+// 监听外部值变化（flush:'post' 确保 Vue DOM 更新优先，避免阻塞预览渲染）
 watch(() => props.value, (newValue) => {
   if (editor && editor.getValue() !== newValue) {
     editor.setValue(newValue || '')
   }
-})
+}, { flush: 'post' })
 
 // 监听语言变化
 watch(() => props.language, () => {

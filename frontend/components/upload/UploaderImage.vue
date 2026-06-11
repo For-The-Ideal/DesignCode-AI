@@ -120,10 +120,11 @@
 </template>
 
 <script setup>
-import { ref, computed, inject } from 'vue'
+import { ref, computed } from 'vue'
 import DescEditorModal from './DescEditorModal.vue'
 import { identifyApi } from "~/api/identify.js"
 import { ElMessage } from 'element-plus'
+import { useSSE } from '~/composables/useSSE'
 const emit = defineEmits(['generated'])
 
 // 图片列表
@@ -137,8 +138,10 @@ const maxLen = ref(5) // 最多5张
 // 评分数据
 const score = ref(0)
 const scoreDimensions = ref([])
-// 生成状态 — 从父组件注入，和编辑器共享同一 SSE 实例
-const { generating, setGenerating, isAvailable } = inject('generation')
+
+const { isAvailable, isAlive, status } = useSSE()
+// 本地按钮锁（点击→SSE connected 之间防连点）
+const generating = ref(false)
 
 // 描述弹窗
 const descEditorRef = ref(null)
@@ -147,6 +150,7 @@ const editingIndex = ref(null)
 
 // 计算是否达到上限
 const isMaxReached = computed(() => images.value.length >= maxLen.value)
+
 
 // 触发文件选择
 const triggerFileInput = () => {
@@ -244,6 +248,7 @@ const generateCode = async () => {
     return
   }
 
+  generating.value = true
   try {
     // 构建设计稿数组 - 图片和描述在同一个对象里
     const designs = await Promise.all(
@@ -265,25 +270,26 @@ const generateCode = async () => {
     console.log('[Uploader] SSE isAvailable:', isAvailable())
 
     // 通知后端开始生成 → 后端通过 Broker → SSE 推送前端
-    setGenerating(true)
     const result = await identifyApi.sendFile(payload)
     console.log('[Uploader] result:', result)
 
     if (!result || !result.data || result.data.status !== 'generating') {
-      setGenerating(false)
+      generating.value = false
       ElMessage.error('AI 启动失败，请稍后重试')
       return
     }
 
-    // ElMessage.success('AI 已接收请求，正在生成代码...')
+    // 请求成功，释放按钮锁
+    // SSE streaming 期间的防连点由 template 中的 status === 'streaming' 接管
+    generating.value = false
+
     // 后续流程由 SSE 事件驱动：
-    //   event:message/preview/score → template 实时更新 → CodeEditor + FlutterTemplate 渲染
-    //   event:done → generating=false → code.vue watch → hasGenerated=true
-    //   无需在此处 emit('generated')，避免与 SSE done 事件冲突
+    //   event:message → sseData.templateCode 实时累加 → CodeEditor + FlutterTemplate 渲染
+    //   event:done   → status='idle' → 按钮恢复可点击
 
   } catch (error) {
     console.error('[Uploader] 生成失败:', error)
-    setGenerating(false)
+    generating.value = false
     ElMessage.error('生成失败，请稍后重试')
   }
 }

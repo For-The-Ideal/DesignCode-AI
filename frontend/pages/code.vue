@@ -79,28 +79,21 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted, provide } from 'vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
 import CodeEditor from '~/components/code/CodeEditor.vue'
 import FlutterTemplate from '@/components/common/FlutterTemplate.vue'
 import UploaderImage from '~/components/upload/UploaderImage.vue'
 import { useGeneration } from '~/composables/useGeneration'
+
 import { ElMessage } from 'element-plus'
-// ═══ 生成流程 composable ═══
-const gen = useGeneration()
+// ═══ 生成流程 composable（SSE + 流式渲染 统一入口）═══
 const {
   template,
   sseStatus,
-  sseError,
   connectSSE,
+  disconnectSSE,
   cleanup,
-} = gen
-
-// 提供给子组件（UploaderImage）共享同一 SSE 实例
-provide('generation', {
-  generating: gen.generating,
-  setGenerating: gen.setGenerating,
-  isAvailable: gen.isAvailable,
-})
+} = useGeneration()
 
 // ═══ 页面状态 ═══
 const hasGenerated = ref(false)
@@ -117,15 +110,15 @@ const langMap = {
 // ═══ 监听 SSE 流式输出 → 驱动视图更新 ═══
 
 /** 监听代码内容变化，自动标记为已生成 */
-watch(() => template.value.templateCode, (code) => {
+watch(() => template.templateCode, (code) => {
   if (code && code.length > 0 && !hasGenerated.value) {
     hasGenerated.value = true
   }
 })
 
 /** 监听 SSE 状态变化 */
-watch(sseStatus, (status) => {
-  if (status === 'done' && template.value.templateCode) {
+watch(sseStatus, (val) => {
+  if (val === 'done' && template.templateCode && template.templateCode.length > 0) {
     hasGenerated.value = true
   }
 })
@@ -150,13 +143,14 @@ onMounted(() => {
 
 onUnmounted(() => {
   cleanup()
+  disconnectSSE()
 })
 
 // ═══ 工具栏操作 ═══
 
 const handleCopy = async () => {
   try {
-    await navigator.clipboard.writeText(template.value.templateCode)
+    await navigator.clipboard.writeText(template.templateCode)
     ElMessage.success('已复制到剪贴板')
   } catch {
     ElMessage.error('复制失败')
@@ -165,7 +159,7 @@ const handleCopy = async () => {
 
 const handleFormat = () => {
   let indent = 0
-  template.value.templateCode = template.value.templateCode.split('\n').map(line => {
+  template.templateCode = template.templateCode.split('\n').map(line => {
     const t = line.trim()
     if (!t) return ''
     if (/^[})]/.test(t)) indent = Math.max(0, indent - 1)
@@ -178,7 +172,7 @@ const handleFormat = () => {
 
 const handleDownload = () => {
   const ext = codeLanguage.value === 'dart' ? 'dart' : codeLanguage.value === 'typescript' ? 'tsx' : 'vue'
-  const blob = new Blob([template.value.templateCode], { type: 'text/plain' })
+  const blob = new Blob([template.templateCode], { type: 'text/plain' })
   const a = document.createElement('a')
   a.href = URL.createObjectURL(blob)
   a.download = `generated.${ext}`

@@ -17,6 +17,6 @@ func InitRoutes(r *gin.Engine) {
 		InitGenerateRoutes(api)
 
 		// SSE 流式代码生成路由
-		InitSSERoutes(api)
+		InitAiRoutes(api)
 	}
 }

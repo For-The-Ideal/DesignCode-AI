@@ -45,3 +45,8 @@ func Unauthorized(c *gin.Context, message string) {
 func InternalError(c *gin.Context, message string) {
 	Error(c, http.StatusInternalServerError, message)
 }
+
+// Fail 业务失败响应（AI 生成失败等场景）
+func Fail(c *gin.Context, message string) {
+	Error(c, http.StatusInternalServerError, message)
+}

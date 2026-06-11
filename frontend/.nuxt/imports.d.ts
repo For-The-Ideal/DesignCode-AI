@@ -34,6 +34,7 @@ export { defineLazyHydrationComponent } from '#app/composables/lazy-hydration';
 export { useCardSpreadAnimation } from '../composables/useCardSpreadAnimation';
 export { useGeneration } from '../composables/useGeneration';
 export { useSSE } from '../composables/useSSE';
+export { useStreamRenderer } from '../composables/useStreamRenderer';
 export { showElectronNotification, setEncrypt, getDecrypt } from '../utils/index';
 export { default as request } from '../utils/request';
 export { useUserStore } from '../stores/user';

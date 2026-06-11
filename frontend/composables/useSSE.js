@@ -1,27 +1,42 @@
-import { ref, onUnmounted } from 'vue'
-import { sseApi } from '~/api/sse'
+import { ref, reactive } from 'vue'
+import { aiApi } from '~/api/ai'
 import { ElMessage } from 'element-plus'
 
 /**
- * useSSE — 代码生成 SSE 客户端 composable
+ * useSSE — 代码生成 SSE 客户端 composable（模块级单例）
  *
- * 流程：
- *   connect() → sseApi.connect() → POST /api/sse → Broker 订阅 → 等待事件
- *   业务端调用 identifyApi.sendFile → POST /api/generate/send
- *     → Broker 推送事件 → SSE ReadableStream 收到 → handleEvent → template refs 更新
- */
-export function useSSE ({ template, generating }) {
-  const status = ref('idle')
-  const error = ref('')
-  const retry = ref(0)
+ * status 值	含义	页面可做的事
+  'idle'	空闲	显示"连接 SSE"按钮
+  'connecting'	连接中	显示加载态
+  'streaming'	SSE响应中 ✅	显示流式进度
+  'done'	SSE响应完成 ✅	显示完成提示
+  'error'	单次连接失败（会自动重试）	显示"重连中..."
+  'maxRetries'	最大次数失败 ✅	显示"连接失败，请手动重试"
 
-  let abortController = null
-  let reader = null
-  let active = false
-  const maxRetries = 3
-  const retryDelay = 1500
-  const maxRetryDelay = 30000
-  const timeout = 120000
+ */
+
+// ═══ 模块级共享状态 ═══
+const status = ref('idle')
+const error = ref('')
+const retry = ref(0)
+
+const sseData = reactive({
+  templateCode: '',
+  previewCode: '',
+  id: null,        // 对齐 auth.go 模板接口 { template_code, preview_code, id }
+  score: 0,
+  dimensions: [],
+})
+
+let abortController = null
+let reader = null
+let active = false
+const maxRetries = 3
+const retryDelay = 1500
+const maxRetryDelay = 30000
+const timeout = 120000
+
+export function useSSE () {
 
   // ═══ 日志 ═══
   const log = (msg, ...args) => {
@@ -60,24 +75,27 @@ export function useSSE ({ template, generating }) {
         log('SSE 连接已确认，等待 Broker 推送...')
         break
       case 'message':
-        template.value.templateCode += data
+        sseData.templateCode += data
         break
       case 'preview':
-        template.value.previewCode = data
+        sseData.previewCode = data
         log('预览 HTML 已更新')
         break
       case 'score':
         try {
           const parsed = JSON.parse(data)
-          template.value.score = parsed.score
-          template.value.dimensions = parsed.dimensions
+          sseData.score = parsed.score
+          sseData.dimensions = parsed.dimensions
           log('评分数据已接收', parsed)
         } catch { log('评分解析失败', data) }
         break
       case 'done':
-        log('SSE 流传输完成，共接收', template.value.templateCode.length, '个字符')
+        log('SSE 流传输完成，共接收', sseData.templateCode.length, '个字符')
+        try {
+          const doneData = JSON.parse(data)
+          sseData.id = doneData.id || null
+        } catch { /* data 非 JSON 时忽略 */ }
         status.value = 'idle'
-        generating.value = false
         break
       case 'error':
         log('服务端错误', data)
@@ -97,6 +115,8 @@ export function useSSE ({ template, generating }) {
     active = true
     status.value = 'connecting'
     error.value = ''
+    retry.value = 0
+    Object.assign(sseData, { templateCode: '', previewCode: '', id: null, score: 0, dimensions: [] })
     abortController = new AbortController()
 
     const timeoutId = setTimeout(() => {
@@ -105,7 +125,7 @@ export function useSSE ({ template, generating }) {
     }, timeout)
 
     try {
-      const response = await sseApi.connect(abortController.signal)
+      const response = await aiApi.connect(abortController.signal)
       clearTimeout(timeoutId)
 
       if (!response.ok) {
@@ -170,15 +190,17 @@ export function useSSE ({ template, generating }) {
       } else if (retry.value >= maxRetries) {
         ElMessage.error('已达最大重连次数，放弃连接')
         error.value += ' — 已达最大重连次数'
-        status.value = 'error'
+        status.value = 'maxRetries'
       }
     }
   }
 
+  // SSE 连接是否可用（空闲 / 流式传输中 / 已完成）
   function isAvailable () {
     return status.value === 'idle' || status.value === 'streaming' || status.value === 'done'
   }
 
+  // 正在连接中，或正在流式传输中
   function isAlive () {
     return status.value === 'connecting' || status.value === 'streaming'
   }
@@ -198,9 +220,5 @@ export function useSSE ({ template, generating }) {
     error.value = ''
   }
 
-  onUnmounted(() => {
-    disconnect()
-  })
-
-  return { status, error, retry, connect, disconnect, isAvailable, isAlive }
+  return { status, error, retry, sseData, connect, disconnect, isAvailable, isAlive }
 }
