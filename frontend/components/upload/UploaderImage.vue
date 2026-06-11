@@ -122,7 +122,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import DescEditorModal from './DescEditorModal.vue'
-import { identifyApi } from "~/api/identify.js"
+import { commonApi } from "~/api/common.js"
 import { ElMessage } from 'element-plus'
 import { useSSE } from '~/composables/useSSE'
 const emit = defineEmits(['generated'])
@@ -270,7 +270,7 @@ const generateCode = async () => {
     console.log('[Uploader] SSE isAvailable:', isAvailable())
 
     // 通知后端开始生成 → 后端通过 Broker → SSE 推送前端
-    const result = await identifyApi.sendFile(payload)
+    const result = await commonApi.generateUi(payload)
     console.log('[Uploader] result:', result)
 
     if (!result || !result.data || result.data.status !== 'generating') {

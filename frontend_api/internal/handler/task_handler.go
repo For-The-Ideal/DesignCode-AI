@@ -1,0 +1,169 @@
+package handler
+
+import (
+	"frontend_api/internal/model"
+	"frontend_api/internal/queue"
+	"frontend_api/internal/repository"
+	"frontend_api/pkg/logger"
+	"frontend_api/pkg/mysql"
+	"frontend_api/utils"
+	"strconv"
+	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+)
+
+// ═══════════════════════════════════════════════
+//  TaskHandler
+//  POST /api/v1/generate-ui  — 创建生成任务
+//  GET  /api/v1/task/:id     — 查询任务状态
+// ═══════════════════════════════════════════════
+
+// CreateTaskRequest 创建任务请求
+//
+//	target - flutter | vue3 | react
+//	images - 设计稿图片列表
+type CreateTaskRequest struct {
+	Target string            `json:"target" binding:"required"`
+	Images []model.TaskImage `json:"images" binding:"required,min=1"`
+}
+
+// TaskHandler 任务处理器
+type TaskHandler struct {
+	taskRepo   *repository.TaskRepository
+	resultRepo *repository.ResultRepository
+	queue      queue.Queue
+	log        *logger.Logger
+}
+
+// NewTaskHandler 创建任务处理器
+func NewTaskHandler(taskRepo *repository.TaskRepository, resultRepo *repository.ResultRepository, q queue.Queue) *TaskHandler {
+	return &TaskHandler{
+		taskRepo:   taskRepo,
+		resultRepo: resultRepo,
+		queue:      q,
+		log:        logger.NewLogger("task-handler"),
+	}
+}
+
+// ── POST /api/v1/generate-ui ──────────────────
+
+// CreateTask 创建生成任务
+//
+//	请求：{"target":"flutter","images":[{"url":"...","desc":"..."}]}
+//	流程：校验参数 → 创建 Task(status=pending) → 入队
+//	响应：{"task_id":"xxx","status":"pending"}
+func (h *TaskHandler) CreateTask(c *gin.Context) {
+	var req CreateTaskRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.BadRequest(c, "参数校验失败: "+err.Error())
+		return
+	}
+
+	// 校验 target
+	validTargets := map[string]bool{"flutter": true, "vue3": true, "react": true}
+	if !validTargets[req.Target] {
+		utils.BadRequest(c, "target 必须是 flutter/vue3/react 之一")
+		return
+	}
+
+	// 创建任务
+	task := &model.Task{
+		ID:        uuid.New().String(),
+		Target:    req.Target,
+		Images:    req.Images,
+		Status:    model.TaskStatusPending,
+		Progress:  0,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+
+	// 保存到 DB
+	if err := h.taskRepo.Create(task); err != nil {
+		h.log.Errorf("保存任务失败: %v", err)
+		utils.InternalError(c, "创建任务失败")
+		return
+	}
+
+	// 入队
+	if err := h.queue.Enqueue(task.ID); err != nil {
+		h.log.Errorf("任务入队失败: %v", err)
+		utils.InternalError(c, "任务入队失败")
+		return
+	}
+
+	h.log.Infof("任务创建成功: id=%s, target=%s", task.ID, task.Target)
+
+	utils.Success(c, gin.H{
+		"task_id": task.ID,
+		"status":  task.Status,
+	}, "任务创建成功")
+}
+
+// ── GET /api/v1/task/:id ──────────────────────
+
+// GetTask 查询任务状态（页面刷新恢复用）
+//
+//	返回：
+//	  task_id       - 任务 ID
+//	  status        - pending | running | success | failed
+//	  progress      - 当前进度 0-100
+//	  current_step  - 当前执行步骤（如 VisionAnalyzeSkill / FlutterGenerateSkill）
+//	  can_sse       - 是否可以继续连接 SSE
+//	  result        - 生成结果（仅 success 时有值）
+//
+//	页面刷新流程：
+//	  1. 从 localStorage 读取 task_id
+//	  2. 请求 GET /api/v1/task/{task_id}
+//	  3. 如果 can_sse=true → 重新连接 SSE
+//	  4. 前端恢复进度显示
+func (h *TaskHandler) GetTask(c *gin.Context) {
+	id := c.Param("id")
+	task, err := h.taskRepo.GetByID(id)
+	if err != nil || task == nil {
+		utils.Error(c, 404, "任务不存在")
+		return
+	}
+
+	// 查询关联结果
+	var result *model.Result
+	if task.Status == model.TaskStatusSuccess {
+		r, err := h.resultRepo.GetByTaskID(task.ID)
+		if err == nil {
+			result = r
+		}
+	}
+
+	resp := task.ToTaskStatusResponse(result)
+	utils.Success(c, resp, "获取成功")
+}
+
+// 获取模版
+func (h *TaskHandler) GetTemplate(c *gin.Context) {
+	idStr := c.Query("id")
+
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		utils.BadRequest(c, "模版获取失败: "+err.Error())
+		return
+	}
+
+	db := mysql.GetDB()
+	if db == nil {
+		utils.InternalError(c, "数据库未连接: "+err.Error())
+		return
+	}
+
+	var tmpl model.TaskTemplate
+	if err := db.Where("id = ?", id).First(&tmpl).Error; err != nil {
+		utils.Error(c, 404, "模版获取失败: "+err.Error())
+		return
+	}
+
+	utils.Success(c, gin.H{
+		"id":            tmpl.ID,
+		"template_code": tmpl.TemplateCode,
+		"preview_code":  tmpl.PreviewCode,
+	}, "获取成功")
+}

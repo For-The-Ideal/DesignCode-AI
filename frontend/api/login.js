@@ -3,7 +3,7 @@ import httpRequest from "~/utils/request";
 export const loginApi = {
   async captcha(server = true) {
     let options = {
-      url: `/api/captcha`,
+      url: `/api/v1/captcha`,
       method: "get",
       server,
     };
@@ -12,7 +12,7 @@ export const loginApi = {
   },
   async login(params = {}, server = true) {
     let options = {
-      url: `/api/login`,
+      url: `/api/v1/auth/login`,
       method: "post",
       params,
       server,
@@ -22,7 +22,7 @@ export const loginApi = {
   },
   async logout(params = {}, server = true) {
     let options = {
-      url: `/api/logout`,
+      url: `/api/v1/auth/logout`,
       method: "post",
       params,
       server,
@@ -32,22 +32,12 @@ export const loginApi = {
   },
   async register(params = {}, server = true) {
     let options = {
-      url: `/api/register`,
+      url: `/api/v1/auth/register`,
       method: "post",
       params,
       server,
     };
     let result = await httpRequest.post(options);
-    return result;
-  },
-  async template(params = {}, server = true) {
-    let options = {
-      url: `/api/template`,
-      method: "get",
-      params,
-      server,
-    };
-    let result = await httpRequest.get(options);
     return result;
   },
 };

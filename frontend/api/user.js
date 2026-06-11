@@ -3,7 +3,7 @@ import httpRequest from "~/utils/request";
 export const userApi = {
   async userInfo(params = {}, server = true) {
     let options = {
-      url: `/api/user/info`,
+      url: `/api/v1/user/info`,
       method: "post",
       params,
       server,
@@ -14,7 +14,7 @@ export const userApi = {
   
   async updateUserInfo(params = {}, server = true) {
     let options = {
-      url: `/api/user/update`,
+      url: `/api/v1/user/update`,
       method: "post",
       params,
       server,
@@ -25,7 +25,7 @@ export const userApi = {
 
   async updatePassword(params = {}, server = true) {
     let options = {
-      url: `/api/user/updatePassword`,
+      url: `/api/v1/user/updatePassword`,
       method: "post",
       params,
       server,

@@ -1,7 +1,7 @@
 import { reactive, watch, onUnmounted } from 'vue'
 import { useSSE } from './useSSE'
 import { useStreamRenderer } from './useStreamRenderer'
-import { loginApi } from '~/api/login'
+import { commonApi } from '~/api/common'
 
 /**
  * useGeneration — 代码生成流程编排 composable
@@ -74,14 +74,13 @@ export function useGeneration () {
    * 再次进入可视区：renderer.resume() 继续
    * 已输出完毕：无操作
    */
-  const initTemplateData = async () => {
+  const initTemplateData = async (id = 1) => {
     // SSE 活跃时跳过（避免覆盖实时生成的数据）
     if (sse.status.value === 'streaming') return
 
     if (!dataLoaded) {
-      const id = 1
       try {
-        const { data } = await loginApi.template({ template: id })
+        const { data } = await commonApi.getTemplate({ id: id })
         if (data.id) {
           template.id = data.id
           templatePreviewCode = data.preview_code || ''
