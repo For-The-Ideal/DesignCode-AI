@@ -5,14 +5,4 @@ export default defineNuxtPlugin((nuxtApp) => {
         console.error('Pinia not installed!')
         return
     }
-    
-    // try {
-    //     const userStore = useUserStore(nuxtApp.$pinia)
-    //     console.log('Store initialized:', userStore)
-        
-    //     // 初始化 store
-    //     userStore.initialize()
-    // } catch (error) {
-    //     console.error('Error initializing store:', error)
-    // }
 })

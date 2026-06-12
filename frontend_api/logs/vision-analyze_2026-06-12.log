@@ -1,0 +1,732 @@
+[2026-06-12 09:23:16] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿...
+[2026-06-12 09:23:16] [INFO] [vision-analyze] [VisionAnalyzeSkill] 分析完成，DSL: {
+  "page_name": "LoginPage",
+  "layout": "column",
+  "components": [
+    {
+      "type": "image",
+      "id": "logo"
+    },
+    {
+      "type": "input",
+      "id": "username"
+    },
+    {
+      "type": "password",
+      "id": "password"
+    },
+    {
+      "type": "button",
+      "id": "login"
+    }
+  ]
+}
+[2026-06-12 09:23:43] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿...
+[2026-06-12 09:23:43] [INFO] [vision-analyze] [VisionAnalyzeSkill] 分析完成，DSL: {
+  "page_name": "LoginPage",
+  "layout": "column",
+  "components": [
+    {
+      "type": "image",
+      "id": "logo"
+    },
+    {
+      "type": "input",
+      "id": "username"
+    },
+    {
+      "type": "password",
+      "id": "password"
+    },
+    {
+      "type": "button",
+      "id": "login"
+    }
+  ]
+}
+[2026-06-12 12:34:15] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿...
+[2026-06-12 12:34:15] [INFO] [vision-analyze] [VisionAnalyzeSkill] 分析完成，DSL: {
+  "page_name": "LoginPage",
+  "layout": "column",
+  "components": [
+    {
+      "type": "image",
+      "id": "logo"
+    },
+    {
+      "type": "input",
+      "id": "username"
+    },
+    {
+      "type": "password",
+      "id": "password"
+    },
+    {
+      "type": "button",
+      "id": "login"
+    }
+  ]
+}
+[2026-06-12 12:42:39] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿...
+[2026-06-12 12:42:39] [INFO] [vision-analyze] [VisionAnalyzeSkill] 分析完成，DSL: {
+  "page_name": "LoginPage",
+  "layout": "column",
+  "components": [
+    {
+      "type": "image",
+      "id": "logo"
+    },
+    {
+      "type": "input",
+      "id": "username"
+    },
+    {
+      "type": "password",
+      "id": "password"
+    },
+    {
+      "type": "button",
+      "id": "login"
+    }
+  ]
+}
+[2026-06-12 13:03:19] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿...
+[2026-06-12 13:03:19] [INFO] [vision-analyze] [VisionAnalyzeSkill] 分析完成，DSL: {
+  "page_name": "LoginPage",
+  "layout": "column",
+  "components": [
+    {
+      "type": "image",
+      "id": "logo"
+    },
+    {
+      "type": "input",
+      "id": "username"
+    },
+    {
+      "type": "password",
+      "id": "password"
+    },
+    {
+      "type": "button",
+      "id": "login"
+    }
+  ]
+}
+[2026-06-12 13:09:21] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿...
+[2026-06-12 13:09:21] [INFO] [vision-analyze] [VisionAnalyzeSkill] 分析完成，DSL: {
+  "page_name": "LoginPage",
+  "layout": "column",
+  "components": [
+    {
+      "type": "image",
+      "id": "logo"
+    },
+    {
+      "type": "input",
+      "id": "username"
+    },
+    {
+      "type": "password",
+      "id": "password"
+    },
+    {
+      "type": "button",
+      "id": "login"
+    }
+  ]
+}
+[2026-06-12 13:16:02] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿...
+[2026-06-12 13:16:02] [INFO] [vision-analyze] [VisionAnalyzeSkill] 分析完成，DSL: {
+  "page_name": "LoginPage",
+  "layout": "column",
+  "components": [
+    {
+      "type": "image",
+      "id": "logo"
+    },
+    {
+      "type": "input",
+      "id": "username"
+    },
+    {
+      "type": "password",
+      "id": "password"
+    },
+    {
+      "type": "button",
+      "id": "login"
+    }
+  ]
+}
+[2026-06-12 13:16:55] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿...
+[2026-06-12 13:16:55] [INFO] [vision-analyze] [VisionAnalyzeSkill] 分析完成，DSL: {
+  "page_name": "LoginPage",
+  "layout": "column",
+  "components": [
+    {
+      "type": "image",
+      "id": "logo"
+    },
+    {
+      "type": "input",
+      "id": "username"
+    },
+    {
+      "type": "password",
+      "id": "password"
+    },
+    {
+      "type": "button",
+      "id": "login"
+    }
+  ]
+}
+[2026-06-12 13:22:58] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿...
+[2026-06-12 13:22:58] [INFO] [vision-analyze] [VisionAnalyzeSkill] 分析完成，DSL: {
+  "page_name": "LoginPage",
+  "layout": "column",
+  "components": [
+    {
+      "type": "image",
+      "id": "logo"
+    },
+    {
+      "type": "input",
+      "id": "username"
+    },
+    {
+      "type": "password",
+      "id": "password"
+    },
+    {
+      "type": "button",
+      "id": "login"
+    }
+  ]
+}
+[2026-06-12 13:23:32] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿...
+[2026-06-12 13:23:32] [INFO] [vision-analyze] [VisionAnalyzeSkill] 分析完成，DSL: {
+  "page_name": "LoginPage",
+  "layout": "column",
+  "components": [
+    {
+      "type": "image",
+      "id": "logo"
+    },
+    {
+      "type": "input",
+      "id": "username"
+    },
+    {
+      "type": "password",
+      "id": "password"
+    },
+    {
+      "type": "button",
+      "id": "login"
+    }
+  ]
+}
+[2026-06-12 13:33:45] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿...
+[2026-06-12 13:33:45] [INFO] [vision-analyze] [VisionAnalyzeSkill] 分析完成，DSL: {
+  "page_name": "LoginPage",
+  "layout": "column",
+  "components": [
+    {
+      "type": "image",
+      "id": "logo"
+    },
+    {
+      "type": "input",
+      "id": "username"
+    },
+    {
+      "type": "password",
+      "id": "password"
+    },
+    {
+      "type": "button",
+      "id": "login"
+    }
+  ]
+}
+[2026-06-12 13:35:46] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿...
+[2026-06-12 13:35:46] [INFO] [vision-analyze] [VisionAnalyzeSkill] 分析完成，DSL: {
+  "page_name": "LoginPage",
+  "layout": "column",
+  "components": [
+    {
+      "type": "image",
+      "id": "logo"
+    },
+    {
+      "type": "input",
+      "id": "username"
+    },
+    {
+      "type": "password",
+      "id": "password"
+    },
+    {
+      "type": "button",
+      "id": "login"
+    }
+  ]
+}
+[2026-06-12 13:47:58] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿...
+[2026-06-12 13:47:58] [INFO] [vision-analyze] [VisionAnalyzeSkill] 分析完成，DSL: {
+  "page_name": "LoginPage",
+  "layout": "column",
+  "components": [
+    {
+      "type": "image",
+      "id": "logo"
+    },
+    {
+      "type": "input",
+      "id": "username"
+    },
+    {
+      "type": "password",
+      "id": "password"
+    },
+    {
+      "type": "button",
+      "id": "login"
+    }
+  ]
+}
+[2026-06-12 13:49:38] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿...
+[2026-06-12 13:49:38] [INFO] [vision-analyze] [VisionAnalyzeSkill] 分析完成，DSL: {
+  "page_name": "LoginPage",
+  "layout": "column",
+  "components": [
+    {
+      "type": "image",
+      "id": "logo"
+    },
+    {
+      "type": "input",
+      "id": "username"
+    },
+    {
+      "type": "password",
+      "id": "password"
+    },
+    {
+      "type": "button",
+      "id": "login"
+    }
+  ]
+}
+[2026-06-12 13:49:51] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿...
+[2026-06-12 13:49:51] [INFO] [vision-analyze] [VisionAnalyzeSkill] 分析完成，DSL: {
+  "page_name": "LoginPage",
+  "layout": "column",
+  "components": [
+    {
+      "type": "image",
+      "id": "logo"
+    },
+    {
+      "type": "input",
+      "id": "username"
+    },
+    {
+      "type": "password",
+      "id": "password"
+    },
+    {
+      "type": "button",
+      "id": "login"
+    }
+  ]
+}
+[2026-06-12 14:28:16] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿...
+[2026-06-12 14:28:16] [INFO] [vision-analyze] [VisionAnalyzeSkill] 分析完成，DSL: {
+  "page_name": "LoginPage",
+  "layout": "column",
+  "components": [
+    {
+      "type": "image",
+      "id": "logo"
+    },
+    {
+      "type": "input",
+      "id": "username"
+    },
+    {
+      "type": "password",
+      "id": "password"
+    },
+    {
+      "type": "button",
+      "id": "login"
+    }
+  ]
+}
+[2026-06-12 15:52:45] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿 (1 张图片)...
+[2026-06-12 15:55:27] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿 (1 张图片)...
+[2026-06-12 15:55:34] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回: {
+  "page_name": "灵感创款",
+  "layout": "模态弹窗（居中浮层），顶部导航栏+主体内容区+底部操作按钮",
+  "components": [
+    "返回箭头图标",
+    "页面标题（‘灵感创款’）",
+    "关闭按钮（X图标）",
+    "上传区域卡片（含上传计数‘0/1’）",
+    "上传占位按钮（加号图标+文字提示）",
+    "辅助说明文本（‘以下玩法均需上传1张参考图’）",
+    "玩法选择标题（‘请选择以下细分玩法’）",
+    "六项玩法选项按钮（网格布局，2列3行）：生成同花型系列款、毛衫改款延伸、参考品牌风格植入、领型样式创新、毛衫织法延申、单品不同搭配建议",
+    "主操作按钮（‘开始生成’，黑色底色，居底固定）"
+  ]
+}
+[2026-06-12 15:55:34] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回非标准 DSL JSON: json: cannot unmarshal string into Go struct field DSL.components of type model.DSLComponent
+[2026-06-12 16:00:40] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿 (1 张图片)...
+[2026-06-12 16:00:47] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回: {
+  "page_name": "算力明细",
+  "layout": "垂直滚动单列布局，顶部为状态摘要区，中部为任务获取区，底部为收支明细标签页+列表区",
+  "components": [
+    "导航栏（含返回箭头、页面标题、更多操作图标、切换视图图标）",
+    "当前可用灵感点卡片（含图标、数值、说明文字、过期提示）",
+    "赚取灵感点功能区（含两个带图标、标题、副标题、操作按钮的卡片）",
+    "收支明细标签页导航（全部/获取/消耗）",
+    "收支明细列表项（含项目名称、状态标签、时间戳、金额及有效期说明）"
+  ]
+}
+[2026-06-12 16:00:47] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回非标准 DSL JSON: json: cannot unmarshal string into Go struct field DSL.components of type model.DSLComponent
+[2026-06-12 16:02:39] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿 (1 张图片)...
+[2026-06-12 16:02:50] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回: {
+  "page_name": "算力明细",
+  "layout": "垂直分层布局，顶部状态栏+标题栏，主体分为三大部分：当前可用值卡片区、赚取灵感点功能区、收支明细列表区；收支明细区含标签导航（全部/获取/消耗）与时间倒序交易记录列表",
+  "components": [
+    "状态栏（时间、信号、Wi-Fi、电池）",
+    "导航栏（返回箭头、页面标题“算力明细”、右侧三点菜单与圆形图标）",
+    "当前可用值卡片（绿色闪电图标、大号数字890、副标题“当前可用灵感点”、过期提示文本）",
+    "功能操作区（两个独立卡片：每日登录签到 + 签到按钮；邀请好友注册 + 即将上线灰色按钮）",
+    "标签导航栏（“全部”“获取”“消耗”，当前选中“全部”带下划线）",
+    "收支明细列表项（每项含：描述文本、标签徽章如“系统返还”、时间戳、金额及状态说明）",
+    "金额数值（右对齐，带正负号与单位“点”，部分含有效期说明如“当日24:00过期”“永久有效”）"
+  ]
+}
+[2026-06-12 16:02:50] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回非标准 DSL JSON: json: cannot unmarshal string into Go struct field DSL.components of type model.DSLComponent
+[2026-06-12 16:05:04] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿 (1 张图片)...
+[2026-06-12 16:05:11] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回: {
+  "page_name": "灵感创款",
+  "layout": "模态弹窗（居中浮层，顶部标题栏+内容区+底部操作按钮）",
+  "components": [
+    "导航栏（含返回箭头、页面标题“灵感创款”、关闭按钮）",
+    "上传区域（标题“上传图片”，进度提示“0 / 1”，加号图标按钮，辅助说明文字）",
+    "玩法选择区（标题“请选择以下细分玩法”，六项并列卡片式按钮：生成同花型系列款、毛衫改款延伸、参考品牌风格植入、领型样式创新、毛衫织法延申、单品不同搭配建议）",
+    "操作按钮（底部黑色宽按钮“开始生成”）"
+  ]
+}
+[2026-06-12 16:05:11] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回非标准 DSL JSON: json: cannot unmarshal string into Go struct field DSL.components of type model.DSLComponent
+[2026-06-12 16:08:01] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿 (1 张图片)...
+[2026-06-12 16:08:07] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回: {
+  "page_name": "灵感创款",
+  "layout": "模态弹窗（居中浮层，顶部标题栏+内容区+底部操作按钮）",
+  "components": [
+    "导航栏（含返回箭头、页面标题“灵感创款”、关闭按钮）",
+    "上传区域（标题“上传图片”，进度提示“0/1”，加号图标按钮，辅助说明文字）",
+    "选项分组标题（“请选择以下细分玩法”）",
+    "六项可选玩法按钮（网格布局，2列3行，每项为圆角矩形按钮，含文本标签）",
+    "底部主操作按钮（黑色实底按钮，文字“开始生成”）"
+  ]
+}
+[2026-06-12 16:08:07] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回非标准 DSL JSON: json: cannot unmarshal string into Go struct field DSL.components of type model.DSLComponent
+[2026-06-12 16:13:47] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿 (1 张图片)...
+[2026-06-12 16:13:51] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回: {
+  "page_name": "灵感创款",
+  "layout": "模态弹窗（居中浮层），顶部标题栏+内容区（上传区+选项区）+底部操作按钮",
+  "components": [
+    "导航返回箭头",
+    "页面标题（‘灵感创款’）",
+    "关闭按钮（X图标）",
+    "上传图片区域（含计数提示‘0/1’、加号按钮、说明文字）",
+    "细分玩法选择区（六项可点击卡片式按钮，两列三行布局）",
+    "主操作按钮（‘开始生成’，黑色实底按钮）"
+  ]
+}
+[2026-06-12 16:13:51] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回非标准 DSL JSON: json: cannot unmarshal string into Go struct field DSL.components of type model.DSLComponent
+[2026-06-12 16:23:00] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿 (1 张图片)...
+[2026-06-12 16:23:06] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回: {
+  "page_name": "灵感创款",
+  "layout": "模态弹窗（居中浮层，顶部标题栏+内容区+底部操作按钮）",
+  "components": [
+    "导航栏（含返回箭头、页面标题“灵感创款”、关闭按钮）",
+    "上传区域（标题“上传图片”，进度提示“0/1”，加号图标按钮，辅助说明文字）",
+    "玩法选择区（标题“请选择以下细分玩法”，六项并列卡片式按钮：生成同花型系列款、毛衫改款延伸、参考品牌风格植入、领型样式创新、毛衫织法延申、单品不同搭配建议）",
+    "操作按钮（底部固定黑色背景的‘开始生成’主按钮）"
+  ]
+}
+[2026-06-12 16:23:07] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回非标准 DSL JSON: json: cannot unmarshal string into Go struct field DSL.components of type model.DSLComponent
+[2026-06-12 16:24:52] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿 (1 张图片)...
+[2026-06-12 16:24:59] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回: {
+  "page_name": "灵感创款",
+  "layout": "模态弹窗（居中浮层，顶部导航栏+主体内容区+底部操作按钮）",
+  "components": [
+    "标题栏（含返回箭头、页面标题“灵感创款”、关闭按钮）",
+    "上传区域（含上传计数提示“0/1”、加号图标按钮、辅助说明文字“以下玩法均需上传1张参考图”）",
+    "选项分组标题（“请选择以下细分玩法”）",
+    "六项可选玩法按钮（网格布局：2列3行，按钮文本分别为“生成同花型系列款”“毛衫改款延伸”“参考品牌风格植入”“领型样式创新”“毛衫织法延伸”“单品不同搭配建议”）",
+    "底部主操作按钮（黑色背景、白色文字“开始生成”）"
+  ]
+}
+[2026-06-12 16:24:59] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回非标准 DSL JSON: json: cannot unmarshal string into Go struct field DSL.components of type model.DSLComponent
+[2026-06-12 16:27:47] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿 (1 张图片)...
+[2026-06-12 16:27:54] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回: {
+  "page_name": "灵感创款",
+  "layout": "模态弹窗（居中浮层，顶部标题栏+内容区+底部操作按钮）",
+  "components": [
+    "导航栏（含返回箭头、页面标题“灵感创款”、关闭按钮）",
+    "上传区域（标题“上传图片”，进度提示“0 / 1”，加号图标按钮，辅助说明文字）",
+    "玩法选择区（标题“请选择以下细分玩法”，六项并列卡片式按钮：生成同花型系列款、毛衫改款延伸、参考品牌风格植入、领型样式创新、毛衫织法延申、单品不同搭配建议）",
+    "主操作按钮（底部黑色宽按钮，文字“开始生成”）"
+  ]
+}
+[2026-06-12 16:27:54] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回非标准 DSL JSON: json: cannot unmarshal string into Go struct field DSL.components of type model.DSLComponent
+[2026-06-12 16:30:33] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿 (1 张图片)...
+[2026-06-12 16:30:40] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回: {
+  "page_name": "个人中心页",
+  "layout": "顶部头像与信息区 + 中部数据统计栏 + 功能导航区 + 底部标签栏",
+  "components": [
+    "顶部品牌标识（DIOION）",
+    "用户头像与操作按钮（三点菜单、相机图标）",
+    "用户名与编辑资料入口",
+    "四列数据统计卡片（AI作品、收藏内容、关注、足迹）",
+    "灵感算力状态条（含数值、标签、消耗明细入口）",
+    "功能列表项（关于我们、用户协议、隐私政策，均带右箭头）",
+    "角色切换模块（‘我是面料商’提示 + 商家版按钮）",
+    "退出登录按钮",
+    "底部导航栏（资讯、消息、我的）"
+  ]
+}
+[2026-06-12 16:30:40] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回非标准 DSL JSON: json: cannot unmarshal string into Go struct field DSL.components of type model.DSLComponent
+[2026-06-12 16:37:27] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿 (1 张图片)...
+[2026-06-12 16:37:33] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回: {
+  "page_name": "个人中心页",
+  "layout": "顶部头像与信息区 + 中部数据统计栏 + 功能导航列表 + 底部导航栏",
+  "components": [
+    "顶部品牌标识（DIOION）",
+    "用户头像与操作按钮（三点菜单、相机图标）",
+    "用户名与编辑资料入口",
+    "四列数据统计卡片（AI作品、收藏内容、关注、足迹）",
+    "灵感算力状态条（含数值、标签、消耗明细入口）",
+    "功能链接列表（关于我们、用户协议、隐私政策）",
+    "角色切换模块（‘我是面料商’提示 + 商家版跳转按钮）",
+    "退出登录按钮",
+    "底部导航栏（资讯、消息、我的）"
+  ]
+}
+[2026-06-12 16:37:33] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回非标准 DSL JSON: json: cannot unmarshal string into Go struct field DSL.components of type model.DSLComponent
+[2026-06-12 16:41:28] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿 (1 张图片)...
+[2026-06-12 16:41:30] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回: {
+  "page_name": "放大镜搜索页",
+  "layout": "单栏侧边聚焦布局",
+  "components": [
+    "用户轮廓图标（女性侧脸剪影）",
+    "手持放大镜交互元素",
+    "波浪线背景纹理（象征搜索目标/数据流）"
+  ]
+}
+[2026-06-12 16:41:30] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回非标准 DSL JSON: json: cannot unmarshal string into Go struct field DSL.components of type model.DSLComponent
+[2026-06-12 16:43:42] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿 (1 张图片)...
+[2026-06-12 16:43:53] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回: {
+  "page_name": "我要找料（面料需求发布流程）",
+  "layout": "多步骤模态弹窗流程，含主表单页、区域选择页、品类选择页、成功提示页",
+  "components": [
+    "模态弹窗容器（带关闭按钮）",
+    "标题栏（'我要找料'）",
+    "步骤引导说明文本",
+    "图片上传区域（支持3张，含预览缩略图与'框选找料区域'按钮）",
+    "上传按钮（'+'图标 + '上传面料'文字）",
+    "相似度选择组件（'100%一致' / '相似即可' 单选按钮组）",
+    "品类选择组件（标签式筛选，如'纯棉牛仔' + '点击选择'下拉入口）",
+    "货期选择组件（'现货' / '期货' 标签切换）",
+    "补充说明输入框（带字数限制计数器）",
+    "操作按钮组（'取消' / '提交'）",
+    "区域选择交互页（图像叠加网格+可拖拽缩放选框，含坐标信息显示）",
+    "品类多选弹窗（分组复选框列表，含'所有牛仔'/'所有混纺'分类，支持滚动）",
+    "成功提示弹窗（带对勾图标、成功文案、'确定'按钮）",
+    "辅助控件（如'框选找料区域'按钮、'X'删除图标、滚动条）"
+  ]
+}
+[2026-06-12 16:43:53] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回非标准 DSL JSON: json: cannot unmarshal string into Go struct field DSL.components of type model.DSLComponent
+[2026-06-12 16:46:15] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿 (1 张图片)...
+[2026-06-12 16:46:26] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回: {
+  "page_name": "我要找料（面料需求发布流程）",
+  "layout": "多步骤模态弹窗流程，含主表单页、区域选择页、品类选择页、成功提示页",
+  "components": [
+    "模态弹窗容器（带关闭按钮）",
+    "标题栏（'我要找料'）",
+    "步骤引导说明文本",
+    "图片上传区域（支持3张，含预览缩略图与'框选找料区域'按钮）",
+    "上传按钮（'+'图标 + '上传面料'文字）",
+    "相似度选择组件（'100%一致' / '相似即可' 单选按钮组）",
+    "品类选择组件（标签式筛选，如'纯棉牛仔' + '点击选择'下拉入口）",
+    "货期选择组件（'现货' / '期货' 标签按钮）",
+    "补充说明输入框（带字数限制计数器）",
+    "操作按钮组（'取消' / '提交'）",
+    "区域选择交互页（图像叠加网格+可拖拽缩放选框，含坐标信息显示）",
+    "品类多选列表弹窗（分'所有牛仔'/'所有混纺'等分类，含复选框与滚动条）",
+    "成功提示弹窗（带对勾图标、成功文案、'确定'按钮）"
+  ]
+}
+[2026-06-12 16:46:26] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回非标准 DSL JSON: json: cannot unmarshal string into Go struct field DSL.components of type model.DSLComponent
+[2026-06-12 17:21:01] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿 (1 张图片)...
+[2026-06-12 17:21:12] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回: {
+  "page_name": "我要找料（面料需求发布流程）",
+  "layout": "多步骤模态弹窗流程，主流程为垂直分步表单，辅以独立功能弹窗（区域选择、品类选择、成功提示）",
+  "components": [
+    "标题栏（含关闭按钮）",
+    "步骤引导说明文本",
+    "图片上传区域（支持1-3张，带预览与删除）",
+    "区域选择按钮（‘框选找料区域’）",
+    "相似度选择选项卡（100%一致 / 相似即可）",
+    "品类选择组件（标签式筛选 + ‘+ 点击选择’扩展入口）",
+    "货期选择按钮组（现货 / 期货）",
+    "补充说明文本域（500字限制）",
+    "操作按钮组（取消 / 提交）",
+    "成功提示弹窗（含图标、标题、描述、确定按钮）",
+    "面料区域框选交互面板（含图像预览、网格裁剪框、坐标信息、取消/确定按钮）",
+    "面料品类多选弹窗（分组复选框：所有牛仔、所有混纺等，含滚动条、取消/确定按钮）",
+    "空状态占位组件（两个‘+ 上传面料’卡片）"
+  ]
+}
+[2026-06-12 17:21:12] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回非标准 DSL JSON: json: cannot unmarshal string into Go struct field DSL.components of type model.DSLComponent
+[2026-06-12 17:23:39] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿 (1 张图片)...
+[2026-06-12 17:23:50] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回: {
+  "page_name": "我要找料（面料需求发布流程）",
+  "layout": "多步骤模态弹窗流程，主流程为垂直分步表单，辅以独立功能弹窗（区域选择、品类选择、成功提示）",
+  "components": [
+    "标题栏（含关闭按钮）",
+    "步骤引导说明文本",
+    "图片上传区域（支持1-3张，带预览与删除）",
+    "区域选择按钮（‘框选找料区域’）",
+    "相似度选项组（100%一致 / 相似即可）",
+    "品类选择控件（标签式下拉/展开选择，如‘纯棉牛仔’+‘点击选择’）",
+    "货期选择按钮组（现货 / 期货）",
+    "补充说明文本域（500字限制）",
+    "操作按钮组（取消 / 提交）",
+    "成功提示弹窗（带勾选图标、提示文案、确定按钮）",
+    "面料区域框选工具弹窗（含图像预览、网格选区、坐标信息、取消/确定按钮）",
+    "面料品类多选弹窗（分组复选框：所有牛仔、所有混纺等，含滚动条、取消/确定按钮）",
+    "通用上传占位组件（‘+ 上传面料’卡片）"
+  ]
+}
+[2026-06-12 17:23:50] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回非标准 DSL JSON: json: cannot unmarshal string into Go struct field DSL.components of type model.DSLComponent
+[2026-06-12 17:26:52] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿 (1 张图片)...
+[2026-06-12 17:27:03] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回: {
+  "page_name": "我要找料（面料需求发布流程）",
+  "layout": "多模态分步表单流 + 弹窗叠加交互",
+  "components": [
+    "标题栏（含关闭按钮）",
+    "步骤引导说明文本",
+    "图片上传区域（支持多图，含已上传缩略图与‘+上传面料’占位）",
+    "区域选择组件（‘框选找料区域’按钮，触发画布裁剪弹窗）",
+    "相似度选择模块（‘100%一致’/‘相似即可’单选按钮组）",
+    "品类筛选组件（标签式选择器，如‘纯棉牛仔’下拉展开，支持‘+点击选择’新增）",
+    "货期选择按钮组（‘现货’/‘期货’）",
+    "补充说明文本域（带字数限制计数器）",
+    "操作按钮组（‘取消’/‘提交’）",
+    "成功提示弹窗（含图标、标题、说明文案、确认按钮）",
+    "画布裁剪弹窗（含图像预览、虚线选框、拖拽缩放控件、裁剪坐标信息、‘取消’/‘确定’按钮）",
+    "品类多选弹窗（分类折叠面板：‘所有牛仔’/‘所有混纺’；网格复选框列表；含‘取消’/‘确定’按钮）",
+    "通用关闭按钮（×）",
+    "辅助提示文字（小字号说明性文案）"
+  ]
+}
+[2026-06-12 17:27:03] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回非标准 DSL JSON: json: cannot unmarshal string into Go struct field DSL.components of type model.DSLComponent
+[2026-06-12 17:31:29] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿 (1 张图片)...
+[2026-06-12 17:31:41] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回: {
+  "page_name": "我要找料（面料需求发布流程）",
+  "layout": "多模态分步表单 + 弹窗式交互流程，主流程为垂直线性步骤（01–05），辅以独立弹窗用于区域选择、品类筛选与成功反馈",
+  "components": [
+    "标题栏（含关闭按钮）",
+    "步骤引导说明文本",
+    "图片上传区（支持最多3张，带预览缩略图与删除按钮）",
+    "区域选择组件（‘框选找料区域’按钮 + 图片叠加网格选区）",
+    "相似度选项卡（‘100%一致’与‘相似即可’二选一）",
+    "品类选择组件（标签式筛选：如‘纯棉牛仔’下拉/展开 + ‘+ 点击选择’入口）",
+    "货期选择按钮组（‘现货’‘期货’）",
+    "补充说明文本域（带字数计数）",
+    "操作按钮组（‘取消’‘提交’）",
+    "成功提示弹窗（含图标、标题、说明文案、确认按钮）",
+    "面料品类多选弹窗（分类折叠面板 + 多列复选框矩阵 + 滚动条 + 取消/确定按钮）",
+    "区域框选交互视图（带图像背景、虚线选框、拖拽缩放控点、坐标尺寸标注）"
+  ]
+}
+[2026-06-12 17:31:41] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回非标准 DSL JSON: json: cannot unmarshal string into Go struct field DSL.components of type model.DSLComponent
+[2026-06-12 17:35:34] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿 (1 张图片)...
+[2026-06-12 17:35:40] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回: {
+  "page_name": "灵感创款",
+  "layout": "模态弹窗（居中浮层，顶部标题栏+内容区+底部操作按钮）",
+  "components": [
+    "导航栏（含返回箭头、页面标题“灵感创款”、关闭按钮）",
+    "上传区域（标题“上传图片”，进度提示“0 / 1”，加号图标按钮，辅助说明文字）",
+    "玩法选择区（标题“请选择以下细分玩法”，六项并列卡片式按钮：生成同花型系列款、毛衫改款延伸、参考品牌风格植入、领型样式创新、毛衫织法延申、单品不同搭配建议）",
+    "操作按钮（底部黑色宽按钮“开始生成”）"
+  ]
+}
+[2026-06-12 17:35:40] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回非标准 DSL JSON: json: cannot unmarshal string into Go struct field DSL.components of type model.DSLComponent
+[2026-06-12 17:45:44] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿 (1 张图片)...
+[2026-06-12 17:45:51] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回: {
+  "page_name": "算力明细",
+  "layout": "垂直分层布局，顶部状态栏+标题栏 → 主体内容区（含当前余额卡片、任务获取区、收支明细标签页与列表）",
+  "components": [
+    "状态栏（时间、信号、电池）",
+    "导航栏（返回箭头、页面标题“算力明细”、更多操作按钮、圆形头像/设置入口）",
+    "当前可用灵感点卡片（含图标、数值、说明文字、过期提示）",
+    "赚取灵感点模块（含两个任务项：每日登录签到、邀请好友注册，各带图标、描述、奖励值及状态按钮）",
+    "收支明细标签页（含‘全部’‘获取’‘消耗’三个可切换标签，当前选中‘全部’）",
+    "收支明细列表项（每项含标题、子标签如‘系统返还’、时间戳、金额及有效期说明）"
+  ]
+}
+[2026-06-12 17:45:51] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回非标准 DSL JSON: json: cannot unmarshal string into Go struct field DSL.components of type model.DSLComponent
+[2026-06-12 17:49:22] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿 (1 张图片)...
+[2026-06-12 17:49:29] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回: {
+  "page_name": "个人中心页",
+  "layout": "顶部头像与信息区 + 中部数据统计栏 + 功能导航区 + 底部导航栏",
+  "components": [
+    "顶部品牌标识（DIOTION）",
+    "用户头像与操作按钮（三点菜单、相机图标）",
+    "用户名与资料编辑入口（Nemo，编辑资料 >）",
+    "四列数据统计卡片（AI作品、收藏内容、关注、足迹）",
+    "灵感算力状态条（含闪电图标、数值、标签、消耗明细入口）",
+    "功能列表项（关于我们、用户协议、隐私政策，均带右箭头）",
+    "角色切换模块（我是面料商 + 商家版按钮）",
+    "退出登录按钮",
+    "底部导航栏（资讯、消息、我的）"
+  ]
+}
+[2026-06-12 17:49:29] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回非标准 DSL JSON: json: cannot unmarshal string into Go struct field DSL.components of type model.DSLComponent
+[2026-06-12 17:58:00] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿 (1 张图片)...
+[2026-06-12 17:58:06] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回: {
+  "page_name": "算力明细",
+  "layout": "垂直滚动单列布局，顶部为状态摘要区，中部为任务获取区，底部为收支明细列表区",
+  "components": [
+    "导航栏（含返回箭头、页面标题、右侧三点菜单与圆形图标）",
+    "状态摘要卡片（含灵感点数值、说明文字、过期提示）",
+    "任务获取模块（含两个任务卡片：每日登录签到、邀请好友注册，各含图标、标题、收益说明、操作按钮）",
+    "标签导航栏（含‘全部’‘获取’‘消耗’三个标签，当前选中‘全部’）",
+    "收支明细列表（含多条记录项，每项包含标题、标签、时间戳、金额及有效期说明）"
+  ]
+}
+[2026-06-12 17:58:06] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回非标准 DSL JSON: json: cannot unmarshal string into Go struct field DSL.components of type model.DSLComponent
+[2026-06-12 18:01:08] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿 (1 张图片)...
+[2026-06-12 18:01:17] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回: {
+  "page_name": "算力明细",
+  "layout": "垂直分层布局，顶部状态栏+标题栏 → 主体内容区（含当前余额卡片、任务获取区、收支明细标签页及列表）",
+  "components": [
+    "状态栏（时间、信号、电池）",
+    "导航栏（返回箭头、页面标题“算力明细”、右侧三点菜单与圆形图标）",
+    "当前可用灵感点卡片（含闪电图标、数值890、副标题、过期提示）",
+    "赚取灵感点模块（含两个任务项：每日登录签到、邀请好友注册，各带图标、描述、奖励值与操作按钮）",
+    "收支明细标签页（含‘全部’‘获取’‘消耗’三个可切换标签，当前选中‘全部’）",
+    "收支明细列表项（每项含标题、状态标签如‘系统返还’、时间戳、金额变化值及有效期说明）"
+  ]
+}
+[2026-06-12 18:01:17] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回非标准 DSL JSON: json: cannot unmarshal string into Go struct field DSL.components of type model.DSLComponent

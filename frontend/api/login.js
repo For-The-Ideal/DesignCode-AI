@@ -3,7 +3,7 @@ import httpRequest from "~/utils/request";
 export const loginApi = {
   async captcha(server = true) {
     let options = {
-      url: `/api/v1/captcha`,
+      url: `/api/v1/auth/captcha`,
       method: "get",
       server,
     };

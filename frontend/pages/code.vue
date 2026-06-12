@@ -5,19 +5,7 @@
       <div class="page-header">
         <h1>AI 代码生成</h1>
         <p>上传设计稿 · AI 智能识别 · 秒级生成高质量代码</p>
-      </div>
-
-      <!-- ═══ 上传区 ═══ -->
-      <UploaderImage @generated="onGenerated" :isBusy="isBusy" />
-
-      <!-- ═══ 未生成时的占位 ═══ -->
-      <div v-if="!hasGenerated && !isBusy" class="empty-state">
-        <div class="empty-icon">
-          <i class="fas fa-code"></i>
-        </div>
-        <h3>等待生成代码</h3>
-        <p>上传设计稿并点击「开始生成代码」，AI 将自动为你生成高质量代码</p>
-        <div class="feature-hints">
+          <div class="feature-hints">
           <div class="hint-item">
             <i class="fas fa-image"></i>
             <span>支持多张设计稿上传</span>
@@ -33,19 +21,11 @@
         </div>
       </div>
 
-      <!-- ═══ 任务进行中（等待 SSE 数据） ═══ -->
-      <div v-if="isBusy && !hasGenerated" class="busy-state">
-        <div class="busy-spinner"><i class="fas fa-spinner fa-spin"></i></div>
-        <h3>AI 生成中...</h3>
-        <div class="busy-progress-bar">
-          <div class="busy-progress-fill" :style="{ width: taskProgress + '%' }"></div>
-        </div>
-        <p class="busy-step">{{ taskCurrentStep || '正在连接...' }}</p>
-        <p class="busy-hint">生成完成后下方将展示代码与预览，请勿关闭页面</p>
-      </div>
+      <!-- ═══ 上传区 ═══ -->
+      <UploaderImage @generated="onGenerated" :initial-images="restoredImages" />
 
-      <!-- ═══ 生成结果展示 ═══ -->
-      <template v-if="hasGenerated">
+      <!-- ═══ 生成中 + 生成结果（共享 core-layout，生成时 GeneratingOverlay 覆盖编辑器） ═══ -->
+      <div v-if="taskProgress > 0 || hasGenerated">
         <div class="core-layout">
           <div class="panel editor-panel">
             <div class="panel-header">
@@ -53,20 +33,22 @@
                 <i class="fas fa-code"></i>
                 <span>{{ generatedLang }} 代码</span>
               </div>
-              <div class="panel-actions">
-                <button class="act-btn" @click="handleCopy"><i class="fas fa-copy"></i><span>复制</span></button>
-                <button class="act-btn" @click="handleFormat"><i class="fas fa-magic"></i><span>格式化</span></button>
-                <button class="act-btn ghost" @click="handleDownload"><i class="fas fa-download"></i><span>下载</span></button>
+              <div class="panel-actions" v-if="taskProgress >= 100 || hasGenerated">
+                <button class="act-btn" :disabled="taskProgress > 0 && taskProgress < 100" @click="handleCopy(template.templateCode)"><i class="fas fa-copy"></i><span>复制</span></button>
+                <button class="act-btn" :disabled="taskProgress > 0 && taskProgress < 100" @click="handleFormatCode"><i class="fas fa-magic"></i><span>格式化</span></button>
+                <button class="act-btn ghost" :disabled="taskProgress > 0 && taskProgress < 100" @click="handleDownload(template.templateCode, codeLanguage)"><i class="fas fa-download"></i><span>下载</span></button>
               </div>
             </div>
             <div class="panel-body editor-body">
-              <CodeEditor
+              <GeneratingOverlay
+                v-if="taskProgress > 0 || hasGenerated"
                 v-model="template.templateCode"
                 :language="codeLanguage"
-                :readonly="false"
                 :auto-scroll="sseStatus === 'streaming'"
                 height="700px"
-                placeholder="// AI 生成的代码将在这里展示..."
+                :progress="taskProgress"
+                :current-step="taskCurrentStep"
+                :visible="taskProgress > 0 && taskProgress < 100"
               />
             </div>
           </div>
@@ -80,34 +62,31 @@
               <span class="device-badge" v-if="generatedFramework">iPhone 15 Pro</span>
             </div>
             <div class="panel-body preview-body">
-              <FlutterTemplate :html="template.previewCode" :showBottomNav="false" />
+              <FlutterTemplate :html="taskProgress >= 100 ? template.previewCode : ''" :showBottomNav="false" />
             </div>
           </div>
         </div>
-      </template>
+      </div>
     </main>
   </div>
 </template>
 
 <script setup>
 import { ref, watch, onMounted, onUnmounted } from 'vue'
-import CodeEditor from '~/components/code/CodeEditor.vue'
 import FlutterTemplate from '@/components/common/FlutterTemplate.vue'
 import UploaderImage from '~/components/upload/UploaderImage.vue'
+import GeneratingOverlay from '~/components/code/GeneratingOverlay.vue'
 import { useGeneration } from '~/composables/useGeneration'
-
+import { handleCopy, handleFormat, handleDownload } from "~/utils/index.js"
 import { ElMessage } from 'element-plus'
 // ═══ 生成流程 composable（SSE + 流式渲染 统一入口）═══
 const {
   template,
   sseStatus,
-  connectSSE,
-  disconnectSSE,
-  cleanup,
-  isBusy,
-  taskStatus,
   taskProgress,
   taskCurrentStep,
+  cleanup,
+  disconnectSSE,
   restoreTask,
 } = useGeneration()
 
@@ -116,6 +95,7 @@ const hasGenerated = ref(false)
 const generatedLang = ref('Dart')
 const generatedFramework = ref('')
 const codeLanguage = ref('dart')
+const restoredImages = ref([])
 
 const langMap = {
   flutter: { label: 'Dart', lang: 'dart' },
@@ -141,8 +121,10 @@ watch(sseStatus, (val) => {
 
 // ═══ 上传组件回调 ═══
 
-const onGenerated = async (result) => {
-  hasGenerated.value = true
+const onGenerated = (result) => {
+  // UploaderImage 内部已调 API + connect + saveActiveTask
+  // 这里只需记录框架类型和语言
+  hasGenerated.value = false
   generatedFramework.value = result.framework
   if (result.framework && langMap[result.framework]) {
     generatedLang.value = langMap[result.framework].label
@@ -150,75 +132,51 @@ const onGenerated = async (result) => {
   }
 }
 
-// ═══ 生命周期 ═══
-
-onMounted(async () => {
+const checkTaskStatus = async() => {
   // 检查是否有之前未完成的任务，恢复进度
   const restored = await restoreTask()
-  if (restored) {
-    if (restored.status === 'pending' || restored.status === 'running') {
-      // 有任务正在执行中，复现生成的框架配置
-      if (restored.framework && langMap[restored.framework]) {
-        generatedFramework.value = restored.framework
-        generatedLang.value = langMap[restored.framework].label
-        codeLanguage.value = langMap[restored.framework].lang
-      }
-      // SSE 已由 restoreTask 内部重连，等待推送即可
-      ElMessage.info('检测到正在执行中的任务，已恢复进度监听')
-    } else if (restored.status === 'success') {
-      // 已完成的任务，展示结果
-      hasGenerated.value = true
-      if (restored.framework && langMap[restored.framework]) {
-        generatedFramework.value = restored.framework
-        generatedLang.value = langMap[restored.framework].label
-        codeLanguage.value = langMap[restored.framework].lang
-      }
-    } else if (restored.status === 'failed') {
-      ElMessage.error('上轮任务执行失败，请重新生成')
-    }
+  console.log('restored', restored)
+  if (!restored) return
+
+  // 恢复已上传的图片回显
+  if (restored.images && restored.images.length > 0) {
+    restoredImages.value = restored.images
   }
-  // 没有已存在的任务 → 保持空状态等待用户操作
+
+  if (restored.framework && langMap[restored.framework]) {
+    generatedFramework.value = restored.framework
+    generatedLang.value = langMap[restored.framework].label
+    codeLanguage.value = langMap[restored.framework].lang
+  }
+
+  if (restored.status === 'pending' || restored.status === 'running') {
+    // 有任务正在执行中，SSE 已由 restoreTask 内部重连
+    ElMessage.info('检测到正在执行中的任务，已恢复进度监听')
+
+  } else if (restored.status === 'success') {
+    // 已完成的任务，展示结果
+    hasGenerated.value = true
+    ElMessage.success('已恢复上次生成的结果')
+
+  } else if (restored.status === 'failed') {
+    ElMessage.error('上轮任务执行失败，请重新生成')
+  }
+}
+
+// ═══ 生命周期 ═══
+onMounted(() => {
+  checkTaskStatus()
 })
+
+const handleFormatCode = () => {
+  template.templateCode = handleFormat(template.templateCode)
+}
 
 onUnmounted(() => {
   cleanup()
   disconnectSSE()
 })
 
-// ═══ 工具栏操作 ═══
-
-const handleCopy = async () => {
-  try {
-    await navigator.clipboard.writeText(template.templateCode)
-    ElMessage.success('已复制到剪贴板')
-  } catch {
-    ElMessage.error('复制失败')
-  }
-}
-
-const handleFormat = () => {
-  let indent = 0
-  template.templateCode = template.templateCode.split('\n').map(line => {
-    const t = line.trim()
-    if (!t) return ''
-    if (/^[})]/.test(t)) indent = Math.max(0, indent - 1)
-    const r = '  '.repeat(indent) + t
-    if (/[({]$/.test(t)) indent++
-    return r
-  }).join('\n')
-  ElMessage.success('代码已格式化')
-}
-
-const handleDownload = () => {
-  const ext = codeLanguage.value === 'dart' ? 'dart' : codeLanguage.value === 'typescript' ? 'tsx' : 'vue'
-  const blob = new Blob([template.templateCode], { type: 'text/plain' })
-  const a = document.createElement('a')
-  a.href = URL.createObjectURL(blob)
-  a.download = `generated.${ext}`
-  a.click()
-  URL.revokeObjectURL(a.href)
-  ElMessage.success('已下载')
-}
 </script>
 
 <style scoped>
@@ -324,6 +282,7 @@ const handleDownload = () => {
   gap: 32px;
   flex-wrap: wrap;
   justify-content: center;
+  margin-top: 24px;
 }
 .hint-item {
   display: flex;
@@ -457,7 +416,22 @@ const handleDownload = () => {
 .panel-body { overflow: hidden; flex: 1; min-height: 0; }
 
 .editor-panel { flex: 1.55; min-width: 0; }
-.editor-body { flex: 1; min-height: 0; }
+.editor-body { flex: 1; min-height: 0; position: relative; }
+
+.editor-empty-hint {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #666;
+  font-size: 14px;
+}
+.editor-empty-hint i {
+  font-size: 48px;
+  color: #333;
+}
 
 .preview-panel { flex: 1; min-width: 0; }
 .preview-body {

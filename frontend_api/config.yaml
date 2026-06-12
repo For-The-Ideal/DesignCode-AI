@@ -8,7 +8,10 @@ server:
 # ═══════════════════════════════════════════════
 #  AI 模型配置
 #  启用 enabled: true 的模型会自动被优先级排序
-#  priority 越小优先级越高
+#      capability: "read"   # 读代码
+#      capability: "both"   # 读写代码
+#      capability: "write"   # 写代码
+#      priority 越小优先级越高
 # ═══════════════════════════════════════════════
 ai:
   logging:
@@ -16,14 +19,27 @@ ai:
     directory: "logs"
 
   models:
-    - provider: "deepseek"
-      name: "DeepSeek V3"
-      api_key: "your_deepseek_api_key"
-      endpoint: "https://api.deepseek.com/v1/chat/completions"
-      enabled: false
+    - provider: "qwen"
+      name: "通义千问 Qwen-VL"
+      api_key: "sk-ffca63c951c24c458d860ffad0dec1b5"
+      endpoint: "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
+      enabled: true
       max_retries: 2
       timeout: 60
+      priority: 5
+      capability: "read"
+
+
+    - provider: "deepseek"
+      name: "DeepSeek V4"
+      api_key: "sk-13ff3e7a86484f34969954fd21c219d3"
+      endpoint: "https://api.deepseek.com/chat/completions"
+      enabled: true
+      max_retries: 2
+      timeout: 180
       priority: 10
+      capability: "write"
+
 
     - provider: "chatgpt"
       name: "ChatGPT 4o"
@@ -33,6 +49,8 @@ ai:
       max_retries: 2
       timeout: 60
       priority: 20
+      capability: "both"
+
 
     - provider: "codex"
       name: "OpenAI Codex"
@@ -42,6 +60,8 @@ ai:
       max_retries: 2
       timeout: 60
       priority: 30
+      capability: "write"
+
 
     - provider: "gemini"
       name: "Gemini Pro"
@@ -51,6 +71,8 @@ ai:
       max_retries: 1
       timeout: 60
       priority: 25
+      capability: "both"
+
 
     - provider: "claude"
       name: "Claude 3.5 Sonnet"
@@ -60,6 +82,8 @@ ai:
       max_retries: 2
       timeout: 60
       priority: 15
+      capability: "both"
+
 
     - provider: "mock"
       name: "Local Mock"
@@ -69,3 +93,15 @@ ai:
       max_retries: 0
       timeout: 0
       priority: 99
+      capability: "both"
+
+
+# ═══════════════════════════════════════════════
+#  腾讯云对象存储 COS 配置
+#  上传图片时使用，留空则跳过初始化
+# ═══════════════════════════════════════════════
+cos:
+  bucket: "upload-image-1301638170" # 桶名
+  region: "ap-guangzhou" # 区域
+  secret_id: "AKIDplYGoIervrnhPtLchaFvRnIi2EPQDq9L" # Secret ID
+  secret_key: "1vY0FFzqY1EMIqOp9VgeOvDFguwraJtG" # Secret Key

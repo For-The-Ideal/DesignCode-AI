@@ -1,10 +1,16 @@
 package handler
 
 import (
+	"errors"
+	"fmt"
 	"frontend_api/internal/model"
 	"frontend_api/pkg/mysql"
 	"frontend_api/utils"
+	"math/rand"
+	"strings"
 	"time"
+
+	"gorm.io/gorm"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -26,14 +32,14 @@ func NewAuthHandler() *AuthHandler {
 
 // RegisterRequest 注册请求参数
 type RegisterRequest struct {
-	Username string `json:"username" binding:"required,min=4,max=20"`
 	Password string `json:"password" binding:"required,min=6"`
 	Nickname string `json:"nickname"`
+	Email    string `json:"email" binding:"required"`
 }
 
 // LoginRequest 登录请求参数
 type LoginRequest struct {
-	Username    string `json:"username" binding:"required"`
+	Email       string `json:"email" binding:"required"`
 	Password    string `json:"password" binding:"required"`
 	CaptchaID   string `json:"captcha_id" binding:"required"`
 	CaptchaCode string `json:"captcha_code" binding:"required"`
@@ -59,6 +65,12 @@ func (h *AuthHandler) Captcha(c *gin.Context) {
 	}, "验证码获取成功")
 }
 
+// Logout 退出登录
+func (h *AuthHandler) Logout(c *gin.Context) {
+	// JWT 无状态，无需后端处理
+	utils.Success(c, gin.H{}, "已退出登录")
+}
+
 // Register 用户注册
 func (h *AuthHandler) Register(c *gin.Context) {
 	var req RegisterRequest
@@ -67,12 +79,15 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
+	// 统一转小写
+	req.Email = strings.ToLower(strings.TrimSpace(req.Email))
+
 	db := mysql.GetDB()
 
-	// 检查用户是否已存在
+	// 检查邮箱是否已注册
 	var existingUser model.User
-	if err := db.Where("username = ?", req.Username).First(&existingUser).Error; err == nil {
-		utils.Error(c, 409, "该用户名已被注册")
+	if err := db.Where("email = ?", req.Email).First(&existingUser).Error; err == nil {
+		utils.Error(c, 409, "该邮箱已被注册")
 		return
 	}
 
@@ -85,13 +100,24 @@ func (h *AuthHandler) Register(c *gin.Context) {
 
 	// 创建用户
 	newUser := model.User{
-		Username: req.Username,
+		Email:    req.Email,
 		Password: string(hashedPassword),
 		Nickname: req.Nickname,
 	}
 	if req.Nickname == "" {
-		newUser.Nickname = req.Username
+		// 随机生成 3~5 位昵称
+		chars := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+		length := 3 + rand.Intn(3) // 3~5
+		name := make([]byte, length)
+		for i := range name {
+			name[i] = chars[rand.Intn(len(chars))]
+		}
+		newUser.Nickname = string(name)
 	}
+
+	// 生成随机头像（DiceBear，基于 email seed 保持一致）
+	avatarStyle := "avataaars"
+	newUser.Avatar = fmt.Sprintf("https://api.dicebear.com/7.x/%s/svg?seed=%s", avatarStyle, req.Email)
 
 	if err := db.Create(&newUser).Error; err != nil {
 		utils.InternalError(c, "用户创建失败: "+err.Error())
@@ -100,7 +126,9 @@ func (h *AuthHandler) Register(c *gin.Context) {
 
 	utils.Success(c, gin.H{
 		"id":       newUser.ID,
-		"username": newUser.Username,
+		"email":    newUser.Email,
+		"nickname": newUser.Nickname,
+		"avatar":   newUser.Avatar,
 	}, "注册成功")
 }
 
@@ -112,6 +140,9 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
+	// 统一转小写
+	req.Email = strings.ToLower(strings.TrimSpace(req.Email))
+
 	// 校验验证码
 	if !utils.VerifyCaptcha(req.CaptchaID, req.CaptchaCode) {
 		utils.BadRequest(c, "验证码错误或已过期")
@@ -120,25 +151,29 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 	db := mysql.GetDB()
 
-	// 查找用户
+	// 查找用户（通过 email）
 	var user model.User
-	if err := db.Where("username = ?", req.Username).First(&user).Error; err != nil {
-		utils.Unauthorized(c, "用户名或密码错误")
+	if err := db.Where("email = ?", req.Email).First(&user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			utils.Unauthorized(c, "该邮箱未注册")
+		} else {
+			utils.InternalError(c, "查询用户失败")
+		}
 		return
 	}
 
 	// 校验密码
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
-		utils.Unauthorized(c, "用户名或密码错误")
+		utils.Unauthorized(c, "密码错误")
 		return
 	}
 
 	// 生成 JWT
 	configJWT := mysql.GetConfig() // 通过 mysql 包读取配置
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"user_id":  user.ID,
-		"username": user.Username,
-		"exp":      time.Now().Add(time.Hour * 24).Unix(),
+		"user_id": user.ID,
+		"email":   user.Email,
+		"exp":     time.Now().Add(time.Hour * 24).Unix(),
 	})
 
 	tokenString, err := token.SignedString([]byte(configJWT))
@@ -150,7 +185,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	utils.Success(c, gin.H{
 		"token":    tokenString,
 		"id":       user.ID,
-		"username": user.Username,
+		"email":    user.Email,
 		"nickname": user.Nickname,
 		"avatar":   user.Avatar,
 	}, "登录成功")

@@ -22,6 +22,7 @@
                 v-model="form.oldPassword"
                 placeholder="当前密码"
                 maxlength="20"
+                minlength="6"
                 @focus="focusedInput = 'old'"
                 @blur="focusedInput = null"
                 @input="clearError('oldPassword')"
@@ -44,6 +45,7 @@
                 v-model="form.newPassword"
                 placeholder="新密码"
                 maxlength="20"
+                minlength="6"
                 @focus="focusedInput = 'new1'"
                 @blur="focusedInput = null"
                 @input="clearError('newPassword')"
@@ -66,6 +68,7 @@
                 v-model="form.confirmPassword"
                 placeholder="确认新密码"
                 maxlength="20"
+                minlength="6"
                 @focus="focusedInput = 'new2'"
                 @blur="focusedInput = null"
                 @input="clearError('confirmPassword')"
@@ -91,6 +94,8 @@
 <script setup>
 import { ref, reactive } from 'vue'
 import DialogModel from '@/components/dialog/DialogModel.vue'
+import { ElMessage } from 'element-plus'
+import { userApi } from '~/api/user'
 
 const emit = defineEmits(['close', 'back'])
 
@@ -153,18 +158,24 @@ const handleSubmit = async () => {
   if (form.newPassword.length < 6)        { errors.newPassword       = '新密码长度至少6位'; return }
   if (form.newPassword !== form.confirmPassword) { errors.confirmPassword = '两次输入的新密码不一致'; return }
 
-  loading.value = true
-  // TODO: 对接真实修改密码 API
-  await new Promise(resolve => setTimeout(resolve, 800))
-
-  if (form.oldPassword !== '123456') {
-    errors.oldPassword = '当前密码错误'
+ loading.value = true
+  try {
+    const res = await userApi.updatePassword({
+      oldPassword: form.oldPassword,
+      newPassword: form.newPassword,
+    })
+    if (res.code === 200) {
+      ElMessage.success('密码修改成功')
+      close()
+    } else {
+      // 后端返回错误信息（如"当前密码错误"）
+      errors.oldPassword = res.message || '修改失败'
+    }
+  } catch (e) {
+    errors.oldPassword = '网络错误，请重试'
+  } finally {
     loading.value = false
-    return
   }
-
-  alert('密码修改成功！')
-  close()
 }
 
 defineExpose({ open, close })

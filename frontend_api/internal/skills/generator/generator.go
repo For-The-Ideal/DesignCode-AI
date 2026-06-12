@@ -1,6 +1,9 @@
 package generator
 
-import "context"
+import (
+	"context"
+	"frontend_api/pkg/ai"
+)
 
 // ═══════════════════════════════════════════════
 //  GeneratorSkill 通用类型定义
@@ -8,8 +11,9 @@ import "context"
 
 // Input 生成器通用输入
 type Input struct {
-	DSL    string `json:"dsl"`
-	Prompt string `json:"prompt,omitempty"` // 从 prompts/{target}/generate.txt 加载
+	DSL    string   `json:"dsl"`
+	Prompt string   `json:"prompt,omitempty"` // 从 prompts/{target}/generate.txt 加载
+	Images []string `json:"images,omitempty"` // base64 编码的图片（通用模型兼容）
 }
 
 // Output 生成器通用输出
@@ -26,15 +30,15 @@ type Skill interface {
 }
 
 // GeneratorFunc 将 DSL + target 映射到对应的生成器技能
-func GeneratorFunc(target string) Skill {
+func GeneratorFunc(target string, client ai.Client) Skill {
 	switch target {
 	case "flutter":
-		return NewFlutterSkill()
+		return NewFlutterSkill(client)
 	case "vue3":
-		return NewVue3Skill()
+		return NewVue3Skill(client)
 	case "react":
-		return NewReactSkill()
+		return NewReactSkill(client)
 	default:
-		return NewFlutterSkill()
+		return NewFlutterSkill(client)
 	}
 }

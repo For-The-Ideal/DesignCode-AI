@@ -3,6 +3,7 @@ package generator
 import (
 	"context"
 	"fmt"
+	"frontend_api/pkg/ai"
 	"frontend_api/pkg/logger"
 	"os"
 	"path/filepath"
@@ -15,13 +16,15 @@ import (
 
 // FlutterSkill Flutter 代码生成技能
 type FlutterSkill struct {
-	logger *logger.Logger
+	aiClient ai.Client
+	logger   *logger.Logger
 }
 
 // NewFlutterSkill 创建 Flutter 生成技能
-func NewFlutterSkill() *FlutterSkill {
+func NewFlutterSkill(client ai.Client) *FlutterSkill {
 	return &FlutterSkill{
-		logger: logger.NewLogger("flutter-gen"),
+		aiClient: client,
+		logger:   logger.NewLogger("flutter-gen"),
 	}
 }
 
@@ -31,7 +34,6 @@ func (s *FlutterSkill) Name() string {
 }
 
 // Execute 执行代码生成
-// TODO: 接入 AI 模型进行真实代码生成
 func (s *FlutterSkill) Execute(ctx context.Context, input interface{}) (interface{}, error) {
 	gi, ok := input.(Input)
 	if !ok {
@@ -41,48 +43,22 @@ func (s *FlutterSkill) Execute(ctx context.Context, input interface{}) (interfac
 	s.logger.Infof("[FlutterSkill] 开始生成 Flutter 代码, DSL length=%d", len(gi.DSL))
 
 	prompt := s.loadPrompt()
-	_ = prompt // TODO: 将 prompt + DSL 传给 AI 模型
+	if prompt == "" {
+		return nil, fmt.Errorf("flutter: 提示词文件未找到")
+	}
 
-	// Mock 返回（与旧 mockdata 保持一致）
-	code := fmt.Sprintf(`// Flutter 代码生成于 DesignCode AI
-// DSL: %s
-// 当前为 Mock 实现，后续接入 AI 模型
+	messages := []ai.Message{
+		{Role: "system", Content: prompt},
+		{Role: "user", Content: fmt.Sprintf("DSL:\n%s", gi.DSL)},
+	}
 
-import 'package:flutter/material.dart';
+	content, err := s.aiClient.Chat(ctx, messages, ai.WithDeepSeekThinking("high"), ai.WithMaxTokens(8192))
+	if err != nil {
+		return nil, fmt.Errorf("flutter: AI 调用失败: %w", err)
+	}
 
-void main() => runApp(const MyApp());
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'DesignCode AI',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorSchemeSeed: const Color(0xFF007AFF),
-        useMaterial3: true,
-      ),
-      home: const HomePage(),
-    );
-  }
-}
-
-class HomePage extends StatelessWidget {
-  const HomePage({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('DesignCode AI')),
-      body: const Center(child: Text('Flutter 代码已生成')),
-    );
-  }
-}
-`, gi.DSL[:min(len(gi.DSL), 80)])
-
-	preview := `<div class="phone-body"><div class="generated-badge">✨ Flutter 代码已生成</div></div>`
-
-	return Output{Code: code, Preview: preview, Score: 85}, nil
+	s.logger.Infof("[FlutterSkill] 生成完成, code=%d chars", len(content))
+	return Output{Code: content, Preview: "", Score: 0}, nil
 }
 
 func (s *FlutterSkill) loadPrompt() string {

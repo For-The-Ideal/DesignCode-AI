@@ -70,6 +70,7 @@ import Login from './Login.vue'
 import Register from './Register.vue'
 import CaptchaModal from './CaptchaModal.vue'
 import { loginApi } from '@/api/login'
+import { useUserStore } from '@/stores/user'
 
 const emit = defineEmits(['loginSuccess', 'registerSuccess', 'close'])
 
@@ -79,7 +80,8 @@ const isRegister = ref(false)
 const isForgotPassword = ref(false)
 const isCaptchaActive = ref(false)
 const captchaModalRef = ref(null)
-const loginCreds = reactive({ email: '', password: '', rememberMe: false })
+const loginCreds = reactive({ email: '', password: '' })
+const userStore = useUserStore()
 
 // 忘记密码表单
 const forgotEmail = ref('')
@@ -112,10 +114,9 @@ const toggleMode = () => {
   else goToLogin()
 }
 
-const onRequestCaptcha = ({ email, password, rememberMe }) => {
+const onRequestCaptcha = ({ email, password }) => {
   loginCreds.email = email
   loginCreds.password = password
-  loginCreds.rememberMe = rememberMe
   isCaptchaActive.value = true
 }
 
@@ -126,19 +127,18 @@ const onCaptchaBack = () => {
 const onCaptchaConfirm = async ({ captchaId, captchaCode }) => {
   try {
     const res = await loginApi.login({
-      email: loginCreds.email,
+      email: loginCreds.email.toLowerCase(),
       password: loginCreds.password,
       captcha_id: captchaId,
       captcha_code: captchaCode,
     })
     if (res.code === 200) {
-      if (loginCreds.rememberMe) localStorage.setItem('user', JSON.stringify(res.data))
       isCaptchaActive.value = false
       emit('loginSuccess', res.data)
       close()
     } else {
-      captchaModalRef.value?.showError(res.message || '验证失败，请重试')
       captchaModalRef.value?.refresh()
+      captchaModalRef.value?.showError(res.message || '验证失败，请重试')
     }
   } catch (e) {
     captchaModalRef.value?.showError('网络错误，请重试')
@@ -148,13 +148,8 @@ const onCaptchaConfirm = async ({ captchaId, captchaCode }) => {
   }
 }
 
-const onLoginSuccess = (data) => {
-  emit('loginSuccess', data)
-  close()
-}
 const onRegisterSuccess = (data) => {
-  emit('registerSuccess', data)
-  close()
+  goToLogin()
 }
 const submitForgotPassword = async () => {
   if (!forgotEmail.value) return

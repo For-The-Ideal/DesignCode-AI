@@ -26,6 +26,8 @@ const sseData = reactive({
   id: null,        // 对齐 auth.go 模板接口 { template_code, preview_code, id }
   score: 0,
   dimensions: [],
+  progress: 0,     // SSE progress 事件跟踪
+  currentStep: '', // 当前步骤名称
 })
 
 let abortController = null
@@ -76,10 +78,18 @@ export function useSSE () {
         break
       case 'message':
         sseData.templateCode += data
+        log('收到 message 片段(' + data.length + '):', data.slice(0, 50))
         break
       case 'preview':
         sseData.previewCode = data
         log('预览 HTML 已更新')
+        break
+      case 'progress':
+        try {
+          const p = JSON.parse(data)
+          sseData.progress = p.progress
+          sseData.currentStep = p.step || ''
+        } catch { log('progress 解析失败', data) }
         break
       case 'score':
         try {
@@ -116,7 +126,7 @@ export function useSSE () {
     status.value = 'connecting'
     error.value = ''
     retry.value = 0
-    Object.assign(sseData, { templateCode: '', previewCode: '', id: null, score: 0, dimensions: [] })
+    Object.assign(sseData, { templateCode: '', previewCode: '', id: null, score: 0, dimensions: [], progress: 0, currentStep: '' })
     abortController = new AbortController()
 
     const timeoutId = setTimeout(() => {

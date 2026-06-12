@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"frontend_api/internal/model"
+	"frontend_api/pkg/ai"
 	"frontend_api/pkg/logger"
 	"os"
 	"path/filepath"
@@ -13,22 +14,12 @@ import (
 // ═══════════════════════════════════════════════
 //  VisionAnalyzeSkill
 //  职责：将设计稿图片分析为结构化 DSL (JSON)
-//  输出格式：
-//    {
-//      "page_name": "LoginPage",
-//      "layout": "column",
-//      "components": [
-//        {"type":"image","id":"logo"},
-//        {"type":"input","id":"username"},
-//        {"type":"password","id":"password"},
-//        {"type":"button","id":"login"}
-//      ]
-//    }
+//  使用千问 Qwen3-VL-Plus 多模态模型
 // ═══════════════════════════════════════════════
 
 // Input 视觉分析输入
 type Input struct {
-	Images []model.TaskImage `json:"images"`
+	Images []string `json:"images"` // COS URL 数组
 }
 
 // Output 视觉分析输出
@@ -38,13 +29,15 @@ type Output struct {
 
 // Skill 视觉分析技能
 type Skill struct {
-	logger *logger.Logger
+	aiClient ai.Client
+	logger   *logger.Logger
 }
 
 // NewSkill 创建视觉分析技能
-func NewSkill() *Skill {
+func NewSkill(client ai.Client) *Skill {
 	return &Skill{
-		logger: logger.NewLogger("vision-analyze"),
+		aiClient: client,
+		logger:   logger.NewLogger("vision-analyze"),
 	}
 }
 
@@ -54,11 +47,7 @@ func (s *Skill) Name() string {
 }
 
 // Execute 执行视觉分析
-// 当前为 Mock 实现，返回标准 LoginPage DSL
-// TODO: 接入 AI 模型进行真实图片分析
 func (s *Skill) Execute(ctx context.Context, input interface{}) (interface{}, error) {
-	s.logger.Info("[VisionAnalyzeSkill] 开始分析设计稿...")
-
 	vi, ok := input.(Input)
 	if !ok {
 		return nil, fmt.Errorf("vision: 输入类型错误")
@@ -68,26 +57,44 @@ func (s *Skill) Execute(ctx context.Context, input interface{}) (interface{}, er
 		return nil, fmt.Errorf("vision: 至少需要一张图片")
 	}
 
+	s.logger.Infof("[VisionAnalyzeSkill] 开始分析设计稿 (%d 张图片)...", len(vi.Images))
+
 	// 读取分析 prompt
 	promptContent := s.loadPrompt()
-	_ = promptContent // TODO: 传给 AI 模型
-
-	// Mock: 返回标准 LoginPage DSL
-	dsl := model.DSL{
-		PageName: "LoginPage",
-		Layout:   "column",
-		Components: []model.DSLComponent{
-			{Type: "image", ID: "logo"},
-			{Type: "input", ID: "username"},
-			{Type: "password", ID: "password"},
-			{Type: "button", ID: "login"},
-		},
+	if promptContent == "" {
+		return nil, fmt.Errorf("vision: 提示词文件未找到")
 	}
 
-	dslBytes, _ := json.MarshalIndent(dsl, "", "  ")
-	s.logger.Infof("[VisionAnalyzeSkill] 分析完成，DSL: %s", string(dslBytes))
+	// 构建多模态消息：图片 + 分析指令
+	content := make([]ai.ContentPart, 0, len(vi.Images)+1)
+	for _, imgURL := range vi.Images {
+		content = append(content, ai.ImagePart(imgURL))
+	}
+	content = append(content, ai.TextPart(promptContent))
 
-	return Output{DSL: string(dslBytes)}, nil
+	messages := []ai.Message{
+		{Role: "user", Content: content},
+	}
+
+	if s.aiClient == nil {
+		return nil, fmt.Errorf("vision: AI 客户端未配置")
+	}
+
+	resp, err := s.aiClient.Chat(ctx, messages)
+	if err != nil {
+		return nil, fmt.Errorf("vision: AI 分析失败: %w", err)
+	}
+
+	s.logger.Infof("[VisionAnalyzeSkill] AI 返回: %s", resp)
+
+	// 校验返回的是合法 DSL JSON
+	var dsl model.DSL
+	if err := json.Unmarshal([]byte(resp), &dsl); err != nil {
+		s.logger.Infof("[VisionAnalyzeSkill] AI 返回非标准 DSL JSON: %v", err)
+		// 仍然原样返回，由上层处理
+	}
+
+	return Output{DSL: resp}, nil
 }
 
 // loadPrompt 加载 prompts/vision/analyze.txt

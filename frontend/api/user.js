@@ -4,11 +4,11 @@ export const userApi = {
   async userInfo(params = {}, server = true) {
     let options = {
       url: `/api/v1/user/info`,
-      method: "post",
+      method: "get",
       params,
       server,
     };
-    let result = await httpRequest.post(options);
+    let result = await httpRequest.get(options);
     return result;
   },
   

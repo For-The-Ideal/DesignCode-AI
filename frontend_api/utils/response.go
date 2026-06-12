@@ -26,7 +26,7 @@ func Success(c *gin.Context, data interface{}, message string) {
 func Error(c *gin.Context, code int, message string) {
 	c.JSON(code, Response{
 		Code:    code,
-		Data:    nil,
+		Data:    gin.H{},
 		Message: message,
 	})
 }

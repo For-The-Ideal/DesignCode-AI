@@ -83,11 +83,20 @@ func (m *Manager) Push(taskID string, event SSEEvent) bool {
 
 	select {
 	case ch <- event:
+		log.Printf("[SSE Manager] task %s pushed event: %s | data=%s", taskID, event.Event, truncateStr(event.Data, 60))
 		return true
 	default:
 		log.Printf("[SSE Manager] task %s channel full, dropping event: %s", taskID, event.Event)
 		return false
 	}
+}
+
+// truncateStr 截断过长字符串用于日志
+func truncateStr(s string, maxLen int) string {
+	if len(s) <= maxLen {
+		return s
+	}
+	return s[:maxLen] + "..."
 }
 
 // NumSubscribers 返回当前订阅数

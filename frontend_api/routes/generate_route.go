@@ -13,7 +13,7 @@ import (
 // 请求路径：
 //
 //	POST  /api/v1/generate-ui        → 创建 UI 生成任务
-//	      请求：{"target":"flutter","images":[{"url":"...","desc":"..."}]}
+//	      请求：{"target":"flutter","images":["cos_url1","cos_url2"]}
 //	      响应：{"task_id":"xxx","status":"pending"}
 //
 //	GET   /api/v1/task/:id            → 查询任务状态
@@ -28,7 +28,7 @@ import (
 //	        event: done      data: {"progress":100,"step":"Done"}
 //	        event: error     data: {"message":"AI接口超时"}
 //
-//	POST  /api/v1/upload              → 图片上传（占位，待接入 COS）
+//	POST  /api/v1/upload              → 上传图片到 COS，返回 URL
 //	      请求：multipart/form-data  image
 //	      响应：{"url":"","filename":"xxx","size":123}
 func InitGenerateRoutes(v1 *gin.RouterGroup,

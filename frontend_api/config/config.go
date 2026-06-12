@@ -59,6 +59,7 @@ type AIModelYAMLItem struct {
 	MaxRetries int    `mapstructure:"max_retries"`
 	Timeout    int    `mapstructure:"timeout"` // 秒
 	Priority   int    `mapstructure:"priority"`
+	Capability string `mapstructure:"capability"` // read(vision分析) / write(代码生成) / both(两者)
 }
 
 var AppConfig *Config

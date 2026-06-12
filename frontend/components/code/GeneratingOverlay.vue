@@ -1,58 +1,72 @@
 <!-- components/code/GeneratingOverlay.vue -->
+<!-- 集成了 CodeEditor + 生成进度覆盖层的复合组件 -->
 <template>
-  <div class="generating-overlay">
-    <div class="generating-content">
-      <!-- 旋转的芯片图标 -->
-      <div class="generating-icon">
-        <div class="icon-ring">
-          <i class="fas fa-microchip"></i>
-        </div>
-        <div class="ring ring-1"></div>
-        <div class="ring ring-2"></div>
-      </div>
-
-      <!-- 进度百分比 -->
-      <div class="generating-percent">{{ displayProgress }}%</div>
-
-      <!-- 状态文字 -->
-      <div class="generating-status">{{ currentStep }}</div>
-
-      <!-- 进度条 -->
-      <div class="generating-progress-bar">
-        <div class="progress-fill" :style="{ width: displayProgress + '%' }">
-          <div class="progress-glow"></div>
-        </div>
-      </div>
-
-      <!-- 步骤指示器 -->
-      <div class="generating-steps">
-        <div
-          v-for="(step, index) in steps"
-          :key="index"
-          class="step"
-          :class="{
-            active: currentStepIndex >= index,
-            completed: currentStepIndex > index,
-          }"
-        >
-          <div class="step-dot">
-            <i v-if="currentStepIndex > index" class="fas fa-check"></i>
-            <span v-else>{{ index + 1 }}</span>
+  <div class="generating-wrapper">
+    <!-- 底层：代码编辑器 -->
+    <CodeEditor
+      :model-value="modelValue"
+      :language="language"
+      :readonly="readonly"
+      :auto-scroll="autoScroll"
+      :height="height"
+      :placeholder="placeholder"
+      @update:model-value="emit('update:modelValue', $event)"
+    />
+    <!-- 上层：进度覆盖层 -->
+    <div v-if="visible" class="generating-overlay">
+      <div class="generating-content">
+        <!-- 旋转的芯片图标 -->
+        <div class="generating-icon">
+          <div class="icon-ring">
+            <i class="fas fa-microchip"></i>
           </div>
-          <div class="step-label">{{ step.label }}</div>
+          <div class="ring ring-1"></div>
+          <div class="ring ring-2"></div>
         </div>
-      </div>
 
-      <!-- 动态消息 -->
-      <div class="generating-messages">
-        <div
-          v-for="(msg, idx) in messages"
-          :key="idx"
-          class="message-item"
-          :class="{ new: idx === messages.length - 1 }"
-        >
-          <i class="fas fa-chevron-right"></i>
-          <span>{{ msg }}</span>
+        <!-- 进度百分比 -->
+        <div class="generating-percent">{{ displayProgress }}%</div>
+
+        <!-- 状态文字 -->
+        <div class="generating-status">{{ displayStep }}</div>
+
+        <!-- 进度条 -->
+        <div class="generating-progress-bar">
+          <div class="progress-fill" :style="{ width: displayProgress + '%' }">
+            <div class="progress-glow"></div>
+          </div>
+        </div>
+
+        <!-- 步骤指示器 -->
+        <div class="generating-steps">
+          <div
+            v-for="(step, index) in steps"
+            :key="index"
+            class="step"
+            :class="{
+              active: currentStepIndex >= index,
+              completed: currentStepIndex > index,
+            }"
+          >
+            <div class="step-dot">
+              <i v-if="currentStepIndex > index" class="fas fa-check"></i>
+              <span v-else>{{ index + 1 }}</span>
+            </div>
+            <div class="step-label">{{ step.label }}</div>
+          </div>
+        </div>
+
+        <!-- 动态消息 -->
+        <div class="generating-messages">
+          <div
+            v-for="(msg, idx) in messages"
+            :key="idx"
+            class="message-item"
+            :class="{ new: idx === messages.length - 1 }"
+          >
+            <i class="fas fa-chevron-right"></i>
+            <span>{{ msg }}</span>
+          </div>
         </div>
       </div>
     </div>
@@ -60,164 +74,107 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onUnmounted } from "vue";
+import { ref, computed, watch } from "vue";
+import CodeEditor from "./CodeEditor.vue";
 
 const props = defineProps({
-  // 是否显示
-  visible: {
-    type: Boolean,
-    default: false,
-  },
-  // 外部控制进度 (0-100)，为 null 时使用内部模拟定时器
-  progress: {
-    type: Number,
-    default: null,
-  },
-  // 自定义步骤
-  customSteps: {
-    type: Array,
-    default: null,
-  },
+  // ── 编辑器相关 ──
+  modelValue: { type: String, default: '' },
+  language: { type: String, default: 'dart' },
+  readonly: { type: Boolean, default: false },
+  autoScroll: { type: Boolean, default: false },
+  height: { type: [String, Number], default: '700px' },
+  placeholder: { type: String, default: '// AI 生成的代码将在这里展示...' },
+
+  // ── 覆盖层相关 ──
+  visible: { type: Boolean, default: false },
+  progress: { type: Number, default: 0 },
+  currentStep: { type: String, default: '' },
+  customSteps: { type: Array, default: null },
 });
 
-const emit = defineEmits(["complete", "progress"]);
-
-// 是否由外部控制进度
-const isExternal = computed(() => props.progress !== null);
+const emit = defineEmits(["update:modelValue", "complete"]);
 
 // 默认步骤
 const defaultSteps = [
   { label: "图像识别", progress: 20, message: "正在识别设计稿中的UI元素..." },
   { label: "布局分析", progress: 40, message: "分析页面布局结构..." },
-  { label: "代码生成", progress: 60, message: "生成代码框架..." },
-  { label: "优化输出", progress: 80, message: "优化代码质量..." },
+  { label: "代码生成", progress: 60, message: "AI 正在生成代码框架..." },
+  { label: "优化输出", progress: 80, message: "优化代码质量中..." },
   { label: "完成", progress: 100, message: "生成完成！" },
 ];
 
 const steps = computed(() => props.customSteps || defaultSteps);
-
-const internalProgress = ref(0);
 const currentStepIndex = ref(0);
-const currentStep = ref("准备就绪");
 const messages = ref([]);
-let timer = null;
 
-// 当前显示的进度
-const displayProgress = computed(() =>
-  isExternal.value ? props.progress : internalProgress.value
-);
+// 显示用状态文字：优先使用真实 currentStep，回退为根据进度推算
+const displayStep = computed(() => {
+  if (props.currentStep) {
+    const stepMap = {
+      DownloadImages: '下载图片素材',
+      VisionAnalyzeSkill: '视觉分析设计稿',
+      FlutterGenerateSkill: 'Flutter 代码生成',
+      Vue3GenerateSkill: 'Vue3 代码生成',
+      ReactGenerateSkill: 'React 代码生成',
+      GenerateSkill: '代码生成',
+      SaveResult: '保存生成结果',
+      Done: '生成完成',
+    }
+    return stepMap[props.currentStep] || props.currentStep
+  }
+  for (let i = steps.value.length - 1; i >= 0; i--) {
+    if (props.progress >= steps.value[i].progress) {
+      return steps.value[i].label
+    }
+  }
+  return '准备就绪'
+})
 
-// 更新进度
-const updateProgress = (newProgress) => {
-  internalProgress.value = Math.min(newProgress, 100);
-  emit("progress", displayProgress.value);
+// 显示用进度（直接使用外部 progress）
+const displayProgress = computed(() => props.progress)
 
-  // 根据进度更新当前步骤
+// 监听外部 progress
+watch(() => props.progress, (val) => {
+  if (val == null) return
   for (let i = 0; i < steps.value.length; i++) {
-    if (displayProgress.value >= steps.value[i].progress) {
-      currentStepIndex.value = i;
-      currentStep.value = steps.value[i].label;
-
-      // 添加消息（避免重复添加）
-      const lastMsg = messages.value[messages.value.length - 1];
+    if (val >= steps.value[i].progress) {
+      currentStepIndex.value = i
+    }
+  }
+  for (let i = 0; i < steps.value.length; i++) {
+    if (val >= steps.value[i].progress) {
+      const lastMsg = messages.value[messages.value.length - 1]
       if (!lastMsg || lastMsg !== steps.value[i].message) {
-        messages.value.push(steps.value[i].message);
-        // 自动滚动到最新消息
-        setTimeout(() => {
-          const container = document.querySelector(".generating-messages");
-          if (container) container.scrollTop = container.scrollHeight;
-        }, 50);
+        messages.value.push(steps.value[i].message)
       }
     }
   }
-
-  // 完成时触发事件
-  if (displayProgress.value >= 100) {
-    setTimeout(() => {
-      emit("complete");
-    }, 500);
+  if (val >= 100) {
+    emit('complete')
   }
-};
+})
 
-// 开始生成（内部模拟进度，仅在没有外部进度时使用）
-const start = (duration = 3000) => {
-  internalProgress.value = 0;
-  messages.value = [];
-  currentStepIndex.value = 0;
-
-  const stepDuration = duration / 100;
-  let currentProgress = 0;
-
-  if (timer) clearInterval(timer);
-
-  timer = setInterval(() => {
-    currentProgress += 1;
-    if (currentProgress <= 100) {
-      updateProgress(currentProgress);
-    } else {
-      clearInterval(timer);
-      timer = null;
-    }
-  }, stepDuration);
-};
-
-// 设置进度（手动控制）
-const setProgress = (value) => {
-  updateProgress(value);
-};
-
-// 重置
-const reset = () => {
-  if (timer) clearInterval(timer);
-  internalProgress.value = 0;
-  messages.value = [];
-  currentStepIndex.value = 0;
-  currentStep.value = "准备就绪";
-  timer = null;
-};
-
-// 监听 visible 变化
-watch(
-  () => props.visible,
-  (newVal) => {
-    if (newVal) {
-      // 外部控制进度时不启动内部定时器
-      if (!isExternal.value && !timer && internalProgress.value === 0) {
-        start();
-      }
-    } else {
-      reset();
-    }
-  },
-);
-
-// 监听外部进度变化
-watch(
-  () => props.progress,
-  (newVal) => {
-    if (isExternal.value && newVal !== null) {
-      updateProgress(newVal);
-    }
-  },
-);
-
-onUnmounted(() => {
-  if (timer) clearInterval(timer);
-});
-
-defineExpose({
-  start,
-  setProgress,
-  reset,
-  updateProgress,
-});
+// visible 从 false → true 时重置消息
+watch(() => props.visible, (val) => {
+  if (val) {
+    messages.value = []
+    currentStepIndex.value = 0
+  }
+})
 </script>
 
 <style scoped>
+.generating-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
 .generating-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(10, 10, 15, 0.95);
+  background: rgba(10, 10, 15, 0.92);
   backdrop-filter: blur(12px);
   border-radius: 16px;
   display: flex;
@@ -417,67 +374,32 @@ defineExpose({
 
 /* 动画 */
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes ringRotate {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 @keyframes pulse {
-  0%,
-  100% {
-    transform: scale(0.95);
-    opacity: 0.8;
-  }
-  50% {
-    transform: scale(1.05);
-    opacity: 1;
-  }
+  0%, 100% { transform: scale(0.95); opacity: 0.8; }
+  50% { transform: scale(1.05); opacity: 1; }
 }
 
 @keyframes shimmer {
-  0% {
-    transform: translateX(-20px);
-  }
-  100% {
-    transform: translateX(40px);
-  }
+  0% { transform: translateX(-20px); }
+  100% { transform: translateX(40px); }
 }
 
 @keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateX(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: translateX(0); }
 }
 
 /* 滚动条 */
-.generating-messages::-webkit-scrollbar {
-  width: 4px;
-}
-
-.generating-messages::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 2px;
-}
-
-.generating-messages::-webkit-scrollbar-thumb {
-  background: rgba(0, 255, 255, 0.3);
-  border-radius: 2px;
-}
+.generating-messages::-webkit-scrollbar { width: 4px; }
+.generating-messages::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); border-radius: 2px; }
+.generating-messages::-webkit-scrollbar-thumb { background: rgba(0, 255, 255, 0.3); border-radius: 2px; }
 </style>

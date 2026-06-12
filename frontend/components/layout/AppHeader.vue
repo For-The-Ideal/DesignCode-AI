@@ -37,19 +37,21 @@
         <!-- 已登录：头像 + 下拉菜单 -->
         <div v-else class="user-menu" @mouseenter="showDropdown = true" @mouseleave="showDropdown = false">
           <div class="user-avatar">
-            <span class="avatar-text">{{ (userInfo?.username || userInfo?.email)?.charAt(0)?.toUpperCase() || 'U' }}</span>
+            <img v-if="userInfo?.avatar" :src="userInfo.avatar" class="avatar-img" @error="onAvatarError($event)" />
+            <span class="avatar-text" v-show="!userInfo?.avatar || avatarFailed">{{ fallbackLetter }}</span>
           </div>
-          <span class="user-name">{{ userInfo?.username || userInfo?.email }}</span>
+          <span class="user-name">{{ userInfo?.nickname || userInfo?.email }}</span>
 
           <!-- 下拉菜单 -->
           <transition name="dropdown-fade">
             <div v-if="showDropdown" class="dropdown-panel">
               <div class="dropdown-header">
                 <div class="dropdown-avatar">
-                  <span>{{ (userInfo?.username || userInfo?.email)?.charAt(0)?.toUpperCase() || 'U' }}</span>
+                  <img v-if="userInfo?.avatar" :src="userInfo.avatar" class="avatar-img" @error="onAvatarError($event)" />
+                  <span v-show="!userInfo?.avatar || avatarFailed">{{ fallbackLetter }}</span>
                 </div>
                 <div class="dropdown-user-info">
-                  <span class="dropdown-username">{{ userInfo?.username || userInfo?.email }}</span>
+                  <span class="dropdown-username">{{ userInfo?.nickname || userInfo?.email }}</span>
                   <span class="dropdown-email">{{ userInfo?.email }}</span>
                 </div>
               </div>
@@ -90,6 +92,7 @@ import AuthModal from '~/components/auth/AuthModal.vue'
 import Password from '~/components/auth/Password.vue'
 import { useUserStore } from '~/stores/user'
 import { storeToRefs } from 'pinia'
+import { loginApi } from '~/api/login'
 
 const router = useRouter()
 const route = useRoute()
@@ -98,6 +101,7 @@ const loginModalRef = ref()
 const passwordModalRef = ref()
 const passwordBackToLogin = ref(false)
 const showDropdown = ref(false)
+const avatarFailed = ref(false)
 const { isLogin, userInfo } = storeToRefs(userStore)
 const navList = ref([
   {
@@ -126,8 +130,9 @@ const handleRegisterSuccess = () => {}
 
 const handleModalClose = () => {}
 
-const handleLogout = () => {
+const handleLogout = async () => {
   showDropdown.value = false
+  // 清 Pinia 状态
   userStore.logout()
 }
 
@@ -144,6 +149,15 @@ const openPasswordModal = () => {
 
 const handlePasswordBack = () => {
   loginModalRef.value?.open()
+}
+
+const fallbackLetter = computed(() => {
+  return (userInfo.value?.nickname || userInfo.value?.email)?.charAt(0)?.toUpperCase() || 'U'
+})
+
+const onAvatarError = (e) => {
+  e.target.style.display = 'none'
+  avatarFailed.value = true
 }
 
 </script>

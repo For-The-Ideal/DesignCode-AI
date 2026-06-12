@@ -68,6 +68,25 @@ export function useGeneration () {
     }
   })
 
+  // ═══ SSE progress → 任务进度 ═══
+  watch(() => sse.sseData.progress, (val) => {
+    taskProgress.value = val
+  })
+
+  watch(() => sse.sseData.currentStep, (val) => {
+    taskCurrentStep.value = val
+  })
+
+  // ═══ SSE 状态 → 任务状态 ═══
+  watch(sse.status, (val) => {
+    if (val === 'idle' && taskStatus.value === 'running') {
+      // SSE 流结束，任务完成
+      taskStatus.value = 'success'
+      taskProgress.value = 100
+      localStorage.removeItem(RESTORE_KEY)
+    }
+  })
+
   // 渲染器输出 → template（仅模板加载场景，SSE 不活跃时）
   watch(() => renderer.displayText.value, (text) => {
     if (sse.status.value !== 'streaming') {
@@ -85,6 +104,10 @@ export function useGeneration () {
     activeTaskId.value = taskId
     activeTaskFramework.value = framework
     taskStatus.value = 'running'
+    // 清空上一次残留数据
+    template.templateCode = ''
+    template.previewCode = ''
+    template.id = null
     localStorage.setItem(RESTORE_KEY, JSON.stringify({ taskId, framework }))
   }
 
@@ -130,7 +153,7 @@ export function useGeneration () {
         // 任务还在执行 → 重连 SSE
         taskStatus.value = data.status
         sse.connect(taskId)
-        return { taskId, status: data.status, framework: activeTaskFramework.value }
+        return { taskId, status: data.status, framework: activeTaskFramework.value, images: data.images || [] }
 
       } else if (data.status === 'success' && data.result) {
         // 任务已完成 → 展示结果
@@ -138,12 +161,12 @@ export function useGeneration () {
         template.templateCode = data.result.code || ''
         template.previewCode = data.result.preview || ''
         template.id = data.result.id || null
-        return { taskId, status: 'success', framework: activeTaskFramework.value }
+        return { taskId, status: 'success', framework: activeTaskFramework.value, images: data.images || [] }
 
       } else if (data.status === 'failed') {
         taskStatus.value = 'failed'
         taskErrorMsg.value = '任务执行失败'
-        return { taskId, status: 'failed', framework: activeTaskFramework.value }
+        return { taskId, status: 'failed', framework: activeTaskFramework.value, images: data.images || [] }
       }
     } catch {
       localStorage.removeItem(RESTORE_KEY)

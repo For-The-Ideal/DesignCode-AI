@@ -15,7 +15,8 @@
     <!-- 密码 -->
     <div class="input-field" :class="{ focused: focusedInput === 'password', error: errors.password }">
       <i class="fas fa-lock input-icon"></i>
-      <input :type="showPassword ? 'text' : 'password'" v-model="form.password" placeholder="密码" minlength="8" maxlength="20"
+      <input :type="showPassword ? 'text' : 'password'" 
+      v-model="form.password" placeholder="密码" minlength="6" maxlength="20"
         @focus="onFocus('password')" @blur="onBlur('password')" @input="clearError('password')" @keyup.enter="handleLogin">
       <button type="button" class="password-eye" @click="showPassword = !showPassword">
         <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
@@ -27,13 +28,8 @@
     </div>
     <p v-if="errors.password" class="field-error">{{ errors.password }}</p>
 
-    <!-- 记住我 / 忘记密码 -->
+    <!-- 忘记密码 -->
     <div class="form-options">
-      <label class="checkbox">
-        <input type="checkbox" v-model="rememberMe">
-        <span class="checkmark"></span>
-        <span>记住我</span>
-      </label>
       <a href="#" class="forgot-link" @click.prevent="$emit('forgotPassword')">忘记密码？</a>
     </div>
 
@@ -50,7 +46,6 @@ import { ref, reactive } from 'vue'
 const emit = defineEmits(['forgotPassword', 'requestCaptcha'])
 
 const loading = ref(false)
-const rememberMe = ref(false)
 const showPassword = ref(false)
 const focusedInput = ref(null)
 const animatedInput = ref(null)
@@ -73,7 +68,6 @@ const handleLogin = () => {
   emit('requestCaptcha', {
     email: form.email,
     password: form.password,
-    rememberMe: rememberMe.value,
   })
 }
 </script>
@@ -188,41 +182,10 @@ const handleLogin = () => {
 
 .form-options {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   font-size: 13px;
   margin: 8px 0 4px;
-}
-.checkbox {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  color: #888;
-}
-.checkbox input { display: none; }
-.checkmark {
-  width: 16px;
-  height: 16px;
-  border: 1px solid rgba(0, 255, 255, 0.3);
-  border-radius: 4px;
-  position: relative;
-  transition: all 0.3s;
-}
-.checkbox input:checked + .checkmark {
-  background: #00ffff;
-  border-color: #00ffff;
-}
-.checkbox input:checked + .checkmark::after {
-  content: '';
-  position: absolute;
-  left: 4px;
-  top: 1px;
-  width: 5px;
-  height: 9px;
-  border: solid #0a0a0f;
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
 }
 .forgot-link {
   color: #00ffff;

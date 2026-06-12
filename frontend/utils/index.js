@@ -1,5 +1,6 @@
 import CryptoJS from "crypto-js";
 import { cryptoConfig } from "~/config/index.js";
+import { ElMessage } from 'element-plus'
 
 // 创建原生通知的函数
 export const showElectronNotification = (options) => {
@@ -56,7 +57,7 @@ export const showElectronNotification = (options) => {
 };
 
 /**
- * 加密数据（同步版本）
+ * 加密数据
  */
 export const setEncrypt = (data) => {
   if (!data) {
@@ -83,32 +84,60 @@ export const setEncrypt = (data) => {
 }
 
 /**
- * 解密数据
+ * 复制文本到剪贴板
+ * @param {string} text 要复制的文本
  */
-export const getDecrypt = (encryptedStr) => {
-  if (!encryptedStr) {
-    console.warn("⚠️  解密数据为空")
-    return null
-  }
+export const handleCopy = async (text) => {
   try {
-    const decrypted = CryptoJS.AES.decrypt(
-      encryptedStr,
-      CryptoJS.enc.Utf8.parse(cryptoConfig.key),
-      {
-        iv: CryptoJS.enc.Utf8.parse(cryptoConfig.iv),
-        mode: CryptoJS.mode.CBC,
-        padding: CryptoJS.pad.Pkcs7,
-      }
-    )
-    const resultUtf8 = decrypted.toString(CryptoJS.enc.Utf8)
-    try {
-      const parsed = JSON.parse(resultUtf8)
-      console.log("✅ 解密成功，解析为JSON:", parsed)
-      return parsed
-    } catch (jsonError) {
-      return resultUtf8
-    }
-  } catch (error) {
-    return null
+    await navigator.clipboard.writeText(text)
+    ElMessage.success('已复制到剪贴板')
+  } catch {
+    ElMessage.error('复制失败')
   }
+}
+
+/**
+ * 格式化代码（缩进对齐）
+ * @param {string} code 原始代码
+ * @returns {string} 格式化后的代码
+ */
+export const handleFormat = (code) => {
+  let indent = 0
+  const formatted = code.split('\n').map(line => {
+    const t = line.trim()
+    if (!t) return ''
+    if (/^[})]/.test(t)) indent = Math.max(0, indent - 1)
+    const r = '  '.repeat(indent) + t
+    if (/[({]$/.test(t)) indent++
+    return r
+  }).join('\n')
+  ElMessage.success('代码已格式化')
+  return formatted
+}
+
+/**
+ * 下载代码文件
+ * @param {string} text 代码文本
+ * @param {string} language 语言标识（dart/typescript/html）
+ */
+export const handleDownload = (text, language) => {
+  const ext = language === 'dart' ? 'dart' : language === 'typescript' ? 'tsx' : 'vue'
+  const blob = new Blob([text], { type: 'text/plain' })
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(blob)
+  a.download = `generated.${ext}`
+  a.click()
+  URL.revokeObjectURL(a.href)
+  ElMessage.success('已下载')
+}
+
+
+// 读取文件为 base64 data URL
+export function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result)
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
 }

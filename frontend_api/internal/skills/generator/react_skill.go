@@ -3,6 +3,7 @@ package generator
 import (
 	"context"
 	"fmt"
+	"frontend_api/pkg/ai"
 	"frontend_api/pkg/logger"
 	"os"
 	"path/filepath"
@@ -15,13 +16,15 @@ import (
 
 // ReactSkill React 代码生成技能
 type ReactSkill struct {
-	logger *logger.Logger
+	aiClient ai.Client
+	logger   *logger.Logger
 }
 
 // NewReactSkill 创建 React 生成技能
-func NewReactSkill() *ReactSkill {
+func NewReactSkill(client ai.Client) *ReactSkill {
 	return &ReactSkill{
-		logger: logger.NewLogger("react-gen"),
+		aiClient: client,
+		logger:   logger.NewLogger("react-gen"),
 	}
 }
 
@@ -31,7 +34,6 @@ func (s *ReactSkill) Name() string {
 }
 
 // Execute 执行代码生成
-// TODO: 接入 AI 模型进行真实代码生成
 func (s *ReactSkill) Execute(ctx context.Context, input interface{}) (interface{}, error) {
 	gi, ok := input.(Input)
 	if !ok {
@@ -41,35 +43,22 @@ func (s *ReactSkill) Execute(ctx context.Context, input interface{}) (interface{
 	s.logger.Infof("[ReactSkill] 开始生成 React 代码, DSL length=%d", len(gi.DSL))
 
 	prompt := s.loadPrompt()
-	_ = prompt // TODO: 将 prompt + DSL 传给 AI 模型
+	if prompt == "" {
+		return nil, fmt.Errorf("react: 提示词文件未找到")
+	}
 
-	code := fmt.Sprintf(`// React 代码生成于 DesignCode AI
-// DSL: %s
+	messages := []ai.Message{
+		{Role: "system", Content: prompt},
+		{Role: "user", Content: fmt.Sprintf("DSL:\n%s", gi.DSL)},
+	}
 
-import React from 'react';
+	content, err := s.aiClient.Chat(ctx, messages, ai.WithDeepSeekThinking("high"), ai.WithMaxTokens(8192))
+	if err != nil {
+		return nil, fmt.Errorf("react: AI 调用失败: %w", err)
+	}
 
-function App() {
-  return (
-    <div className="app">
-      <header className="app-header">
-        <h1>DesignCode AI</h1>
-        <p className="subtitle">AI 生成的 React 代码</p>
-      </header>
-      <main className="app-main">
-        <div className="card">
-          <p>React 代码已生成</p>
-        </div>
-      </main>
-    </div>
-  );
-}
-
-export default App;
-`, gi.DSL[:min(len(gi.DSL), 80)])
-
-	preview := `<div class="phone-body"><div class="generated-badge">✨ React 代码已生成</div></div>`
-
-	return Output{Code: code, Preview: preview, Score: 83}, nil
+	s.logger.Infof("[ReactSkill] 生成完成, code=%d chars", len(content))
+	return Output{Code: content, Preview: "", Score: 0}, nil
 }
 
 func (s *ReactSkill) loadPrompt() string {

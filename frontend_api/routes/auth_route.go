@@ -13,6 +13,7 @@ import (
 //	GET   /api/v1/auth/captcha   → 获取图形验证码
 //	POST  /api/v1/auth/login     → 用户登录
 //	POST  /api/v1/auth/register  → 用户注册
+//	POST  /api/v1/auth/logout    → 退出登录
 func InitAuthRoutes(v1 *gin.RouterGroup, authHandler *handler.AuthHandler) {
 	auth := v1.Group("/auth")
 	{
@@ -24,5 +25,8 @@ func InitAuthRoutes(v1 *gin.RouterGroup, authHandler *handler.AuthHandler) {
 
 		// POST /api/v1/auth/register → 用户注册
 		auth.POST("/register", authHandler.Register)
+
+		// POST /api/v1/auth/logout → 退出登录
+		auth.POST("/logout", authHandler.Logout)
 	}
 }

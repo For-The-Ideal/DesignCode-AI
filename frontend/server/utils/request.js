@@ -40,12 +40,19 @@ export const getData = async (options = {}) => {
         result = await $fetch(baseURL, reqJson).then((res) => {
             return typeof res === 'string' ? JSON.parse(res) : res
         }).catch((error) => {
-            return Promise.reject(error);
+            const message = error?.data?.message || error?.message || '请求失败';
+            const status = error?.status || error?.response?.status || 400;
+            console.error('serverData 耗时：', Date.now() - startTime, '  地址：', url,'  status：', status, '错误：', message);
+            return {
+                code: status,
+                error: 'serverData error',
+                message,
+                data: []
+            };
         });
 
         if(result.code !== 200){
             console.error('serverData 耗时：', Date.now() - startTime, '  地址：', url,'  参数：', JSON.stringify(reqJson), '返回数据：', JSON.stringify(result));
-            return Promise.reject(result);
         }
         return result
     } catch (err) {

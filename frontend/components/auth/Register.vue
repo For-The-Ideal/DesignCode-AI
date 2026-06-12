@@ -1,21 +1,9 @@
 <template>
   <form @submit.prevent="handleRegister" class="auth-form" v-border-gradient>
-    <!-- 用户名 -->
-    <div class="input-field" :class="{ focused: focusedInput === 'username', error: errors.username }">
-      <i class="fas fa-user input-icon"></i>
-      <input type="text" v-model="form.username" placeholder="用户名" maxlength="20"
-        @focus="onFocus('username')" @blur="onBlur('username')" @input="clearError('username')">
-      <svg class="border-svg" :class="{ animate: animatedInput === 'username' }">
-        <rect x="0" y="0" rx="26" ry="26" width="100%" height="100%" pathLength="100" class="border-bg" />
-        <rect x="0" y="0" rx="26" ry="26" width="100%" height="100%" pathLength="100" class="moving-stroke" />
-      </svg>
-    </div>
-    <p v-if="errors.username" class="field-error">{{ errors.username }}</p>
-
     <!-- 邮箱 -->
     <div class="input-field" :class="{ focused: focusedInput === 'email', error: errors.email }">
       <i class="fas fa-envelope input-icon"></i>
-      <input type="email" v-model="form.email" placeholder="邮箱" maxlength="20"
+      <input type="email" v-model="form.email" placeholder="邮箱" maxlength="50"
         @focus="onFocus('email')" @blur="onBlur('email')" @input="clearError('email')">
       <svg class="border-svg" :class="{ animate: animatedInput === 'email' }">
         <rect x="0" y="0" rx="26" ry="26" width="100%" height="100%" pathLength="100" class="border-bg" />
@@ -27,7 +15,8 @@
     <!-- 密码 -->
     <div class="input-field" :class="{ focused: focusedInput === 'password', error: errors.password }">
       <i class="fas fa-lock input-icon"></i>
-      <input :type="showPassword ? 'text' : 'password'" v-model="form.password" placeholder="密码" maxlength="20"
+      <input :type="showPassword ? 'text' : 'password'" v-model="form.password"
+        placeholder="密码" maxlength="20" minlength="6"
         @focus="onFocus('password')" @blur="onBlur('password')" @input="clearError('password')">
       <button type="button" class="password-eye" @click="showPassword = !showPassword">
         <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
@@ -42,7 +31,8 @@
     <!-- 确认密码 -->
     <div class="input-field" :class="{ focused: focusedInput === 'confirm', error: errors.confirm }">
       <i class="fas fa-check-circle input-icon"></i>
-      <input :type="showConfirm ? 'text' : 'password'" v-model="form.confirm" placeholder="确认密码" maxlength="20"
+      <input :type="showConfirm ? 'text' : 'password'" v-model="form.confirm"
+        placeholder="确认密码" maxlength="20" minlength="6"
         @focus="onFocus('confirm')" @blur="onBlur('confirm')" @input="clearError('confirm')">
       <button type="button" class="password-eye" @click="showConfirm = !showConfirm">
         <i :class="showConfirm ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
@@ -63,6 +53,8 @@
 
 <script setup>
 import { ref, reactive } from 'vue'
+import { loginApi } from '@/api/login'
+import { ElMessage } from 'element-plus'
 
 const emit = defineEmits(['success'])
 
@@ -72,8 +64,8 @@ const showConfirm = ref(false)
 const focusedInput = ref(null)
 const animatedInput = ref(null)
 
-const form = reactive({ username: '', email: '', password: '', confirm: '' })
-const errors = reactive({ username: '', email: '', password: '', confirm: '' })
+const form = reactive({ email: '', password: '', confirm: '' })
+const errors = reactive({ email: '', password: '', confirm: '' })
 
 const clearError = (field) => { errors[field] = '' }
 const onFocus = (id) => { focusedInput.value = id; animatedInput.value = id }
@@ -83,7 +75,6 @@ const onBlur = (id) => {
 
 const handleRegister = async () => {
   let valid = true
-  if (!form.username)  { errors.username  = '请输入用户名'; valid = false }
   if (!form.email)     { errors.email     = '请输入邮箱'; valid = false }
   if (!form.password)  { errors.password  = '请输入密码'; valid = false }
   if (!form.confirm)   { errors.confirm   = '请确认密码'; valid = false }
@@ -96,11 +87,22 @@ const handleRegister = async () => {
   }
 
   loading.value = true
-  // TODO: 对接真实注册 API
-  await new Promise(resolve => setTimeout(resolve, 800))
-  alert('注册成功！请登录')
-  emit('success')
-  loading.value = false
+  try {
+    const res = await loginApi.register({
+      email: form.email.toLowerCase(),
+      password: form.password,
+    })
+    if (res.code === 200) {
+      ElMessage.success('注册成功！请登录')
+      emit('success')
+    } else {
+      ElMessage.error(res.message || '注册失败，请重试')
+    }
+  } catch (e) {
+    ElMessage.error('网络错误，请稍后重试')
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 

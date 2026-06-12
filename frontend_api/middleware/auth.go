@@ -11,21 +11,30 @@ import (
 
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// 优先取 Authorization 头（Bearer token）
 		authHeader := c.GetHeader("Authorization")
-		if authHeader == "" {
+		tokenString := ""
+
+		if authHeader != "" {
+			parts := strings.SplitN(authHeader, " ", 2)
+			if len(parts) == 2 && parts[0] == "Bearer" {
+				tokenString = parts[1]
+			}
+		}
+
+		// fallback: 从 cookie 中读取 token
+		if tokenString == "" {
+			cookie, err := c.Cookie("token")
+			if err == nil && cookie != "" {
+				tokenString = cookie
+			}
+		}
+
+		if tokenString == "" {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "未提供认证信息"})
 			c.Abort()
 			return
 		}
-
-		parts := strings.SplitN(authHeader, " ", 2)
-		if !(len(parts) == 2 && parts[0] == "Bearer") {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "认证格式不正确"})
-			c.Abort()
-			return
-		}
-
-		tokenString := parts[1]
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 			return []byte(config.AppConfig.Server.JWTSecret), nil
 		})
@@ -45,7 +54,8 @@ func AuthMiddleware() gin.HandlerFunc {
 
 		// 将用户信息存入上下文，供后续 Handler 使用
 		c.Set("user_id", uint(claims["user_id"].(float64)))
-		c.Set("username", claims["username"].(string))
+		c.Set("email", claims["email"].(string))
+		c.Set("token_string", tokenString)
 
 		c.Next()
 	}

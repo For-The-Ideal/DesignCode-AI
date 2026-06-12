@@ -24,7 +24,21 @@ export const commonApi = {
     return result;
   },
 
-  // 创建AI生成代码任务
+  // 上传图片到 COS（base64）
+  async uploadImage(base64Data, filename) {
+    let options = {
+      url: `/api/v1/upload`,
+      method: "post",
+      params: {
+        image: base64Data,
+        filename: filename || 'image.png',
+      },
+      server: false,
+    };
+    let result = await httpRequest.post(options);
+    return result;
+  },
+
   async generateUi(params = {}, server = true) {
     let options = {
       url: `/api/v1/generate-ui`,

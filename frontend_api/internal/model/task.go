@@ -20,8 +20,8 @@ const (
 	TaskStatusFailed  TaskStatus = "failed"
 )
 
-// TaskImage 任务关联的图片
-type TaskImage struct {
+// ImageItem 图片项
+type ImageItem struct {
 	URL  string `json:"url"`
 	Desc string `json:"desc"`
 }
@@ -29,8 +29,9 @@ type TaskImage struct {
 // Task 生成任务
 type Task struct {
 	ID          string      `json:"id" gorm:"primaryKey"`
-	Target      string      `json:"target"` // flutter | vue3 | react
-	Images      []TaskImage `json:"images" gorm:"serializer:json"`
+	Target      string      `json:"target"`                        // flutter | vue3 | react
+	Images      []ImageItem `json:"images" gorm:"serializer:json"` // 图片列表（url + desc）
+	Quality     int         `json:"quality"`                       // 质量要求 60-100
 	Status      TaskStatus  `json:"status" gorm:"size:20"`
 	Progress    int         `json:"progress"`     // 当前进度 0-100
 	CurrentStep string      `json:"current_step"` // 当前执行步骤
@@ -49,14 +50,16 @@ type Task struct {
 //   current_step  - 当前执行步骤，如 VisionAnalyzeSkill / FlutterGenerateSkill
 //   can_sse       - 是否可以连接 SSE（true=运行中可连，false=已结束无需连）
 //   result        - 生成结果（仅 success 时有值）
+//   images        - 上传的图片列表（刷新后回显用）
 type TaskStatusResponse struct {
-	TaskID      string     `json:"task_id"`
-	Target      string     `json:"target"`
-	Status      TaskStatus `json:"status"`
-	Progress    int        `json:"progress"`
-	CurrentStep string     `json:"current_step"`
-	CanSSE      bool       `json:"can_sse"`
-	Result      *Result    `json:"result,omitempty"`
+	TaskID      string      `json:"task_id"`
+	Target      string      `json:"target"`
+	Status      TaskStatus  `json:"status"`
+	Progress    int         `json:"progress"`
+	CurrentStep string      `json:"current_step"`
+	CanSSE      bool        `json:"can_sse"`
+	Images      []ImageItem `json:"images"`
+	Result      *Result     `json:"result,omitempty"`
 }
 
 // ToTaskStatusResponse 将 Task 转换为对外响应
@@ -69,6 +72,7 @@ func (t *Task) ToTaskStatusResponse(result *Result) *TaskStatusResponse {
 		Progress:    t.Progress,
 		CurrentStep: t.CurrentStep,
 		CanSSE:      canSSE,
+		Images:      t.Images,
 		Result:      result,
 	}
 }

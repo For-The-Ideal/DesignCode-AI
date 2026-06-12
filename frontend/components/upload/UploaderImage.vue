@@ -27,11 +27,26 @@
         <div class="preview-area" v-if="images.length > 0">
           <div class="preview-header">
             <span><i class="fas fa-images"></i> 已上传 ({{ images.length }}/{{ maxLen }})</span>
+            <span v-if="uploadedCount < images.length" class="upload-progress">{{ uploadedCount }}/{{ images.length }} 已上传完成</span>
             <button class="clear-btn" @click="clearAll">清空全部</button>
           </div>
           <div class="preview-grid">
-            <div v-for="(img, idx) in images" :key="img.id" class="preview-item">
+            <div v-for="(img, idx) in images" :key="img.id" class="preview-item" :class="{ 'upload-error': img.uploadError }">
               <img :src="img.preview" alt="预览" />
+      
+              <!-- 上传状态 -->
+              <div v-if="img.uploading" class="upload-status uploading">
+                <i class="fas fa-spinner fa-spin"></i>
+                <span>上传中...</span>
+              </div>
+              <div v-else-if="img.cosUrl" class="upload-status done">
+                <i class="fas fa-check-circle"></i>
+                <span>已上传</span>
+              </div>
+              <div v-else-if="img.uploadError" class="upload-status failed">
+                <i class="fas fa-exclamation-circle"></i>
+                <span>上传失败</span>
+              </div>
               <div class="preview-remove" @click="removeImage(idx)">×</div>
               <!-- 描述显示区域 -->
               <div class="image-description" v-if="img.description" @click="openDescModal(idx)">
@@ -67,7 +82,7 @@
         <div class="framework-btn" :class="{ active: framework === 'react' }" @click="framework = 'react'">
           <i class="fab fa-react"></i> React
         </div>
-        <div class="framework-btn" :class="{ active: framework === 'vue' }" @click="framework = 'vue'">
+        <div class="framework-btn" :class="{ active: framework === 'vue3' }" @click="framework = 'vue3'">
           <i class="fab fa-vuejs"></i> Vue
         </div>
       </div>
@@ -102,11 +117,11 @@
     
 
     <!-- 生成按钮 -->
-    <button class="generate-btn" @click="generateCode" :disabled="images.length === 0 || generating || isBusy">
-      <i v-if="isBusy" class="fas fa-hourglass-half"></i>
+    <button class="generate-btn" @click="generateCode" :disabled="images.length === 0 || !allUploaded || generating || (taskProgress > 0 && taskProgress < 100)">
+      <i v-if="taskProgress > 0 && taskProgress < 100" class="fas fa-hourglass-half"></i>
       <i v-else-if="generating" class="fas fa-spinner fa-spin"></i>
       <i v-else class="fas fa-play"></i>
-      {{ isBusy ? '任务执行中...' : generating ? '正在生成...' : '开始生成' }}
+      {{ (taskProgress > 0 && taskProgress < 100) ? '任务执行中...' : generating ? '正在生成...' : '开始生成' }}
     </button>
 
     <!-- 描述编辑弹窗 -->
@@ -121,18 +136,21 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import DescEditorModal from './DescEditorModal.vue'
 import { commonApi } from "~/api/common.js"
 import { ElMessage } from 'element-plus'
 import { useSSE } from '~/composables/useSSE'
 import { useGeneration } from '~/composables/useGeneration'
+import { fileToBase64 } from '~/utils/index.js'
+
 const emit = defineEmits(['generated'])
 
 const props = defineProps({
-  isBusy: {
-    type: Boolean,
-    default: false,
+  /** 外部传入的已上传图片列表（页面刷新恢复时用），格式: [{ url: 'cos_url', desc: '' }] */
+  initialImages: {
+    type: Array,
+    default: () => [],
   },
 })
 
@@ -149,7 +167,7 @@ const score = ref(0)
 const scoreDimensions = ref([])
 
 const { isAvailable, isAlive, status, connect } = useSSE()
-const { saveActiveTask } = useGeneration()
+const { saveActiveTask, taskProgress } = useGeneration()
 // 本地按钮锁（点击→SSE connected 之间防连点）
 const generating = ref(false)
 
@@ -160,6 +178,12 @@ const editingIndex = ref(null)
 
 // 计算是否达到上限
 const isMaxReached = computed(() => images.value.length >= maxLen.value)
+
+// 已上传完成的图片数
+const uploadedCount = computed(() => images.value.filter(img => !!img.cosUrl).length)
+
+// 是否所有图片都上传完成
+const allUploaded = computed(() => images.value.length > 0 && images.value.every(img => !!img.cosUrl))
 
 
 // 触发文件选择
@@ -183,24 +207,55 @@ const handleDrop = (e) => {
   addImages(files)
 }
 
-// 添加图片
-const addImages = (files) => {
+// 添加图片并立即上传到 COS
+const addImages = async (files) => {
   const imageFiles = files.filter(f => f.type.startsWith('image/'))
   const remaining = maxLen.value - images.value.length
   const toAdd = imageFiles.slice(0, remaining)
   
-  toAdd.forEach(file => {
+  for (const file of toAdd) {
+    const preview = await fileToPreview(file)
+    const idx = images.value.length
+    images.value.push({
+      file,
+      preview,
+      cosUrl: '',
+      uploading: true,
+      uploadError: '',
+      description: '',
+      type: detectImageType(file.name)
+    })
+    // 立即上传到 COS
+    uploadOneImage(idx, file)
+  }
+}
+
+// 单张图片转预览 dataURL
+function fileToPreview(file) {
+  return new Promise((resolve) => {
     const reader = new FileReader()
-    reader.onload = (e) => {
-      images.value.push({
-        file: file,
-        preview: e.target.result,
-        description: '',
-        type: detectImageType(file.name)
-      })
-    }
+    reader.onload = (e) => resolve(e.target.result)
     reader.readAsDataURL(file)
   })
+}
+
+// 单张图片上传到 COS
+const uploadOneImage = async (idx, file) => {
+  try {
+    const base64 = await fileToBase64(file)
+    const base64Data = base64.split(',')[1]
+    const res = await commonApi.uploadImage(base64Data, file.name)
+    if (res.code === 200 && res.data?.url) {
+      images.value[idx].cosUrl = res.data.url
+      images.value[idx].uploading = false
+    } else {
+      throw new Error(res.message || '上传失败')
+    }
+  } catch (e) {
+    images.value[idx].uploading = false
+    images.value[idx].uploadError = e.message || '上传失败'
+    ElMessage.error(`"${file.name}" 上传失败: ${e.message}`)
+  }
 }
 
 // 检测图片类型
@@ -260,20 +315,18 @@ const generateCode = async () => {
 
   generating.value = true
   try {
-    // 构建设计稿数组 - 图片和描述在同一个对象里
-    const designs = await Promise.all(
-      images.value.map(async (img) => ({
-        image: await toBase64(img.file),
-        type: img.type,
-        description: img.description || ''
-      }))
-    )
-    
-    // 请求参数
+    // 直接从组件状态取已上传完成的 COS URL
+    const allUploaded = images.value.every(img => !!img.cosUrl)
+    if (!allUploaded) {
+      throw new Error('存在未上传完成的图片，请稍后重试')
+    }
     const payload = {
-      designs: designs,
-      framework: framework.value,
-      quality: qualityValue.value
+      target: framework.value,
+      images: images.value.map(img => ({
+        url: img.cosUrl,
+        desc: img.description || ''
+      })),
+      quality: qualityValue.value,
     }
 
     console.log('[Uploader] payload:', payload)
@@ -289,32 +342,49 @@ const generateCode = async () => {
       return
     }
 
-    // 用 task_id 连接 SSE，订阅该任务的实时事件
-    console.log('[Uploader] 连接 SSE, task_id:', result.data.task_id)
-    await connect(result.data.task_id)
-
-    // 保存任务信息到 localStorage（刷新后可恢复）
+    // 立即保存任务信息到 localStorage（先于 connect 执行，确保刷新可恢复）
     saveActiveTask(result.data.task_id, framework.value)
 
     // 通知父组件（code.vue）框架类型
     emit('generated', { framework: framework.value })
 
+    // 再连接 SSE（可能较慢，不阻塞 localStorage 写入）
+    console.log('[Uploader] 连接 SSE, task_id:', result.data.task_id)
+    await connect(result.data.task_id)
+
+    // 连接成功后,转换按钮状态: "正在生成..." → "任务执行中..."
+    generating.value = false
+
   } catch (error) {
     console.error('[Uploader] 生成失败:', error)
+    ElMessage.error(error.message || '生成失败，请稍后重试')
+  } finally {
     generating.value = false
-    ElMessage.error('生成失败，请稍后重试')
   }
 }
 
+// 外部传入的已上传图片 → 回显到预览区
+watch(() => props.initialImages, (imgs) => {
+  if (imgs && imgs.length > 0) {
+    images.value = imgs.map((img, idx) => ({
+      file: null,
+      preview: img.url,           // COS URL 直接当预览图
+      cosUrl: img.url,
+      uploading: false,
+      uploadError: '',
+      description: img.desc || '',
+      type: '设计稿',
+      id: `restored_${idx}`,
+    }))
+  }
+}, { immediate: true })
 
- const toBase64 = (file) => {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader()
-        reader.readAsDataURL(file)
-        reader.onload = () => resolve(reader.result.split(',')[1])
-        reader.onerror = reject
-      })
-    }
+// 监听 SSE 状态: 空闲时确保按钮可点击
+watch(status, (val) => {
+  if (val === 'idle' || val === 'error' || val === 'maxRetries') {
+    generating.value = false
+  }
+})
 
 </script>
 
@@ -511,6 +581,36 @@ const generateCode = async () => {
 
 .preview-item:hover .preview-remove {
   opacity: 1;
+}
+
+/* 上传状态 */
+.upload-status {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  z-index: 2;
+}
+.upload-status i { font-size: 10px; }
+.upload-status.uploading {
+  background: rgba(0, 255, 255, 0.2);
+  color: #00ffff;
+}
+.upload-status.done {
+  background: rgba(0, 255, 0, 0.15);
+  color: #00ff88;
+}
+.upload-status.failed {
+  background: rgba(255, 0, 0, 0.2);
+  color: #ff4757;
+}
+.preview-item.upload-error {
+  box-shadow: 0 0 0 1px rgba(255, 71, 87, 0.5);
 }
 
 .config-card{

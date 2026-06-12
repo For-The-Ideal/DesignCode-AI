@@ -1,16 +1,7 @@
 package ai
 
-import "context"
-
-// DeepSeek 实现
-// TODO: 实现 DeepSeek API 调用
-type DeepSeek struct{}
-
-func NewDeepSeek() *DeepSeek {
-	return &DeepSeek{}
-}
-
-func (d *DeepSeek) Chat(ctx context.Context, prompt string) (string, error) {
-	// TODO: 调用 DeepSeek API
-	return "", nil
+// NewDeepSeek 创建 DeepSeek 客户端
+// 使用前需在 config.yaml 中配置 deepseek 模型的 api_key 和 endpoint
+func NewDeepSeek(apiKey, endpoint string) Client {
+	return NewClient(endpoint, apiKey, "deepseek-v4-flash")
 }

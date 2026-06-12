@@ -1,6 +1,9 @@
 package handler
 
 import (
+	"crypto/rand"
+	"encoding/hex"
+	"fmt"
 	"frontend_api/internal/model"
 	"frontend_api/internal/queue"
 	"frontend_api/internal/repository"
@@ -11,8 +14,25 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 )
+
+// ═══════════════════════════════════════════════
+//  TaskHandler
+//  POST /api/v1/generate-ui  — 创建生成任务
+//  GET  /api/v1/task/:id     — 查询任务状态
+// ═══════════════════════════════════════════════
+
+func generateTaskID() string {
+	// 时间戳前缀（精确到毫秒，可排序）
+	ts := time.Now().Format("20060102150405.000")
+	// 4字节随机后缀（8 hex chars）
+	b := make([]byte, 4)
+	if _, err := rand.Read(b); err == nil {
+		return ts + "_" + hex.EncodeToString(b)
+	}
+	// 极少发生的 fallback
+	return ts + fmt.Sprintf("_%04d", time.Now().UnixMilli()%10000)
+}
 
 // ═══════════════════════════════════════════════
 //  TaskHandler
@@ -23,10 +43,14 @@ import (
 // CreateTaskRequest 创建任务请求
 //
 //	target - flutter | vue3 | react
-//	images - 设计稿图片列表
+//	images - 图片列表，每项含 url 和 desc
+//	quality - 质量要求 60-100
+//
+//	示例：{"target":"flutter","images":[{"url":"https://...","desc":"首页"}],"quality":90}
 type CreateTaskRequest struct {
-	Target string            `json:"target" binding:"required"`
-	Images []model.TaskImage `json:"images" binding:"required,min=1"`
+	Target  string            `json:"target" binding:"required"`
+	Images  []model.ImageItem `json:"images" binding:"required,min=1"`
+	Quality int               `json:"quality"`
 }
 
 // TaskHandler 任务处理器
@@ -70,9 +94,10 @@ func (h *TaskHandler) CreateTask(c *gin.Context) {
 
 	// 创建任务
 	task := &model.Task{
-		ID:        uuid.New().String(),
+		ID:        generateTaskID(),
 		Target:    req.Target,
 		Images:    req.Images,
+		Quality:   req.Quality,
 		Status:    model.TaskStatusPending,
 		Progress:  0,
 		CreatedAt: time.Now(),
@@ -163,7 +188,13 @@ func (h *TaskHandler) GetTemplate(c *gin.Context) {
 
 	utils.Success(c, gin.H{
 		"id":            tmpl.ID,
+		"name":          tmpl.Name,
+		"framework":     tmpl.Framework,
 		"template_code": tmpl.TemplateCode,
 		"preview_code":  tmpl.PreviewCode,
+		"thumbnail":     tmpl.Thumbnail,
+		"description":   tmpl.Description,
+		"created_at":    tmpl.CreatedAt,
+		"updated_at":    tmpl.UpdatedAt,
 	}, "获取成功")
 }

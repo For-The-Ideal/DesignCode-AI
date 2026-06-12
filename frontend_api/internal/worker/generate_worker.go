@@ -4,6 +4,7 @@ import (
 	"context"
 	"frontend_api/internal/queue"
 	"frontend_api/internal/repository"
+	"frontend_api/internal/skills/code_to_html"
 	"frontend_api/internal/skills/vision"
 	"frontend_api/internal/sse"
 	"frontend_api/internal/workflow"
@@ -28,13 +29,14 @@ func NewGenerateWorker(
 	q queue.Queue,
 	taskRepo *repository.TaskRepository,
 	visionSkill *vision.Skill,
+	codeToHtmlSkill *code_to_html.Skill,
 	resultRepo *repository.ResultRepository,
 	sseManager *sse.Manager,
 ) *GenerateWorker {
 	return &GenerateWorker{
 		queue:    q,
 		taskRepo: taskRepo,
-		workflow: workflow.NewGenerateUIWorkflow(visionSkill, taskRepo, resultRepo, sseManager),
+		workflow: workflow.NewGenerateUIWorkflow(visionSkill, codeToHtmlSkill, taskRepo, resultRepo, sseManager),
 		log:      logger.NewLogger("worker"),
 	}
 }

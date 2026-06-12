@@ -7,10 +7,13 @@ import (
 	"frontend_api/internal/model"
 	"frontend_api/internal/queue"
 	"frontend_api/internal/repository"
+	"frontend_api/internal/skills/code_to_html"
 	"frontend_api/internal/skills/vision"
 	"frontend_api/internal/sse"
 	"frontend_api/internal/worker"
 	"frontend_api/middleware"
+	"frontend_api/pkg/ai"
+	"frontend_api/pkg/cos"
 	"frontend_api/pkg/logger"
 	"frontend_api/pkg/mysql"
 	"frontend_api/routes"
@@ -35,7 +38,10 @@ func Run() {
 		log.Println("[AutoMigrate] 表结构同步完成")
 	}
 
-	// 3. 初始化 Logger
+	// 3. 初始化 COS 客户端
+	cos.InitClient()
+
+	// 4. 初始化 Logger
 	appLog := logger.NewLogger("app")
 
 	// 4. 创建 Repository
@@ -48,11 +54,20 @@ func Run() {
 	// 6. 获取 SSE 管理器（单例）
 	sseManager := sse.GetManager()
 
-	// 7. 创建 Vision Skill
-	visionSkill := vision.NewSkill()
+	// 7. 创建 Skills
+	readAI, err := ai.SelectClient("read")
+	if err != nil {
+		appLog.Warn("[App] 未配置视觉AI模型(千问)，视觉分析将不可用")
+	}
+	visionSkill := vision.NewSkill(readAI)
+	writeAI, err := ai.SelectClient("write")
+	if err != nil {
+		log.Fatalf("初始化AI写客户端失败: %v", err)
+	}
+	codeToHtmlSkill := code_to_html.NewSkill(writeAI)
 
-	// 8. 创建 Worker 并启动（Worker 内部创建 Generator Skill + Workflow）
-	w := worker.NewGenerateWorker(q, taskRepo, visionSkill, resultRepo, sseManager)
+	// 8. 创建 Worker 并启动
+	w := worker.NewGenerateWorker(q, taskRepo, visionSkill, codeToHtmlSkill, resultRepo, sseManager)
 	go w.Run(context.Background())
 
 	// 9. 创建 Handlers

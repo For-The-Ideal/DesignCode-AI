@@ -13,12 +13,20 @@ import (
 //
 // 请求路径：
 //
-//	GET   /api/v1/user/info   → 获取当前用户信息
+//	GET  /api/v1/user/info           → 获取当前用户信息
+//	POST /api/v1/user/update         → 更新用户信息
+//	POST /api/v1/user/updatePassword → 修改密码
 func InitUserRoutes(v1 *gin.RouterGroup, userHandler *handler.UserHandler) {
 	userV1 := v1.Group("/user")
 	userV1.Use(middleware.AuthMiddleware())
 	{
 		// GET /api/v1/user/info → 获取当前用户信息
 		userV1.GET("/info", userHandler.GetUserInfo)
+
+		// POST /api/v1/user/update → 更新用户信息
+		userV1.POST("/update", userHandler.UpdateUserInfo)
+
+		// POST /api/v1/user/updatePassword → 修改密码
+		userV1.POST("/updatePassword", userHandler.UpdateUserPassword)
 	}
 }
