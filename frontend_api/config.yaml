@@ -100,8 +100,4 @@ ai:
 #  腾讯云对象存储 COS 配置
 #  上传图片时使用，留空则跳过初始化
 # ═══════════════════════════════════════════════
-cos:
-  bucket: "upload-image-1301638170" # 桶名
-  region: "ap-guangzhou" # 区域
-  secret_id: "" # Secret ID
-  secret_key: "" # Secret Key
+
