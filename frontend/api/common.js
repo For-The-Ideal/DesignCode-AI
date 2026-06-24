@@ -4,9 +4,9 @@ export const commonApi = {
   // 获取模板
   async getTemplate(params = {}, server = true) {
     let options = {
-      url: `/api/v1/template?id=${params.id}`,
+      url: `/api/v1/template/${params.id}`,
       method: "get",
-      params,
+      params:{},
       server,
     };
     let result = await httpRequest.get(options);

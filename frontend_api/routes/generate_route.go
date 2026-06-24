@@ -51,6 +51,6 @@ func InitGenerateRoutes(v1 *gin.RouterGroup,
 	// POST /api/v1/upload → 图片上传（占位）
 	v1.POST("/upload", uploadHandler.Upload)
 
-	// GET /api/v1/template → 获取预置模板（?id=1）
-	v1.GET("/template", taskHandler.GetTemplate)
+	// GET /api/v1/template/?id=1 → 获取预置模板
+	v1.GET("/template/:id", taskHandler.GetTemplate)
 }

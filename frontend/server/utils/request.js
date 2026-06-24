@@ -1,5 +1,4 @@
 
-import { localUrl } from '~/config/index.js'
 /**
  * 服务器获取数据 统一接口
  * url    请求接口
@@ -17,6 +16,7 @@ export const getData = async (options = {}) => {
     } = options;
     let reqJson = {};
     let result = {};
+    const requestUrl = useRuntimeConfig()
     const startTime = Date.now();
     try {
         let cookie = req.cookie || '';
@@ -35,8 +35,7 @@ export const getData = async (options = {}) => {
         } else if (["post", "put"].includes(method)) {
             reqJson.body = params;
         }
-        let baseURL = localUrl + url;
-
+        let baseURL = requestUrl.public.apiBase + url;
         result = await $fetch(baseURL, reqJson).then((res) => {
             return typeof res === 'string' ? JSON.parse(res) : res
         }).catch((error) => {

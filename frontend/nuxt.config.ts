@@ -25,9 +25,22 @@ export default defineNuxtConfig({
     '@fortawesome/fontawesome-free/css/all.min.css',
   ],
 
-
   build: {
     transpile: ['monaco-editor'],
+  },
+
+  // ========== ✅ 正确的运行时配置 ==========
+  runtimeConfig: {
+    // 私有配置 (仅服务端可访问)
+    apiSecret: '',
+    // 公开配置 (客户端和服务端都可访问)
+    public: {
+      apiBase: '',
+      wsBase: '',
+      debug: false,
+      cryptoKey: '',
+      cryptoIv: '',
+    },
   },
 
   // ========== Vite 配置 ==========
@@ -36,14 +49,7 @@ export default defineNuxtConfig({
       include: [
         'element-plus',
         'element-plus/dist/locale/zh-cn.mjs',
-        // 'swiper',
-        // 'swiper/vue',
-        // 'video.js',
-        // 'vue-color',
-        // 'vue-video-player',
-        // 'vue3-seamless-scroll',
       ],
-      // exclude: ['@vueuse/core'],
     },
     plugins: [
       monacoEditorPlugin({
@@ -63,38 +69,14 @@ export default defineNuxtConfig({
         output: {
           manualChunks(id) {
             if (id.includes('node_modules')) {
-              // // ECharts 核心库
-              // if (id.includes('echarts') || id.includes('zrender')) {
-              //   if (id.includes('vue-echarts')) return
-              //   return 'echarts'
-              // }
-              // // Swiper 核心库
-              // if (id.includes('swiper')) {
-              //   if (id.includes('vue-awesome-swiper')) return
-              //   return 'swiper'
-              // }
-              // 工具库（独立、无 Vue 依赖）
               if (id.includes('crypto-js')) {
                 return 'utils'
               }
-              // // 后续安装 moment / jszip / clipboard 时可取消注释
-              // if (id.includes('moment') || id.includes('jszip') || id.includes('clipboard')) {
-              //   return 'utils'
-              // }
-              // // 动画库
-              // if (id.includes('gsap')) return 'gsap'
             }
           },
         },
       },
     },
-    // css: {
-    //   preprocessorOptions: {
-    //     scss: {
-    //       additionalData: `@use "~/assets/scss/variables.scss" as *;@use "~/assets/scss/config.scss" as *;`
-    //     }
-    //   }
-    // },
     server: {
       warmup: {
         clientFiles: ['./pages/**/*.vue', './layouts/**/*.vue'],

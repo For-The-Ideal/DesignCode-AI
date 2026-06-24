@@ -98,9 +98,9 @@ const codeLanguage = ref('dart')
 const restoredImages = ref([])
 
 const langMap = {
-  flutter: { label: 'Dart', lang: 'dart' },
-  react: { label: 'TypeScript', lang: 'typescript' },
   vue: { label: 'Vue', lang: 'html' },
+  react: { label: 'TypeScript', lang: 'typescript' },
+  flutter: { label: 'Dart', lang: 'dart' },
 }
 
 // ═══ 监听 SSE 流式输出 → 驱动视图更新 ═══

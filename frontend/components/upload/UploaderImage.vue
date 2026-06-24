@@ -31,7 +31,14 @@
             <button class="clear-btn" @click="clearAll">清空全部</button>
           </div>
           <div class="preview-grid">
-            <div v-for="(img, idx) in images" :key="img.id" class="preview-item" :class="{ 'upload-error': img.uploadError }">
+            <div v-for="(img, idx) in images" :key="img.id" class="preview-item"
+                          :class="{ 'upload-error': img.uploadError, 'drag-active': dragIdx === idx, 'drag-over': dragOverIdx === idx }"
+                          draggable="true"
+                          @dragstart="onDragStart($event, idx)"
+                          @dragover.prevent="onDragOver($event, idx)"
+                          @dragleave="dragOverIdx = -1"
+                          @drop.prevent="onDrop(idx)"
+                          @dragend="onDragEnd">
               <img :src="img.preview" alt="预览" />
       
               <!-- 上传状态 -->
@@ -76,14 +83,22 @@
       </div>
 
       <div class="framework-selector">
-        <div class="framework-btn" :class="{ active: framework === 'flutter' }" @click="framework = 'flutter'">
-          <i class="fab fa-flutter"></i> Flutter
+        <div v-for="fw in frameworks" :key="fw.key"
+          class="framework-btn" :class="{ active: framework === fw.key }"
+          @click="framework = fw.key">
+          <i :class="fw.icon"></i> {{ fw.label }}
         </div>
-        <div class="framework-btn" :class="{ active: framework === 'react' }" @click="framework = 'react'">
-          <i class="fab fa-react"></i> React
-        </div>
-        <div class="framework-btn" :class="{ active: framework === 'vue3' }" @click="framework = 'vue3'">
-          <i class="fab fa-vuejs"></i> Vue
+      </div>
+
+      <!-- 平台选择 -->
+      <div class="platform-selector">
+        <div class="slider-label"><span>目标平台</span></div>
+        <div class="platform-row">
+          <div v-for="p in platforms" :key="p.key"
+            class="platform-btn" :class="{ active: platform === p.key }"
+            @click="platform = p.key">
+            <i :class="p.icon"></i> {{ p.label }}
+          </div>
         </div>
       </div>
 
@@ -144,24 +159,40 @@ import { useSSE } from '~/composables/useSSE'
 import { useGeneration } from '~/composables/useGeneration'
 import { fileToBase64 } from '~/utils/index.js'
 
-const emit = defineEmits(['generated'])
-
 const props = defineProps({
-  /** 外部传入的已上传图片列表（页面刷新恢复时用），格式: [{ url: 'cos_url', desc: '' }] */
-  initialImages: {
-    type: Array,
-    default: () => [],
-  },
+  /** 外部传入的已上传图片列表（页面刷新恢复时用） */
+  initialImages: { type: Array, default: () => [] },
+  /** 选中的框架 */
+  modelValue: { type: String, default: 'flutter' },
+  /** 可选的框架列表 */
+  frameworks: { type: Array, default: () => [
+    { key: 'flutter', label: 'Flutter', icon: 'fab fa-flutter' },
+    { key: 'react', label: 'React', icon: 'fab fa-react' },
+    { key: 'vue3', label: 'Vue', icon: 'fab fa-vuejs' },
+  ]},
 })
+
+const emit = defineEmits(['generated', 'update:modelValue'])
 
 // 图片列表
 const images = ref([])
 const isDragging = ref(false)
+const dragIdx = ref(-1)       // 拖拽排序-源索引
+const dragOverIdx = ref(-1)   // 拖拽排序-目标索引
 const fileInput = ref(null)
 // 配置
-const framework = ref('flutter')
+const framework = computed({
+  get: () => props.modelValue,
+  set: (val) => emit('update:modelValue', val),
+})
 const qualityValue = ref(90)
-const maxLen = ref(5) // 最多5张
+const maxLen = ref(3) // 最多5张
+const platform = ref('mobile') // mobile | desktop | tablet
+const platforms = [
+  { key: 'mobile', label: '手机端', icon: 'fas fa-mobile-alt' },
+  { key: 'desktop', label: '桌面端', icon: 'fas fa-desktop' },
+  { key: 'tablet', label: '平板', icon: 'fas fa-tablet-alt' },
+]
 // 评分数据
 const score = ref(0)
 const scoreDimensions = ref([])
@@ -279,6 +310,28 @@ const clearAll = () => {
     editingIndex.value = null
 }
 
+// ── 拖拽排序 ──────────────────────────────
+const onDragStart = (e, idx) => {
+  dragIdx.value = idx
+  e.dataTransfer.effectAllowed = 'move'
+}
+const onDragOver = (e, idx) => {
+  dragOverIdx.value = idx
+}
+const onDrop = (idx) => {
+  if (dragIdx.value < 0 || dragIdx.value === idx) return
+  const arr = [...images.value]
+  const [item] = arr.splice(dragIdx.value, 1)
+  arr.splice(idx, 0, item)
+  images.value = arr
+  dragIdx.value = -1
+  dragOverIdx.value = -1
+}
+const onDragEnd = () => {
+  dragIdx.value = -1
+  dragOverIdx.value = -1
+}
+
 // 打开描述弹窗（可指定索引）
 const openDescModal = (idx = null) => {
   editingIndex.value = idx
@@ -322,9 +375,11 @@ const generateCode = async () => {
     }
     const payload = {
       target: framework.value,
-      images: images.value.map(img => ({
+      platform: platform.value,
+      images: images.value.map((img, i) => ({
         url: img.cosUrl,
-        desc: img.description || ''
+        desc: img.description || '',
+        sort_order: i + 1,
       })),
       quality: qualityValue.value,
     }
@@ -555,6 +610,10 @@ watch(status, (val) => {
   transform: translateY(-2px);
 }
 
+// 拖拽排序视觉反馈
+.preview-item.drag-active { opacity: 0.4; transform: scale(0.95) }
+.preview-item.drag-over { border: 2px dashed #00ffff; transform: scale(1.03) }
+
 .preview-item img {
   width: 100%;
   max-height: 185px;
@@ -733,6 +792,16 @@ watch(status, (val) => {
   border-color: #00ffff;
   color: #00ffff;
 }
+
+/* 平台选择 */
+.platform-selector { margin-bottom: 16px }
+.platform-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px }
+.platform-btn {
+  padding: 12px; background: rgba(0,0,0,.4);
+  border:1px solid rgba(0,255,255,.3); border-radius:12px;
+  text-align:center; cursor:pointer; transition: all .3s
+}
+.platform-btn.active { background: linear-gradient(135deg, rgba(0,255,255,.2), rgba(255,0,255,.2)); border-color:#00ffff; color:#00ffff }
 
 /* 滑块区域 */
 .slider-container {

@@ -42,15 +42,17 @@ func generateTaskID() string {
 
 // CreateTaskRequest 创建任务请求
 //
-//	target - flutter | vue3 | react
-//	images - 图片列表，每项含 url 和 desc
-//	quality - 质量要求 60-100
+//	target   - flutter | vue3 | react
+//	platform - mobile | desktop | tablet（必选）
+//	images   - 图片列表，每项含 url / desc / sort_order，最多5张
+//	quality  - 质量要求 60-100
 //
-//	示例：{"target":"flutter","images":[{"url":"https://...","desc":"首页"}],"quality":90}
+//	示例：{"target":"flutter","platform":"mobile","images":[{"url":"https://...","desc":"首页","sort_order":1}],"quality":90}
 type CreateTaskRequest struct {
-	Target  string            `json:"target" binding:"required"`
-	Images  []model.ImageItem `json:"images" binding:"required,min=1"`
-	Quality int               `json:"quality"`
+	Target   string            `json:"target" binding:"required"`
+	Platform string            `json:"platform" binding:"required"`
+	Images   []model.ImageItem `json:"images" binding:"required,min=1,max=5"`
+	Quality  int               `json:"quality"`
 }
 
 // TaskHandler 任务处理器
@@ -92,10 +94,18 @@ func (h *TaskHandler) CreateTask(c *gin.Context) {
 		return
 	}
 
+	// 校验 platform
+	validPlatforms := map[string]bool{"mobile": true, "desktop": true, "tablet": true}
+	if !validPlatforms[req.Platform] {
+		utils.BadRequest(c, "platform 必须是 mobile/desktop/tablet 之一")
+		return
+	}
+
 	// 创建任务
 	task := &model.Task{
 		ID:        generateTaskID(),
 		Target:    req.Target,
+		Platform:  req.Platform,
 		Images:    req.Images,
 		Quality:   req.Quality,
 		Status:    model.TaskStatusPending,
@@ -166,7 +176,7 @@ func (h *TaskHandler) GetTask(c *gin.Context) {
 
 // 获取模版
 func (h *TaskHandler) GetTemplate(c *gin.Context) {
-	idStr := c.Query("id")
+	idStr := c.Param("id")
 
 	id, err := strconv.Atoi(idStr)
 	if err != nil {

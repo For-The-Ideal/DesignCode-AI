@@ -49,7 +49,7 @@ func (s *ReactSkill) Execute(ctx context.Context, input interface{}) (interface{
 
 	messages := []ai.Message{
 		{Role: "system", Content: prompt},
-		{Role: "user", Content: fmt.Sprintf("DSL:\n%s", gi.DSL)},
+		{Role: "user", Content: fmt.Sprintf("Platform: %s\nDSL:\n%s", gi.Platform, gi.DSL)},
 	}
 
 	content, err := s.aiClient.Chat(ctx, messages, ai.WithDeepSeekThinking("high"), ai.WithMaxTokens(8192))

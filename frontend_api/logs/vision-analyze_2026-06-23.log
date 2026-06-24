@@ -1,0 +1,139 @@
+[2026-06-23 17:01:48] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿 (1 张图片)...
+[2026-06-23 17:01:52] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回: {
+  "page_name":"时尚穿搭展示页",
+  "layout":"单列垂直布局（主体内容居中，背景为实景环境）",
+  "components":[
+    "人物主体图像组件",
+    "外套细节展示组件",
+    "内搭层叠穿搭组件",
+    "下装色彩对比组件",
+    "背景环境纹理组件"
+  ]
+}
+[2026-06-23 17:01:52] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回非标准 DSL JSON: json: cannot unmarshal string into Go struct field DSL.components of type model.DSLComponent
+[2026-06-23 17:04:31] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿 (1 张图片)...
+[2026-06-23 17:04:35] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回: {
+  "page_name": "时尚穿搭展示页",
+  "layout": "单列垂直居中内容布局",
+  "components": [
+    "人物主体图像组件",
+    "背景环境组件（砖墙与台阶）",
+    "服装细节展示区域（风衣、内搭T恤、叠穿层次、裤装）"
+  ]
+}
+[2026-06-23 17:04:35] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回非标准 DSL JSON: json: cannot unmarshal string into Go struct field DSL.components of type model.DSLComponent
+[2026-06-23 17:06:12] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿 (1 张图片)...
+[2026-06-23 17:06:15] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回: {
+  "page_name": "服装搭配展示页",
+  "layout": "单列垂直居中内容布局",
+  "components": [
+    "人物主体图像组件",
+    "背景纹理组件（砖墙）",
+    "服饰细节组件（风衣、内搭T恤、叠穿层、长裤）",
+    "材质与色彩对比组件"
+  ]
+}
+[2026-06-23 17:06:15] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回非标准 DSL JSON: json: cannot unmarshal string into Go struct field DSL.components of type model.DSLComponent
+[2026-06-23 17:08:46] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿 (1 张图片)...
+[2026-06-23 17:08:50] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回: {
+  "page_name": "时尚穿搭展示页",
+  "layout": "单列垂直布局（主体为居中人物特写，背景为环境衬托）",
+  "components": [
+    "人物主体图像组件",
+    "服装细节展示组件（风衣、内搭T恤、叠穿层次、长裤）",
+    "背景环境组件（砖墙、石阶）",
+    "风格氛围组件（自然光、材质纹理、色彩搭配）"
+  ]
+}
+[2026-06-23 17:08:50] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回非标准 DSL JSON: json: cannot unmarshal string into Go struct field DSL.components of type model.DSLComponent
+[2026-06-23 17:16:25] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿 (1 张图片)...
+[2026-06-23 17:16:29] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回: {
+  "page_name": "服饰穿搭展示页",
+  "layout": "单列垂直居中展示布局",
+  "components": [
+    "人物主体图像组件",
+    "背景环境组件（含装饰元素）",
+    "左侧竖排文字标签组件（红色底纹，含中文字符）"
+  ]
+}
+[2026-06-23 17:16:29] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回非标准 DSL JSON: json: cannot unmarshal string into Go struct field DSL.components of type model.DSLComponent
+[2026-06-23 17:17:28] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿 (1 张图片)...
+[2026-06-23 17:17:31] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回: {
+  "page_name": "服饰穿搭展示页",
+  "layout": "单列垂直居中展示布局",
+  "components": [
+    "人物主体图像组件",
+    "背景环境组件（含装饰元素）",
+    "左侧竖排文字标签组件（红色底金色字）"
+  ]
+}
+[2026-06-23 17:17:31] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回非标准 DSL JSON: json: cannot unmarshal string into Go struct field DSL.components of type model.DSLComponent
+[2026-06-23 17:27:17] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿 (1 张图片)...
+[2026-06-23 17:27:20] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回: {
+  "page_name": "时尚穿搭展示页",
+  "layout": "单列垂直居中内容布局",
+  "components": [
+    "人物主体图像组件",
+    "背景环境组件（砖墙与台阶）",
+    "服装细节展示区域（风衣、内搭T恤、叠穿层次、裤装）"
+  ]
+}
+[2026-06-23 17:27:20] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回非标准 DSL JSON: json: cannot unmarshal string into Go struct field DSL.components of type model.DSLComponent
+[2026-06-23 17:33:06] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿 (1 张图片)...
+[2026-06-23 17:33:08] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回: {
+  "page_name": "Doraemon Character Display",
+  "layout": "Single-Component Centered Layout",
+  "components": [
+    "Character Illustration (Doraemon)",
+    "Background Grid Pattern"
+  ]
+}
+[2026-06-23 17:33:08] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回非标准 DSL JSON: json: cannot unmarshal string into Go struct field DSL.components of type model.DSLComponent
+[2026-06-23 17:38:20] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿 (1 张图片)...
+[2026-06-23 17:38:23] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回: {
+  "page_name": "时尚穿搭展示页",
+  "layout": "单列垂直布局（主体为居中人物特写，背景为环境衬托）",
+  "components": [
+    "人物主体图像组件",
+    "服装细节展示组件（风衣、内搭T恤、叠穿层次、裤装）",
+    "背景环境组件（砖墙、台阶）",
+    "风格氛围渲染组件（自然光、材质纹理、色彩搭配）"
+  ]
+}
+[2026-06-23 17:38:23] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回非标准 DSL JSON: json: cannot unmarshal string into Go struct field DSL.components of type model.DSLComponent
+[2026-06-23 17:48:41] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿 (1 张图片)...
+[2026-06-23 17:48:45] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回: {
+  "page_name": "时尚穿搭展示页",
+  "layout": "单列垂直布局（主体为居中人物特写，背景为环境衬托）",
+  "components": [
+    "人物主体图像组件",
+    "服装细节展示组件（风衣、内搭T恤、叠穿层次、裤装）",
+    "背景环境组件（砖墙、台阶）",
+    "风格氛围渲染组件（自然光、材质纹理、色彩搭配）"
+  ]
+}
+[2026-06-23 17:48:45] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回非标准 DSL JSON: json: cannot unmarshal string into Go struct field DSL.components of type model.DSLComponent
+[2026-06-23 17:54:36] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿 (3 张图片)...
+[2026-06-23 18:21:06] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿 (1 张图片)...
+[2026-06-23 18:21:10] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回: {
+  "page_name": "哆啦A梦角色特写页面",
+  "layout": "单主体居中构图，背景为网格状墙面，角色占据画面主要区域，底部有部分身体与道具露出",
+  "components": [
+    "角色头像（哆啦A梦）",
+    "背景墙（灰白网格纹理）",
+    "红色项圈（含铃铛）",
+    "蓝色身体与手臂（部分可见）",
+    "白色腹部区域（含口袋轮廓）"
+  ]
+}
+[2026-06-23 18:21:10] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回非标准 DSL JSON: json: cannot unmarshal string into Go struct field DSL.components of type model.DSLComponent
+[2026-06-23 18:23:07] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿 (1 张图片)...
+[2026-06-23 18:23:10] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回: {
+  "page_name": "Top 10 Ranking Header",
+  "layout": "Centered Vertical Stack",
+  "components": [
+    "Bold 3D-Style Text Label: 'TOP'",
+    "Bold 3D-Style Text Label: '10'"
+  ]
+}
+[2026-06-23 18:23:10] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回非标准 DSL JSON: json: cannot unmarshal string into Go struct field DSL.components of type model.DSLComponent

@@ -1,0 +1,2695 @@
+[2026-06-23 17:02:26] [INFO] [code-to-html] [CodeToHtmlSkill] 开始转换, framework=flutter, code_length=9353
+[2026-06-23 17:02:26] [INFO] [code-to-html] [CodeToHtmlSkill] 原始代码:
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const FashionOutfitApp());
+}
+
+class FashionOutfitApp extends StatelessWidget {
+  const FashionOutfitApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: '时尚穿搭展示',
+      theme: ThemeData(
+        useMaterial3: true,
+        colorSchemeSeed: Colors.brown,
+        brightness: Brightness.light,
+      ),
+      home: const FashionOutfitPage(),
+      debugShowCheckedModeBanner: false,
+    );
+  }
+}
+
+class FashionOutfitPage extends StatelessWidget {
+  const FashionOutfitPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Stack(
+        children: [
+          // 背景环境纹理组件
+          const BackgroundTexture(),
+          // 单列垂直布局，内容居中
+          SafeArea(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight,
+                    ),
+                    child: IntrinsicHeight(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: const [
+                          // 人物主体图像组件
+                          PersonImageComponent(),
+                          SizedBox(height: 24),
+                          // 外套细节展示组件
+                          JacketDetailComponent(),
+                          SizedBox(height: 24),
+                          // 内搭层叠穿搭组件
+                          LayeredTopComponent(),
+                          SizedBox(height: 24),
+                          // 下装色彩对比组件
+                          BottomsColorContrastComponent(),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 背景环境纹理组件
+class BackgroundTexture extends StatelessWidget {
+  const BackgroundTexture({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    // 使用一张实景背景图片（占位图），实际可替换为真实图片
+    return Container(
+      decoration: const BoxDecoration(
+        image: DecorationImage(
+          image: NetworkImage(
+            'https://images.unsplash.com/photo-1600950207944-0d63e8edbc3f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+          ),
+          fit: BoxFit.cover,
+          opacity: 0.4,
+        ),
+      ),
+    );
+  }
+}
+
+/// 人物主体图像组件
+class PersonImageComponent extends StatelessWidget {
+  const PersonImageComponent({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: MediaQuery.of(context).size.height * 0.35,
+      child: Center(
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Image.network(
+            'https://images.unsplash.com/photo-1494797262166-e9a6b8f4f5b1?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
+            fit: BoxFit.cover,
+            width: 250,
+            height: 350,
+            errorBuilder: (context, error, stackTrace) =>
+                const Placeholder(color: Colors.grey),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 外套细节展示组件
+class JacketDetailComponent extends StatelessWidget {
+  const JacketDetailComponent({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 4,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.network(
+                'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80',
+                width: 100,
+                height: 100,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) =>
+                    const Icon(Icons.image, size: 80, color: Colors.grey),
+              ),
+            ),
+            const SizedBox(width: 16),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '粗花呢外套',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    '细腻的编织纹理，金色纽扣点缀，经典优雅的廓形。',
+                    style: TextStyle(fontSize: 13, color: Colors.grey),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 内搭层叠穿搭组件
+class LayeredTopComponent extends StatelessWidget {
+  const LayeredTopComponent({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 4,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            const Text(
+              '内搭层叠',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildLayerImage(
+                  'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?ixlib=rb-4.0.3&auto=format&fit=crop&w=120&q=80',
+                  '白衬衫',
+                ),
+                _buildLayerImage(
+                  'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?ixlib=rb-4.0.3&auto=format&fit=crop&w=120&q=80',
+                  '针织背心',
+                ),
+                _buildLayerImage(
+                  'https://images.unsplash.com/photo-1593030761757-71fae45fa0e7?ixlib=rb-4.0.3&auto=format&fit=crop&w=120&q=80',
+                  '丝巾',
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLayerImage(String url, String label) {
+    return Column(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: Image.network(
+            url,
+            width: 70,
+            height: 70,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) =>
+                const Icon(Icons.image_outlined, size: 50, color: Colors.grey),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(label, style: const TextStyle(fontSize: 11)),
+      ],
+    );
+  }
+}
+
+/// 下装色彩对比组件
+class BottomsColorContrastComponent extends StatelessWidget {
+  const BottomsColorContrastComponent({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 4,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.network(
+                'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80',
+                width: 100,
+                height: 100,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) =>
+                    const Icon(Icons.image, size: 80, color: Colors.grey),
+              ),
+            ),
+            const SizedBox(width: 16),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '阔腿牛仔裤',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 8),
+                  Row(
+                    children: [
+                      _ColorDot(color: Color(0xFF2E4C8C)),
+                      SizedBox(width: 8),
+                      _ColorDot(color: Color(0xFF8BA7B0)),
+                      SizedBox(width: 8),
+                      _ColorDot(color: Color(0xFFD4B48C)),
+                    ],
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    '深蓝与浅灰的对比',
+                    style: TextStyle(fontSize: 13, color: Colors.grey),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ColorDot extends StatelessWidget {
+  final Color color;
+  const _ColorDot({required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 20,
+      height: 20,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.grey.withOpacity(0.5), width: 1),
+      ),
+    );
+  }
+}
+```
+[2026-06-23 17:03:37] [INFO] [code-to-html] [CodeToHtmlSkill] 转换完成, html=10829 chars
+[2026-06-23 17:05:09] [INFO] [code-to-html] [CodeToHtmlSkill] 开始转换, framework=flutter, code_length=9419
+[2026-06-23 17:05:09] [INFO] [code-to-html] [CodeToHtmlSkill] 原始代码:
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: '时尚穿搭展示页',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        useMaterial3: true,
+        colorSchemeSeed: Colors.blueGrey,
+        brightness: Brightness.light,
+      ),
+      home: const FashionOutfitPage(),
+    );
+  }
+}
+
+/// 时尚穿搭展示页
+/// 使用Stack将背景环境作为底层，上方叠加单列垂直居中内容
+class FashionOutfitPage extends StatelessWidget {
+  const FashionOutfitPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final isLargeScreen = screenSize.width > 600;
+    // 人物图像根据屏幕宽度自适应大小
+    final personImageSize = isLargeScreen ? 250.0 : 180.0;
+
+    return Scaffold(
+      body: Stack(
+        children: [
+          // 背景环境组件（砖墙与台阶）
+          Positioned.fill(
+            child: Image.network(
+              'https://images.unsplash.com/photo-1581553680321-4fffae55f7e0?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80',
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => Container(
+                color: Colors.grey.shade300,
+                child: const Center(child: Icon(Icons.broken_image, size: 64)),
+              ),
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return Center(
+                  child: CircularProgressIndicator(
+                    value: loadingProgress.expectedTotalBytes != null
+                        ? loadingProgress.cumulativeBytesLoaded /
+                            loadingProgress.expectedTotalBytes!
+                        : null,
+                  ),
+                );
+              },
+            ),
+          ),
+          // 渐变遮罩，让文字和图像更清晰
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withOpacity(0.2),
+                    Colors.black.withOpacity(0.3),
+                    Colors.black.withOpacity(0.6),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          // 主内容：单列垂直居中布局
+          SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // 人物主体图像组件
+                    ClipOval(
+                      child: Container(
+                        width: personImageSize,
+                        height: personImageSize,
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.8),
+                            width: 4,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.3),
+                              blurRadius: 15,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: Image.network(
+                          'https://images.unsplash.com/photo-1544717302-de2939b7ef71?ixlib=rb-4.0.3&auto=format&fit=crop&w=634&q=80',
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              const Icon(Icons.person, size: 80, color: Colors.grey),
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return const Center(child: CircularProgressIndicator());
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 40),
+
+                    // 服装细节展示区域
+                    // 使用Card包装，增加层次感
+                    Card(
+                      elevation: 8,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      color: Colors.white.withOpacity(0.85),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 28,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // 区域标题
+                            Text(
+                              '服装细节',
+                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.brown.shade800,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            // 四个服装细节卡片：风衣、内搭T恤、叠穿层次、裤装
+                            Wrap(
+                              spacing: 12,
+                              runSpacing: 20,
+                              alignment: WrapAlignment.center,
+                              children: [
+                                _buildClothingCard(
+                                  context,
+                                  imageUrl: 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80',
+                                  label: '风衣',
+                                  isLargeScreen: isLargeScreen,
+                                ),
+                                _buildClothingCard(
+                                  context,
+                                  imageUrl: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?ixlib=rb-4.0.3&auto=format&fit=crop&w=634&q=80',
+                                  label: '内搭T恤',
+                                  isLargeScreen: isLargeScreen,
+                                ),
+                                _buildClothingCard(
+                                  context,
+                                  imageUrl: 'https://images.unsplash.com/photo-1608236415100-f7b0e20b62c3?ixlib=rb-4.0.3&auto=format&fit=crop&w=634&q=80',
+                                  label: '叠穿层次',
+                                  isLargeScreen: isLargeScreen,
+                                ),
+                                _buildClothingCard(
+                                  context,
+                                  imageUrl: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?ixlib=rb-4.0.3&auto=format&fit=crop&w=634&q=80',
+                                  label: '裤装',
+                                  isLargeScreen: isLargeScreen,
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 构建单个服装细节卡片
+  Widget _buildClothingCard(
+    BuildContext context, {
+    required String imageUrl,
+    required String label,
+    required bool isLargeScreen,
+  }) {
+    final cardSize = isLargeScreen ? 150.0 : 120.0;
+    return SizedBox(
+      width: cardSize,
+      child: Column(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              width: cardSize,
+              height: cardSize,
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: Colors.brown.shade200,
+                  width: 2,
+                ),
+              ),
+              child: Image.network(
+                imageUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) =>
+                    const Icon(Icons.checkroom, size: 48, color: Colors.grey),
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return const Center(child: CircularProgressIndicator(strokeWidth: 2));
+                },
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.brown.shade700,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+}
+```
+[2026-06-23 17:05:51] [INFO] [code-to-html] [CodeToHtmlSkill] 转换完成, html=7122 chars
+[2026-06-23 17:06:25] [INFO] [code-to-html] [CodeToHtmlSkill] 开始转换, framework=vue3, code_length=1465
+[2026-06-23 17:06:25] [INFO] [code-to-html] [CodeToHtmlSkill] 原始代码:
+```vue
+<template>
+  <div class="fashion-layout">
+    <!-- 背景纹理：砖墙 -->
+    <BackgroundTexture />
+
+    <!-- 主内容：垂直居中 -->
+    <main class="main-content">
+      <!-- 人物主体图像 -->
+      <PersonImage />
+
+      <!-- 服饰细节展示区 -->
+      <section class="clothing-details">
+        <ClothingItem label="风衣" color="#8B4513" material="羊毛混纺" />
+        <ClothingItem label="内搭T恤" color="#F5F5DC" material="纯棉" />
+        <ClothingItem label="叠穿层" color="#A0522D" material="针织" />
+        <ClothingItem label="长裤" color="#2F4F4F" material="西装料" />
+      </section>
+
+      <!-- 材质与色彩对比 -->
+      <MaterialContrast />
+    </main>
+  </div>
+</template>
+
+<script setup lang="ts">
+import BackgroundTexture from './components/BackgroundTexture.vue'
+import PersonImage from './components/PersonImage.vue'
+import ClothingItem from './components/ClothingItem.vue'
+import MaterialContrast from './components/MaterialContrast.vue'
+</script>
+
+<style scoped>
+.fashion-layout {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.main-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem;
+  gap: 2rem;
+  max-width: 800px;
+  width: 100%;
+}
+
+.clothing-details {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+}
+</style>
+```
+[2026-06-23 17:07:47] [INFO] [code-to-html] [CodeToHtmlSkill] 转换完成, html=7472 chars
+[2026-06-23 17:09:24] [INFO] [code-to-html] [CodeToHtmlSkill] 开始转换, framework=flutter, code_length=13400
+[2026-06-23 17:09:24] [INFO] [code-to-html] [CodeToHtmlSkill] 原始代码:
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const FashionApp());
+}
+
+class FashionApp extends StatelessWidget {
+  const FashionApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: '时尚穿搭展示',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        colorSchemeSeed: Colors.brown,
+        useMaterial3: true,
+        brightness: Brightness.light,
+      ),
+      home: const FashionShowcasePage(),
+    );
+  }
+}
+
+class FashionShowcasePage extends StatelessWidget {
+  const FashionShowcasePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final isWide = constraints.maxWidth > 600;
+          final imageSize = isWide ? 350.0 : 250.0;
+          final cardWidth = isWide ? 180.0 : 140.0;
+          final padding = isWide ? 32.0 : 16.0;
+
+          return SafeArea(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // ---------- 背景环境 + 人物主体 ----------
+                  SizedBox(
+                    height: imageSize * 1.8,
+                    child: Stack(
+                      children: [
+                        // 背景环境：砖墙 + 石阶
+                        Positioned.fill(
+                          child: Image.network(
+                            'https://picsum.photos/seed/brick-wall/800/1200',
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              color: Colors.grey.shade300,
+                              child: const Center(child: Text('砖墙背景')),
+                            ),
+                          ),
+                        ),
+                        // 底部石阶效果
+                        Positioned(
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          height: 60,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  Colors.transparent,
+                                  Colors.brown.shade800.withOpacity(0.7),
+                                ],
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.stairs, color: Colors.white70, size: 30),
+                                const SizedBox(width: 8),
+                                Text(
+                                  '石阶步道',
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.9),
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w300,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        // 人物主体图像（居中特写）
+                        Center(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(20),
+                            child: Image.network(
+                              'https://picsum.photos/seed/fashion-model/400/600',
+                              width: imageSize,
+                              height: imageSize * 1.5,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(
+                                width: imageSize,
+                                height: imageSize * 1.5,
+                                color: Colors.brown.shade200,
+                                child: const Icon(Icons.person, size: 80, color: Colors.white70),
+                              ),
+                            ),
+                          ),
+                        ),
+                        // 自然光晕效果（左上角）
+                        Positioned(
+                          top: 20,
+                          left: 20,
+                          child: Container(
+                            width: 120,
+                            height: 120,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: RadialGradient(
+                                colors: [
+                                  Colors.yellow.withOpacity(0.2),
+                                  Colors.transparent,
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  SizedBox(height: padding / 2),
+
+                  // ---------- 风格氛围描述 ----------
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: padding),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '自然光 · 材质纹理 · 色彩搭配',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: Colors.brown.shade700,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            _ColorDot(color: Colors.brown.shade300),
+                            _ColorDot(color: Colors.amber.shade200),
+                            _ColorDot(color: Colors.grey.shade500),
+                            _ColorDot(color: Colors.white70),
+                            _ColorDot(color: Colors.black38),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '砖墙的粗粝质感与柔和的自然光交织，呈现大地色系的沉稳与层次。',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Colors.grey.shade600,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  SizedBox(height: padding),
+
+                  // ---------- 服装细节展示 ----------
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: padding),
+                    child: Text(
+                      '服装细节',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.brown.shade800,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // 响应式网格或水平滚动
+                  isWide
+                      ? Padding(
+                          padding: EdgeInsets.symmetric(horizontal: padding),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              _ClothingCard(
+                                label: '风衣',
+                                imageUrl: 'https://picsum.photos/seed/trench-coat/200/300',
+                                cardWidth: cardWidth,
+                              ),
+                              _ClothingCard(
+                                label: '内搭T恤',
+                                imageUrl: 'https://picsum.photos/seed/tshirt/200/300',
+                                cardWidth: cardWidth,
+                              ),
+                              _ClothingCard(
+                                label: '叠穿层次',
+                                imageUrl: 'https://picsum.photos/seed/layering/200/300',
+                                cardWidth: cardWidth,
+                              ),
+                              _ClothingCard(
+                                label: '长裤',
+                                imageUrl: 'https://picsum.photos/seed/trousers/200/300',
+                                cardWidth: cardWidth,
+                              ),
+                            ],
+                          ),
+                        )
+                      : SizedBox(
+                          height: 220,
+                          child: ListView(
+                            scrollDirection: Axis.horizontal,
+                            padding: EdgeInsets.symmetric(horizontal: padding),
+                            children: [
+                              _ClothingCard(
+                                label: '风衣',
+                                imageUrl: 'https://picsum.photos/seed/trench-coat/200/300',
+                                cardWidth: cardWidth,
+                              ),
+                              const SizedBox(width: 12),
+                              _ClothingCard(
+                                label: '内搭T恤',
+                                imageUrl: 'https://picsum.photos/seed/tshirt/200/300',
+                                cardWidth: cardWidth,
+                              ),
+                              const SizedBox(width: 12),
+                              _ClothingCard(
+                                label: '叠穿层次',
+                                imageUrl: 'https://picsum.photos/seed/layering/200/300',
+                                cardWidth: cardWidth,
+                              ),
+                              const SizedBox(width: 12),
+                              _ClothingCard(
+                                label: '长裤',
+                                imageUrl: 'https://picsum.photos/seed/trousers/200/300',
+                                cardWidth: cardWidth,
+                              ),
+                            ],
+                          ),
+                        ),
+
+                  const SizedBox(height: 24),
+
+                  // 底部留白
+                  SizedBox(height: padding),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// 颜色圆点，用于展示色彩搭配
+class _ColorDot extends StatelessWidget {
+  final Color color;
+  const _ColorDot({required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      width: 24,
+      height: 24,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white, width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 服装卡片组件
+class _ClothingCard extends StatelessWidget {
+  final String label;
+  final String imageUrl;
+  final double cardWidth;
+
+  const _ClothingCard({
+    required this.label,
+    required this.imageUrl,
+    required this.cardWidth,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: cardWidth,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // 图片
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            child: Image.network(
+              imageUrl,
+              height: cardWidth * 1.2,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                height: cardWidth * 1.2,
+                color: Colors.grey.shade200,
+                child: const Icon(Icons.image, size: 40, color: Colors.grey),
+              ),
+            ),
+          ),
+          // 标签
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Colors.brown.shade700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+```
+[2026-06-23 17:10:36] [INFO] [code-to-html] [CodeToHtmlSkill] 转换完成, html=9112 chars
+[2026-06-23 17:16:45] [INFO] [code-to-html] [CodeToHtmlSkill] 开始转换, framework=react, code_length=3016
+[2026-06-23 17:16:45] [INFO] [code-to-html] [CodeToHtmlSkill] 原始代码:
+```tsx
+import React from 'react';
+
+// 人物主体图像组件
+const CharacterImage: React.FC = () => {
+  return (
+    <div style={{ marginBottom: '20px' }}>
+      <img
+        src="https://via.placeholder.com/300x400?text=人物"
+        alt="人物穿搭"
+        style={{ width: '300px', height: '400px', objectFit: 'cover', borderRadius: '8px' }}
+      />
+    </div>
+  );
+};
+
+// 背景环境组件（含装饰元素）
+const BackgroundEnvironment: React.FC = () => {
+  return (
+    <div
+      style={{
+        position: 'relative',
+        width: '400px',
+        height: '200px',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        borderRadius: '12px',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: '20px',
+      }}
+    >
+      {/* 装饰元素：圆形 */}
+      <div
+        style={{
+          position: 'absolute',
+          top: '10%',
+          left: '10%',
+          width: '40px',
+          height: '40px',
+          background: 'rgba(255,255,255,0.3)',
+          borderRadius: '50%',
+        }}
+      />
+      {/* 装饰元素：三角形 */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: '15%',
+          right: '15%',
+          width: 0,
+          height: 0,
+          borderLeft: '20px solid transparent',
+          borderRight: '20px solid transparent',
+          borderBottom: '30px solid rgba(255,255,255,0.2)',
+        }}
+      />
+      {/* 装饰文字 */}
+      <span
+        style={{
+          color: 'white',
+          fontSize: '20px',
+          fontWeight: 'bold',
+          zIndex: 1,
+        }}
+      >
+        背景环境
+      </span>
+    </div>
+  );
+};
+
+// 左侧竖排文字标签组件（红色底纹，含中文字符）
+const VerticalTextLabel: React.FC = () => {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: '20px',
+      }}
+    >
+      <div
+        style={{
+          background: 'red',
+          color: 'white',
+          padding: '12px 8px',
+          borderRadius: '6px',
+          writingMode: 'vertical-rl', // 竖排文字
+          textOrientation: 'upright', // 保持字符正立（可选）
+          fontSize: '18px',
+          fontWeight: 'bold',
+          letterSpacing: '4px',
+        }}
+      >
+        穿搭展示
+      </div>
+    </div>
+  );
+};
+
+// 主页面组件：单列垂直居中展示布局
+const ClothingDisplayPage: React.FC = () => {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '100vh',
+        background: '#f0f0f0',
+        padding: '20px',
+      }}
+    >
+      <h1 style={{ marginBottom: '30px', fontFamily: 'serif' }}>服饰穿搭展示</h1>
+      <CharacterImage />
+      <BackgroundEnvironment />
+      <VerticalTextLabel />
+    </div>
+  );
+};
+
+export default ClothingDisplayPage;
+```
+[2026-06-23 17:16:55] [INFO] [code-to-html] [CodeToHtmlSkill] 转换完成, html=2573 chars
+[2026-06-23 17:17:58] [INFO] [code-to-html] [CodeToHtmlSkill] 开始转换, framework=react, code_length=2981
+[2026-06-23 17:17:58] [INFO] [code-to-html] [CodeToHtmlSkill] 原始代码:
+```tsx
+import React from 'react';
+
+// 背景环境组件（含装饰元素）
+const BackgroundEnvironment: React.FC = () => {
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        overflow: 'hidden',
+      }}
+    >
+      {/* 装饰元素 */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 50,
+          left: 50,
+          width: 100,
+          height: 100,
+          background: 'rgba(255,255,255,0.1)',
+          borderRadius: '50%',
+        }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          bottom: 80,
+          right: 60,
+          width: 150,
+          height: 150,
+          background: 'rgba(255,255,255,0.1)',
+          borderRadius: '50%',
+        }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          top: '30%',
+          left: '10%',
+          width: 200,
+          height: 200,
+          background: 'rgba(255,255,255,0.05)',
+          borderRadius: '50%',
+        }}
+      />
+    </div>
+  );
+};
+
+// 人物主体图像组件
+const PersonImage: React.FC = () => {
+  return (
+    <div
+      style={{
+        width: 300,
+        height: 400,
+        background: '#f0f0f0',
+        borderRadius: 10,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: 18,
+        color: '#666',
+        overflow: 'hidden',
+      }}
+    >
+      <img
+        src="https://via.placeholder.com/300x400?text=Person"
+        alt="Person"
+        style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 10 }}
+      />
+    </div>
+  );
+};
+
+// 左侧竖排文字标签组件（红色底金色字）
+const VerticalTextLabel: React.FC = () => {
+  return (
+    <div
+      style={{
+        background: '#cc0000',
+        color: '#FFD700',
+        padding: '20px 10px',
+        borderRadius: 8,
+        writingMode: 'vertical-rl',
+        textOrientation: 'mixed',
+        fontSize: 24,
+        fontWeight: 'bold',
+        letterSpacing: 4,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: 300,
+        width: 60,
+      }}
+    >
+      时尚穿搭
+    </div>
+  );
+};
+
+// 主页面 —— 服饰穿搭展示页
+const App: React.FC = () => {
+  return (
+    <div
+      style={{
+        position: 'relative',
+        width: '100vw',
+        height: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+      }}
+    >
+      <BackgroundEnvironment />
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 40,
+          zIndex: 1,
+        }}
+      >
+        <VerticalTextLabel />
+        <PersonImage />
+      </div>
+    </div>
+  );
+};
+
+export default App;
+```
+[2026-06-23 17:18:20] [INFO] [code-to-html] [CodeToHtmlSkill] 转换完成, html=2676 chars
+[2026-06-23 17:27:54] [INFO] [code-to-html] [CodeToHtmlSkill] 开始转换, framework=flutter, code_length=9620
+[2026-06-23 17:27:54] [INFO] [code-to-html] [CodeToHtmlSkill] 原始代码:
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const FashionShowcaseApp());
+}
+
+class FashionShowcaseApp extends StatelessWidget {
+  const FashionShowcaseApp({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: '时尚穿搭展示',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        useMaterial3: true,
+        colorSchemeSeed: Colors.brown,
+        brightness: Brightness.light,
+      ),
+      home: const FashionShowcasePage(),
+    );
+  }
+}
+
+class FashionShowcasePage extends StatelessWidget {
+  const FashionShowcasePage({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    // 响应式宽度
+    final screenWidth = MediaQuery.of(context).size.width;
+    final imageWidth = screenWidth > 600 ? screenWidth * 0.5 : screenWidth * 0.8;
+    final itemWidth = (screenWidth - 48 - 16) / 2; // 用于服装细节卡片
+
+    return Scaffold(
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // 1. 人物主体图像组件
+                  _PersonImage(imageWidth: imageWidth),
+                  const SizedBox(height: 24),
+
+                  // 2. 背景环境组件（砖墙与台阶）
+                  _BackgroundEnvironment(screenWidth: screenWidth),
+                  const SizedBox(height: 24),
+
+                  // 3. 服装细节展示区域
+                  _ClothingDetails(itemWidth: itemWidth),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// 人物主体图像组件
+class _PersonImage extends StatelessWidget {
+  final double imageWidth;
+  const _PersonImage({Key? key, required this.imageWidth}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Image.network(
+        'https://images.unsplash.com/photo-1581044777550-4c6a2e7e6b8a?w=400&h=600&fit=crop', // 人物（可替换）
+        width: imageWidth,
+        height: imageWidth * 1.5, // 保持3:2比例
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Container(
+            width: imageWidth,
+            height: imageWidth * 1.5,
+            color: Colors.grey[200],
+            child: const Center(child: CircularProgressIndicator()),
+          );
+        },
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            width: imageWidth,
+            height: imageWidth * 1.5,
+            color: Colors.grey[200],
+            child: const Icon(Icons.person, size: 80, color: Colors.grey),
+          );
+        },
+      ),
+    );
+  }
+}
+
+// 背景环境组件（砖墙与台阶）
+class _BackgroundEnvironment extends StatelessWidget {
+  final double screenWidth;
+  const _BackgroundEnvironment({Key? key, required this.screenWidth}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: screenWidth > 600 ? screenWidth * 0.7 : screenWidth * 0.9,
+      height: 200,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        // 模拟砖墙背景
+        gradient: LinearGradient(
+          colors: [Colors.brown.shade300, Colors.brown.shade600],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Stack(
+        children: [
+          // 砖纹理模拟（用多个小容器）
+          Positioned.fill(
+            child: GridView.builder(
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 6,
+                childAspectRatio: 2,
+                mainAxisSpacing: 4,
+                crossAxisSpacing: 4,
+              ),
+              itemCount: 60,
+              itemBuilder: (context, index) {
+                return Container(
+                  decoration: BoxDecoration(
+                    color: index % 2 == 0
+                        ? Colors.brown.shade400
+                        : Colors.brown.shade500,
+                    border: Border.all(color: Colors.brown.shade700, width: 1),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                );
+              },
+            ),
+          ),
+          // 台阶模拟（底部两个矩形）
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: Container(
+                    height: 30,
+                    color: Colors.grey.shade400,
+                    child: const Center(child: Text('台阶', style: TextStyle(color: Colors.white))),
+                  ),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: Container(
+                    height: 50,
+                    color: Colors.grey.shade600,
+                    child: const Center(child: Text('台阶', style: TextStyle(color: Colors.white))),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // 居中文字提示（可移除）
+          const Center(
+            child: Text(
+              '砖墙背景',
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                shadows: [Shadow(blurRadius: 4, color: Colors.black45)],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// 服装细节展示区域（风衣、内搭T恤、叠穿层次、裤装）
+class _ClothingDetails extends StatelessWidget {
+  final double itemWidth;
+  const _ClothingDetails({Key? key, required this.itemWidth}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    // 服装列表数据（图片可替换为实际资源）
+    final items = [
+      _ClothingItem(
+        label: '风衣',
+        imageUrl: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=200&h=200&fit=crop',
+        description: '经典卡其色风衣',
+      ),
+      _ClothingItem(
+        label: '内搭T恤',
+        imageUrl: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=200&h=200&fit=crop',
+        description: '纯棉白色T恤',
+      ),
+      _ClothingItem(
+        label: '叠穿层次',
+        imageUrl: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=200&h=200&fit=crop',
+        description: '毛衣+衬衫叠穿',
+      ),
+      _ClothingItem(
+        label: '裤装',
+        imageUrl: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=200&h=200&fit=crop',
+        description: '直筒牛仔裤',
+      ),
+    ];
+
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      alignment: WrapAlignment.center,
+      children: items.map((item) {
+        return SizedBox(
+          width: itemWidth,
+          child: Card(
+            elevation: 3,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                  child: Image.network(
+                    item.imageUrl,
+                    height: 100,
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, progress) {
+                      if (progress == null) return child;
+                      return Container(height: 100, color: Colors.grey[200], child: const Center(child: CircularProgressIndicator()));
+                    },
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(height: 100, color: Colors.grey[200], child: const Icon(Icons.image, size: 50, color: Colors.grey));
+                    },
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Column(
+                    children: [
+                      Text(
+                        item.label,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        item.description,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+}
+
+// 服装数据模型
+class _ClothingItem {
+  final String label;
+  final String imageUrl;
+  final String description;
+  const _ClothingItem({
+    required this.label,
+    required this.imageUrl,
+    required this.description,
+  });
+}
+```
+[2026-06-23 17:29:20] [INFO] [code-to-html] [CodeToHtmlSkill] 转换完成, html=0 chars
+[2026-06-23 17:33:33] [INFO] [code-to-html] [CodeToHtmlSkill] 开始转换, framework=flutter, code_length=6771
+[2026-06-23 17:33:33] [INFO] [code-to-html] [CodeToHtmlSkill] 原始代码:
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Doraemon Character Display',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        colorSchemeSeed: Colors.blue,
+        useMaterial3: true,
+      ),
+      home: const DoraemonPage(),
+    );
+  }
+}
+
+class DoraemonPage extends StatelessWidget {
+  const DoraemonPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final size = Size(constraints.maxWidth, constraints.maxHeight);
+          final shorterSide = size.shortestSide;
+          final gridSize = shorterSide * 0.05; // grid cell size proportional to screen
+
+          return Center(
+            child: SizedBox(
+              width: size.width,
+              height: size.height,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  // Background grid pattern
+                  Positioned.fill(
+                    child: CustomPaint(
+                      painter: GridPainter(
+                        gridSize: gridSize.clamp(10, 40),
+                        color: Colors.grey.withOpacity(0.2),
+                      ),
+                    ),
+                  ),
+                  // Character illustration (Doraemon)
+                  CustomPaint(
+                    size: Size(shorterSide * 0.5, shorterSide * 0.5),
+                    painter: DoraemonPainter(),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+// Painter for background grid pattern
+class GridPainter extends CustomPainter {
+  final double gridSize;
+  final Color color;
+
+  GridPainter({required this.gridSize, required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1.0;
+
+    // Draw vertical lines
+    for (double x = 0; x <= size.width; x += gridSize) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+    }
+    // Draw horizontal lines
+    for (double y = 0; y <= size.height; y += gridSize) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant GridPainter oldDelegate) {
+    return oldDelegate.gridSize != gridSize || oldDelegate.color != color;
+  }
+}
+
+// Painter for Doraemon character (simplified illustration)
+class DoraemonPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2;
+
+    // Body (blue circle)
+    final bodyPaint = Paint()
+      ..color = const Color(0xFF2196F3) // Material Blue
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(center, radius, bodyPaint);
+
+    // Face (white oval)
+    final facePaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+    final faceRect = Rect.fromCenter(
+      center: center,
+      width: radius * 1.2,
+      height: radius * 1.0,
+    );
+    canvas.drawOval(faceRect, facePaint);
+
+    // Eyes (black circles)
+    final eyePaint = Paint()
+      ..color = Colors.black
+      ..style = PaintingStyle.fill;
+    final eyeOffset = radius * 0.25;
+    final eyeRadius = radius * 0.12;
+    canvas.drawCircle(Offset(center.dx - eyeOffset, center.dy - eyeOffset * 0.5), eyeRadius, eyePaint);
+    canvas.drawCircle(Offset(center.dx + eyeOffset, center.dy - eyeOffset * 0.5), eyeRadius, eyePaint);
+
+    // Nose (red circle)
+    final nosePaint = Paint()
+      ..color = Colors.red
+      ..style = PaintingStyle.fill;
+    final noseRadius = radius * 0.1;
+    canvas.drawCircle(Offset(center.dx, center.dy - radius * 0.05), noseRadius, nosePaint);
+
+    // Mouth (arc)
+    final mouthPaint = Paint()
+      ..color = Colors.black
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0;
+    final mouthRect = Rect.fromCenter(
+      center: Offset(center.dx, center.dy + radius * 0.1),
+      width: radius * 0.8,
+      height: radius * 0.5,
+    );
+    canvas.drawArc(mouthRect, 0.2, 3.0, false, mouthPaint);
+
+    // Whiskers (lines)
+    final whiskerPaint = Paint()
+      ..color = Colors.black
+      ..strokeWidth = 1.5;
+    final whiskerLength = radius * 0.25;
+    final whiskerStartY = center.dy - radius * 0.1;
+    final whiskerVerticalSpacing = radius * 0.08;
+
+    // Left whiskers
+    canvas.drawLine(
+      Offset(center.dx - radius * 0.5, whiskerStartY - whiskerVerticalSpacing),
+      Offset(center.dx - radius * 0.9, whiskerStartY - whiskerVerticalSpacing),
+      whiskerPaint,
+    );
+    canvas.drawLine(
+      Offset(center.dx - radius * 0.5, whiskerStartY),
+      Offset(center.dx - radius * 0.9, whiskerStartY),
+      whiskerPaint,
+    );
+    canvas.drawLine(
+      Offset(center.dx - radius * 0.5, whiskerStartY + whiskerVerticalSpacing),
+      Offset(center.dx - radius * 0.9, whiskerStartY + whiskerVerticalSpacing),
+      whiskerPaint,
+    );
+
+    // Right whiskers
+    canvas.drawLine(
+      Offset(center.dx + radius * 0.5, whiskerStartY - whiskerVerticalSpacing),
+      Offset(center.dx + radius * 0.9, whiskerStartY - whiskerVerticalSpacing),
+      whiskerPaint,
+    );
+    canvas.drawLine(
+      Offset(center.dx + radius * 0.5, whiskerStartY),
+      Offset(center.dx + radius * 0.9, whiskerStartY),
+      whiskerPaint,
+    );
+    canvas.drawLine(
+      Offset(center.dx + radius * 0.5, whiskerStartY + whiskerVerticalSpacing),
+      Offset(center.dx + radius * 0.9, whiskerStartY + whiskerVerticalSpacing),
+      whiskerPaint,
+    );
+
+    // Bell (yellow circle at bottom center)
+    final bellPaint = Paint()
+      ..color = Colors.yellow
+      ..style = PaintingStyle.fill;
+    final bellCenter = Offset(center.dx, center.dy + radius * 0.55);
+    final bellRadius = radius * 0.12;
+    canvas.drawCircle(bellCenter, bellRadius, bellPaint);
+
+    // Bell line
+    final bellLinePaint = Paint()
+      ..color = Colors.black
+      ..strokeWidth = 1.5;
+    canvas.drawLine(
+      Offset(bellCenter.dx - bellRadius * 0.8, bellCenter.dy),
+      Offset(bellCenter.dx + bellRadius * 0.8, bellCenter.dy),
+      bellLinePaint,
+    );
+
+    // Collar (red ribbon)
+    final collarPaint = Paint()
+      ..color = Colors.red
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 4.0;
+    final collarRect = Rect.fromCircle(center: center, radius: radius * 0.7);
+    canvas.drawArc(collarRect, -0.5, 1.0, false, collarPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant DoraemonPainter oldDelegate) => false;
+}
+```
+[2026-06-23 17:34:54] [INFO] [code-to-html] [CodeToHtmlSkill] 转换完成, html=379 chars
+[2026-06-23 17:39:03] [INFO] [code-to-html] [CodeToHtmlSkill] 开始转换, framework=flutter, code_length=13069
+[2026-06-23 17:39:03] [INFO] [code-to-html] [CodeToHtmlSkill] 原始代码:
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const FashionStyleApp());
+}
+
+class FashionStyleApp extends StatelessWidget {
+  const FashionStyleApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: '时尚穿搭展示页',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        useMaterial3: true,
+        colorSchemeSeed: const Color(0xFF8B4513), // 棕色系，与环境呼应
+        brightness: Brightness.light,
+      ),
+      home: const StyleDisplayPage(),
+    );
+  }
+}
+
+class StyleDisplayPage extends StatelessWidget {
+  const StyleDisplayPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      // 使用 SafeArea 适配异形屏
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // 响应式：根据宽度决定是否使用更紧凑的间距
+            final isWide = constraints.maxWidth > 600;
+            return SingleChildScrollView(
+              padding: EdgeInsets.symmetric(
+                horizontal: isWide ? 48 : 16,
+                vertical: 16,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 1. 人物主体图像组件（居中特写）
+                  _buildPortraitSection(isWide),
+                  const SizedBox(height: 24),
+
+                  // 2. 服装细节展示组件
+                  _buildClothingDetails(isWide),
+                  const SizedBox(height: 24),
+
+                  // 3. 背景环境组件（砖墙、台阶）
+                  _buildEnvironmentSection(isWide),
+                  const SizedBox(height: 24),
+
+                  // 4. 风格氛围渲染组件（自然光、材质纹理、色彩搭配）
+                  _buildAtmosphereSection(isWide),
+                  const SizedBox(height: 32),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  // ===== 人物主体图像 =====
+  Widget _buildPortraitSection(bool isWide) {
+    final double imageHeight = isWide ? 400 : 300;
+    return Center(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: SizedBox(
+          height: imageHeight,
+          width: isWide ? imageHeight * 0.75 : double.infinity,
+          child: Image.network(
+            'https://images.unsplash.com/photo-1581044777550-4c0c5e6a0a2f?w=800&h=1000&fit=crop', // 人物特写示例（外套、叠穿）
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => Container(
+              color: Colors.grey[300],
+              child: const Icon(Icons.person, size: 80, color: Colors.white),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ===== 服装细节展示 =====
+  Widget _buildClothingDetails(bool isWide) {
+    // 四件单品：风衣、内搭T恤、叠穿（衬衫）、裤装
+    final items = [
+      _ClothingItem(
+        imageUrl: 'https://images.unsplash.com/photo-1608236415911-8f3f5c74c54d?w=300&h=400&fit=crop',
+        label: '风衣',
+        color: const Color(0xFFD4A574),
+      ),
+      _ClothingItem(
+        imageUrl: 'https://images.unsplash.com/photo-1564257631407-4deb1f99d992?w=300&h=400&fit=crop',
+        label: '内搭T恤',
+        color: const Color(0xFFF5F5DC),
+      ),
+      _ClothingItem(
+        imageUrl: 'https://images.unsplash.com/photo-1600077106724-318af0c68bbc?w=300&h=400&fit=crop',
+        label: '叠穿衬衫',
+        color: const Color(0xFF8B7D6B),
+      ),
+      _ClothingItem(
+        imageUrl: 'https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=300&h=400&fit=crop',
+        label: '裤装',
+        color: const Color(0xFF3E2723),
+      ),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '服装细节',
+          style: Theme.of(/* context */)._textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        const SizedBox(height: 12),
+        // 响应式：宽屏用 GridView，窄屏用横向滚动
+        if (isWide)
+          Wrap(
+            spacing: 16,
+            runSpacing: 16,
+            children: items.map((item) => _buildClothingCard(item)).toList(),
+          )
+        else
+          SizedBox(
+            height: 220,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: items.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 12),
+              itemBuilder: (context, index) => _buildClothingCard(items[index]),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildClothingCard(_ClothingItem item) {
+    return SizedBox(
+      width: 150,
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: Image.network(
+                item.imageUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  color: item.color.withOpacity(0.3),
+                  child: const Icon(Icons.checkroom, size: 48),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text(
+                item.label,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ===== 背景环境组件 =====
+  Widget _buildEnvironmentSection(bool isWide) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '背景环境',
+          style: Theme.of(/* context */)._textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        const SizedBox(height: 12),
+        // 砖墙背景 + 台阶
+        Container(
+          height: 200,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            // 模拟砖墙纹理（图案）
+            image: DecorationImage(
+              image: const NetworkImage(
+                'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&h=600&fit=crop', // 砖墙纹理
+              ),
+              fit: BoxFit.cover,
+              colorFilter: ColorFilter.mode(
+                Colors.brown.withOpacity(0.3),
+                BlendMode.darken,
+              ),
+            ),
+          ),
+          child: Stack(
+            children: [
+              // 台阶效果：底部灰色渐变
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                height: 60,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [
+                        Colors.grey[600]!,
+                        Colors.grey[600]!.withOpacity(0),
+                      ],
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: List.generate(
+                      4,
+                      (index) => Container(
+                        width: 40,
+                        height: 20 + (index * 5),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[400],
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              // 装饰：自然光光晕
+              Positioned(
+                top: 20,
+                right: 30,
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.yellow.withOpacity(0.15),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.yellow.withOpacity(0.2),
+                        blurRadius: 60,
+                        spreadRadius: 20,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ===== 风格氛围渲染组件 =====
+  Widget _buildAtmosphereSection(bool isWide) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '氛围渲染',
+          style: Theme.of(/* context */)._textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        const SizedBox(height: 12),
+        // 自然光、材质、色彩搭配演示
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                const Color(0xFFFFF8E1).withOpacity(0.7), // 自然光暖色
+                const Color(0xFFD7CCC8),                   // 材质质感
+                const Color(0xFF8D6E63).withOpacity(0.5),   // 大地色
+              ],
+            ),
+            border: Border.all(color: Colors.brown.withOpacity(0.3), width: 1),
+          ),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  // 自然光图标
+                  const Icon(Icons.wb_sunny, color: Colors.orange, size: 40),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      '自然光 · 上午10点侧逆光营造立体层次',
+                      style: TextStyle(color: Colors.brown[800], fontSize: 14),
+                    ),
+                  ),
+                ],
+              ),
+              const Divider(height: 24),
+              Row(
+                children: [
+                  // 材质纹理图标
+                  const Icon(Icons.texture, color: Colors.brown, size: 40),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      '材质纹理 · 粗花呢、棉麻、皮革微肌理',
+                      style: TextStyle(color: Colors.brown[800], fontSize: 14),
+                    ),
+                  ),
+                ],
+              ),
+              const Divider(height: 24),
+              Row(
+                children: [
+                  // 色彩搭配（色块）
+                  Row(
+                    children: [
+                      Container(
+                        width: 24,
+                        height: 24,
+                        color: const Color(0xFFD4A574),
+                      ),
+                      const SizedBox(width: 4),
+                      Container(
+                        width: 24,
+                        height: 24,
+                        color: const Color(0xFFF5F5DC),
+                      ),
+                      const SizedBox(width: 4),
+                      Container(
+                        width: 24,
+                        height: 24,
+                        color: const Color(0xFF8B7D6B),
+                      ),
+                      const SizedBox(width: 4),
+                      Container(
+                        width: 24,
+                        height: 24,
+                        color: const Color(0xFF3E2723),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      '色彩搭配 · 大地色系+暖白，和谐高级',
+                      style: TextStyle(color: Colors.brown[800], fontSize: 14),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// 辅助数据类
+class _ClothingItem {
+  final String imageUrl;
+  final String label;
+  final Color color;
+
+  const _ClothingItem({
+    required this.imageUrl,
+    required this.label,
+    required this.color,
+  });
+}
+
+// 扩展 Theme 以方便获取 TextTheme（实际生产建议用 BuildContext）
+// 由于上面使用了 _textTheme，此处补充一个 getter 避免编译错误
+extension _BuildContextExtension on BuildContext {
+  TextTheme get _textTheme => Theme.of(this).textTheme;
+}
+```
+[2026-06-23 17:40:03] [INFO] [code-to-html] [CodeToHtmlSkill] 转换完成, html=9094 chars
+[2026-06-23 17:49:19] [INFO] [code-to-html] [CodeToHtmlSkill] 开始转换, framework=flutter, code_length=5829
+[2026-06-23 17:49:19] [INFO] [code-to-html] [CodeToHtmlSkill] 原始代码:
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: '时尚穿搭展示',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        useMaterial3: true,
+        colorSchemeSeed: Colors.teal,
+        brightness: Brightness.light,
+      ),
+      home: const FashionDetailPage(),
+    );
+  }
+}
+
+class FashionDetailPage extends StatelessWidget {
+  const FashionDetailPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isLandscape = screenWidth > screenHeight;
+
+    return Scaffold(
+      body: Stack(
+        children: [
+          // 背景环境组件：砖墙纹理
+          Positioned.fill(
+            child: Container(
+              decoration: const BoxDecoration(
+                image: DecorationImage(
+                  image: NetworkImage(
+                    'https://www.transparenttextures.com/patterns/brick-wall.png',
+                  ),
+                  fit: BoxFit.cover,
+                  colorFilter: ColorFilter.mode(
+                    Colors.black26,
+                    BlendMode.darken,
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // 风格氛围渲染组件：半透明暖色调渐变覆盖层
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.orange.withOpacity(0.15),
+                    Colors.transparent,
+                    Colors.brown.withOpacity(0.2),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // 人物主体图像组件（居中）
+          Center(
+            child: FractionallySizedBox(
+              heightFactor: isLandscape ? 0.85 : 0.72,
+              widthFactor: isLandscape ? 0.45 : 0.8,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.network(
+                  'https://picsum.photos/seed/fashion/400/600',
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    color: Colors.grey[300],
+                    child: const Icon(
+                      Icons.person,
+                      size: 80,
+                      color: Colors.white70,
+                    ),
+                  ),
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return const Center(
+                      child: CircularProgressIndicator(),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+
+          // 服装细节展示组件（风衣、内搭T恤、叠穿层次、裤装）
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: screenHeight * 0.05,
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: screenWidth * 0.06,
+              ),
+              child: Card(
+                elevation: 4,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                color: Colors.white.withOpacity(0.85),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: screenWidth * 0.04,
+                    vertical: screenHeight * 0.02,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        '穿搭细节',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.brown,
+                        ),
+                      ),
+                      SizedBox(height: screenHeight * 0.015),
+                      _buildDetailRow(Icons.checkroom, '风衣', '经典卡其色双排扣'),
+                      SizedBox(height: screenHeight * 0.012),
+                      _buildDetailRow(Icons.settings_overscan, '内搭T恤', '白色纯棉圆领'),
+                      SizedBox(height: screenHeight * 0.012),
+                      _buildDetailRow(Icons.layers, '叠穿层次', '衬衫领 + 针织背心'),
+                      SizedBox(height: screenHeight * 0.012),
+                      _buildDetailRow(Icons.accessibility_new, '裤装', '深蓝直筒牛仔裤'),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(IconData icon, String label, String value) {
+    return Row(
+      children: [
+        Icon(icon, size: 20, color: Colors.brown.shade400),
+        const SizedBox(width: 8),
+        Text(
+          '$label：',
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+          ),
+        ),
+        const SizedBox(width: 4),
+        Expanded(
+          child: Text(
+            value,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade700,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+}
+```
+[2026-06-23 17:49:33] [INFO] [code-to-html] [CodeToHtmlSkill] 转换完成, html=4621 chars
+[2026-06-23 18:21:53] [INFO] [code-to-html] [CodeToHtmlSkill] 开始转换, framework=flutter, code_length=8168
+[2026-06-23 18:21:53] [INFO] [code-to-html] [CodeToHtmlSkill] 原始代码:
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: '哆啦A梦角色特写',
+      theme: ThemeData(
+        useMaterial3: true,
+        colorSchemeSeed: Colors.blue,
+      ),
+      home: const DoraemonPage(),
+    );
+  }
+}
+
+class DoraemonPage extends StatelessWidget {
+  const DoraemonPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final double size = constraints.maxWidth < constraints.maxHeight
+              ? constraints.maxWidth
+              : constraints.maxHeight;
+          final double characterSize = size * 0.7;
+          final double gridSpacing = size * 0.04;
+
+          return Stack(
+            children: [
+              // 背景网格墙
+              Positioned.fill(
+                child: GridPaper(
+                  color: Colors.grey.shade300,
+                  divisions: 1,
+                  interval: gridSpacing,
+                  divisionsColor: Colors.grey.shade400,
+                  subdivisions: 1,
+                ),
+              ),
+              // 角色居中
+              Center(
+                child: SizedBox(
+                  width: characterSize,
+                  height: characterSize * 1.2,
+                  child: CustomPaint(
+                    painter: DoraemonPainter(),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class DoraemonPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final double w = size.width;
+    final double h = size.height;
+    final double headRadius = w * 0.45;
+    final double bodyHeight = h * 0.5;
+    final double bodyWidth = w * 0.5;
+    final Offset center = Offset(w / 2, headRadius + 10);
+
+    // --- 身体 (蓝色) ---
+    final bodyRect = Rect.fromCenter(
+      center: Offset(w / 2, center.dy + headRadius * 1.1),
+      width: bodyWidth,
+      height: bodyHeight,
+    );
+    final bodyPaint = Paint()..color = const Color(0xFF2196F3);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(bodyRect, const Radius.circular(20)),
+      bodyPaint,
+    );
+
+    // --- 头部 (蓝色) ---
+    final headPaint = Paint()..color = const Color(0xFF2196F3);
+    canvas.drawCircle(center, headRadius, headPaint);
+
+    // --- 白色面部 ---
+    final facePaint = Paint()..color = Colors.white;
+    final double faceWidth = headRadius * 1.2;
+    final double faceHeight = headRadius * 1.0;
+    final faceRect = Rect.fromCenter(
+      center: Offset(center.dx, center.dy + headRadius * 0.1),
+      width: faceWidth,
+      height: faceHeight,
+    );
+    canvas.drawOval(faceRect, facePaint);
+
+    // --- 眼睛 ---
+    final double eyeRadius = headRadius * 0.15;
+    final double eyeY = center.dy - headRadius * 0.1;
+    final double eyeOffsetX = headRadius * 0.25;
+
+    // 眼白
+    final eyePaint = Paint()..color = Colors.white;
+    canvas.drawOval(
+      Rect.fromCenter(
+          center: Offset(center.dx - eyeOffsetX, eyeY),
+          width: eyeRadius * 2,
+          height: eyeRadius * 2.2),
+      eyePaint);
+    canvas.drawOval(
+      Rect.fromCenter(
+          center: Offset(center.dx + eyeOffsetX, eyeY),
+          width: eyeRadius * 2,
+          height: eyeRadius * 2.2),
+      eyePaint);
+    // 瞳孔
+    final pupilPaint = Paint()..color = Colors.black;
+    final double pupilRadius = headRadius * 0.07;
+    canvas.drawCircle(
+        Offset(center.dx - eyeOffsetX, eyeY + headRadius * 0.02),
+        pupilRadius, pupilPaint);
+    canvas.drawCircle(
+        Offset(center.dx + eyeOffsetX, eyeY + headRadius * 0.02),
+        pupilRadius, pupilPaint);
+
+    // --- 鼻子 (红色) ---
+    final nosePaint = Paint()..color = Colors.red;
+    canvas.drawCircle(
+        Offset(center.dx, center.dy + headRadius * 0.05), headRadius * 0.08,
+        nosePaint);
+
+    // --- 嘴巴 (微笑弧线) ---
+    final mouthPaint = Paint()
+      ..color = Colors.black
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0;
+    final mouthPath = Path();
+    mouthPath.moveTo(center.dx - headRadius * 0.3, center.dy + headRadius * 0.15);
+    mouthPath.quadraticBezierTo(
+      center.dx,
+      center.dy + headRadius * 0.35,
+      center.dx + headRadius * 0.3,
+      center.dy + headRadius * 0.15,
+    );
+    canvas.drawPath(mouthPath, mouthPaint);
+
+    // --- 胡须 ---
+    final whiskerPaint = Paint()
+      ..color = Colors.black
+      ..strokeWidth = 2.0;
+    for (int i = 0; i < 3; i++) {
+      // 左边
+      canvas.drawLine(
+        Offset(center.dx - headRadius * 0.35, center.dy + headRadius * 0.02 + i * 10),
+        Offset(center.dx - headRadius * 0.7, center.dy - headRadius * 0.1 + i * 10),
+        whiskerPaint,
+      );
+      // 右边
+      canvas.drawLine(
+        Offset(center.dx + headRadius * 0.35, center.dy + headRadius * 0.02 + i * 10),
+        Offset(center.dx + headRadius * 0.7, center.dy - headRadius * 0.1 + i * 10),
+        whiskerPaint,
+      );
+    }
+
+    // --- 红色项圈 ---
+    final collarPaint = Paint()..color = Colors.red;
+    canvas.drawRect(
+      Rect.fromCenter(
+        center: Offset(center.dx, center.dy + headRadius * 0.8),
+        width: headRadius * 1.0,
+        height: headRadius * 0.15,
+      ),
+      collarPaint,
+    );
+
+    // --- 铃铛 (金色) ---
+    final bellPaint = Paint()..color = const Color(0xFFFFD700);
+    final double bellY = center.dy + headRadius * 0.9;
+    final double bellRadius = headRadius * 0.12;
+    canvas.drawCircle(Offset(center.dx, bellY), bellRadius, bellPaint);
+    // 铃铛开口线
+    final bellLinePaint = Paint()
+      ..color = Colors.black
+      ..strokeWidth = 1.5;
+    canvas.drawLine(
+      Offset(center.dx, center.dy + headRadius * 0.78),
+      Offset(center.dx, bellY),
+      bellLinePaint,
+    );
+    // 铃铛小孔
+    canvas.drawCircle(
+      Offset(center.dx, bellY - headRadius * 0.03),
+      headRadius * 0.03,
+      bellLinePaint..style = PaintingStyle.stroke,
+    );
+
+    // --- 白色腹部 (含口袋轮廓) ---
+    final bellyPaint = Paint()..color = Colors.white;
+    final bellyRect = Rect.fromCenter(
+      center: Offset(w / 2, center.dy + headRadius * 1.5),
+      width: bodyWidth * 0.7,
+      height: bodyHeight * 0.4,
+    );
+    canvas.drawOval(bellyRect, bellyPaint);
+
+    // 口袋 (灰色半圆)
+    final pocketPaint = Paint()..color = const Color(0xFFBDBDBD);
+    final pocketRect = Rect.fromCenter(
+      center: Offset(w / 2, center.dy + headRadius * 1.7),
+      width: bodyWidth * 0.3,
+      height: bodyHeight * 0.15,
+    );
+    canvas.drawArc(pocketRect, 0, 3.14159, false, pocketPaint..style = PaintingStyle.fill);
+    // 口袋边线
+    final pocketLinePaint = Paint()
+      ..color = Colors.black
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+    canvas.drawArc(pocketRect, 0, 3.14159, false, pocketLinePaint);
+
+    // --- 手臂 (部分可见) ---
+    final armPaint = Paint()..color = const Color(0xFF2196F3);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(0, center.dy + headRadius * 1.3, bodyWidth * 0.2, bodyHeight * 0.2),
+        const Radius.circular(10),
+      ),
+      armPaint,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(w - bodyWidth * 0.2, center.dy + headRadius * 1.3, bodyWidth * 0.2, bodyHeight * 0.2),
+        const Radius.circular(10),
+      ),
+      armPaint,
+    );
+
+    // --- 脚部 (底部露出) ---
+    final footPaint = Paint()..color = Colors.white;
+    canvas.drawOval(
+      Rect.fromCenter(
+          center: Offset(w * 0.35, h - 10),
+          width: bodyWidth * 0.25,
+          height: bodyHeight * 0.15),
+      footPaint,
+    );
+    canvas.drawOval(
+      Rect.fromCenter(
+          center: Offset(w * 0.65, h - 10),
+          width: bodyWidth * 0.25,
+          height: bodyHeight * 0.15),
+      footPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+```
+[2026-06-23 18:23:03] [INFO] [code-to-html] [CodeToHtmlSkill] 转换完成, html=3820 chars
+[2026-06-23 18:23:29] [INFO] [code-to-html] [CodeToHtmlSkill] 开始转换, framework=flutter, code_length=1751
+[2026-06-23 18:23:29] [INFO] [code-to-html] [CodeToHtmlSkill] 原始代码:
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Top 10 Ranking Header',
+      theme: ThemeData(
+        useMaterial3: true,
+      ),
+      home: const RankingHeaderPage(),
+    );
+  }
+}
+
+class RankingHeaderPage extends StatelessWidget {
+  const RankingHeaderPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Top 10 Ranking Header'),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _build3DText('TOP', context),
+            _build3DText('10', context),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _build3DText(String text, BuildContext context) {
+    // 响应式字体大小：基于屏幕宽度，并限制范围
+    final double screenWidth = MediaQuery.of(context).size.width;
+    double fontSize = screenWidth * 0.15;
+    fontSize = fontSize.clamp(40.0, 120.0);
+
+    return Text(
+      text,
+      style: TextStyle(
+        fontSize: fontSize,
+        fontWeight: FontWeight.w900,
+        color: Colors.orange,
+        shadows: const [
+          Shadow(
+            offset: Offset(2, 2),
+            blurRadius: 4,
+            color: Colors.black45,
+          ),
+          Shadow(
+            offset: Offset(-1, -1),
+            blurRadius: 2,
+            color: Colors.white30,
+          ),
+          Shadow(
+            offset: Offset(4, 4),
+            blurRadius: 6,
+            color: Colors.black26,
+          ),
+        ],
+      ),
+    );
+  }
+}
+```
+[2026-06-23 18:23:40] [INFO] [code-to-html] [CodeToHtmlSkill] 转换完成, html=3622 chars

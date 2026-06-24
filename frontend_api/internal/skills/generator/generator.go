@@ -11,9 +11,10 @@ import (
 
 // Input 生成器通用输入
 type Input struct {
-	DSL    string   `json:"dsl"`
-	Prompt string   `json:"prompt,omitempty"` // 从 prompts/{target}/generate.txt 加载
-	Images []string `json:"images,omitempty"` // base64 编码的图片（通用模型兼容）
+	DSL      string   `json:"dsl"`
+	Prompt   string   `json:"prompt,omitempty"`   // 从 prompts/{target}/generate.txt 加载
+	Images   []string `json:"images,omitempty"`   // base64 编码的图片（通用模型兼容）
+	Platform string   `json:"platform,omitempty"` // mobile | desktop | tablet
 }
 
 // Output 生成器通用输出

@@ -730,3 +730,46 @@
   ]
 }
 [2026-06-12 18:01:17] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回非标准 DSL JSON: json: cannot unmarshal string into Go struct field DSL.components of type model.DSLComponent
+[2026-06-12 18:04:38] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿 (1 张图片)...
+[2026-06-12 18:04:44] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回: {
+  "page_name": "算力明细",
+  "layout": "垂直分层布局（顶部状态区 + 功能操作区 + 明细列表区）",
+  "components": [
+    "导航栏（含返回箭头、页面标题、更多操作按钮、扫描图标）",
+    "当前可用值卡片（含闪电图标、数值、副标题、过期提示）",
+    "功能获取模块（标题‘赚取灵感点’，含两个横向卡片：每日登录签到、邀请好友注册）",
+    "标签切换栏（‘全部’‘获取’‘消耗’，当前选中‘全部’）",
+    "收支明细列表（多条带时间戳的交易记录，每条含项目名称、状态标签、金额、有效期说明）"
+  ]
+}
+[2026-06-12 18:04:44] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回非标准 DSL JSON: json: cannot unmarshal string into Go struct field DSL.components of type model.DSLComponent
+[2026-06-12 18:06:17] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿 (1 张图片)...
+[2026-06-12 18:06:23] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回: {
+  "page_name": "算力明细",
+  "layout": "垂直滚动单列布局，顶部为状态摘要区，中部为任务获取区，底部为收支明细列表区",
+  "components": [
+    "导航栏（含返回箭头、页面标题、右侧三点菜单与圆形图标）",
+    "状态摘要卡片（含灵感点数值、说明文字、过期提示）",
+    "任务获取模块（含两个任务卡片：每日登录签到、邀请好友注册，各含图标、标题、收益说明、操作按钮）",
+    "标签导航栏（含‘全部’‘获取’‘消耗’三个标签，当前选中‘全部’）",
+    "收支明细列表（含多条记录项，每项包含标题、标签、时间戳、金额及有效期说明）"
+  ]
+}
+[2026-06-12 18:06:23] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回非标准 DSL JSON: json: cannot unmarshal string into Go struct field DSL.components of type model.DSLComponent
+[2026-06-12 18:10:00] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿 (1 张图片)...
+[2026-06-12 18:10:08] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回: {
+  "page_name": "算力明细",
+  "layout": "垂直滚动单列布局，顶部为状态摘要区，中部为任务获取区，底部为收支明细列表区，采用卡片式分组设计",
+  "components": [
+    "导航栏（含返回箭头、页面标题、更多操作图标、设置/切换图标）",
+    "当前可用灵感点摘要卡片（含闪电图标、数值、说明文字、过期提醒）",
+    "赚取灵感点功能区（两个独立功能卡片：每日登录签到、邀请好友注册）",
+    "功能卡片内含图标、标题、副标题、操作按钮（签到按钮、即将上线灰显按钮）",
+    "收支明细标签页导航（全部/获取/消耗，当前选中‘全部’）",
+    "收支明细列表项（每项包含：事件描述、状态标签、时间戳、金额及有效期说明）",
+    "状态标签（如‘系统返还’黑色胶囊标签）",
+    "时间戳（统一格式：YYYY-MM-DD HH:MM:SS）",
+    "金额与有效期说明（右对齐，含正负号、单位‘点’、有效期标注）"
+  ]
+}
+[2026-06-12 18:10:08] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回非标准 DSL JSON: json: cannot unmarshal string into Go struct field DSL.components of type model.DSLComponent

@@ -1,9 +1,9 @@
 {
-  "_hash": "Z0YakMlkNVfQzxBpAPWj0AOWBKtxgRrZwv22uC7T1Dg",
+  "_hash": "kPKccZGef9MKcIPUIDAD4AKcnbcNKCu5tzfgY0RVTo8",
   "project": {
     "rootDir": "E:/DesignCode-AI/frontend"
   },
   "versions": {
-    "nuxt": "4.4.2"
+    "nuxt": "4.4.8"
   }
 }

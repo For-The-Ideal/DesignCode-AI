@@ -20,21 +20,32 @@ const (
 	TaskStatusFailed  TaskStatus = "failed"
 )
 
-// ImageItem 图片项
+// ImageItem 上传图片项
 type ImageItem struct {
-	URL  string `json:"url"`
-	Desc string `json:"desc"`
+	URL       string `json:"url"`
+	Desc      string `json:"desc"`
+	SortOrder int    `json:"sort_order"` // 排序，1-N
+}
+
+// TaskStep 任务执行步骤记录
+type TaskStep struct {
+	Step      string    `json:"step"`      // 步骤名称,  如 VisionAnalyzeSkill
+	Progress  int       `json:"progress"`  // 该步骤完成时的进度 0-100
+	Status    string    `json:"status"`    // pending | running | done | error
+	Timestamp time.Time `json:"timestamp"` // 记录时间
 }
 
 // Task 生成任务
 type Task struct {
 	ID          string      `json:"id" gorm:"primaryKey"`
-	Target      string      `json:"target"`                        // flutter | vue3 | react
-	Images      []ImageItem `json:"images" gorm:"serializer:json"` // 图片列表（url + desc）
-	Quality     int         `json:"quality"`                       // 质量要求 60-100
+	Target      string      `json:"target"`                                      // flutter | vue3 | react
+	Platform    string      `json:"platform" gorm:"size:20;default:mobile"`      // mobile | desktop | tablet
+	Images      []ImageItem `json:"images" gorm:"column:images;serializer:json"` // 上传的图片列表
+	Quality     int         `json:"quality"`                                     // 质量要求 60-100
 	Status      TaskStatus  `json:"status" gorm:"size:20"`
-	Progress    int         `json:"progress"`     // 当前进度 0-100
-	CurrentStep string      `json:"current_step"` // 当前执行步骤
+	Progress    int         `json:"progress"`                                            // 当前进度 0-100
+	CurrentStep string      `json:"current_step"`                                        // 当前执行步骤
+	TaskSteps   []TaskStep  `json:"task_steps" gorm:"column:task_steps;serializer:json"` // 执行步骤记录
 	UserID      uint        `json:"user_id"`
 	CreatedAt   time.Time   `json:"created_at"`
 	UpdatedAt   time.Time   `json:"updated_at"`
@@ -59,6 +70,7 @@ type TaskStatusResponse struct {
 	CurrentStep string      `json:"current_step"`
 	CanSSE      bool        `json:"can_sse"`
 	Images      []ImageItem `json:"images"`
+	TaskSteps   []TaskStep  `json:"task_steps"` // 执行步骤记录
 	Result      *Result     `json:"result,omitempty"`
 }
 
@@ -73,6 +85,17 @@ func (t *Task) ToTaskStatusResponse(result *Result) *TaskStatusResponse {
 		CurrentStep: t.CurrentStep,
 		CanSSE:      canSSE,
 		Images:      t.Images,
+		TaskSteps:   t.TaskSteps,
 		Result:      result,
 	}
+}
+
+// AddStep 追加执行步骤记录
+func (t *Task) AddStep(step string, progress int, status string) {
+	t.TaskSteps = append(t.TaskSteps, TaskStep{
+		Step:      step,
+		Progress:  progress,
+		Status:    status,
+		Timestamp: time.Now(),
+	})
 }

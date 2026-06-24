@@ -75,12 +75,24 @@ func NewGenerateUIWorkflow(
 	}
 }
 
-// pushProgress 推送进度事件并持久化到 DB
-func (w *GenerateUIWorkflow) pushProgress(taskID string, step string, progress int) {
-	w.log.Infof("[Workflow] pushProgress: task=%s step=%s progress=%d", taskID, step, progress)
-	// 持久化进度
-	_ = w.taskRepo.UpdateProgress(taskID, progress, step)
+// pushProgress 推送进度事件并持久化到 DB（含 task_steps）
+func (w *GenerateUIWorkflow) pushProgress(task *model.Task, step string, progress int) {
+	w.log.Infof("[Workflow] pushProgress: task=%s step=%s progress=%d", task.ID, step, progress)
+	// 记录步骤到 task_steps 并落库
+	task.AddStep(step, progress, "done")
+	task.Progress = progress
+	task.CurrentStep = step
+	_ = w.taskRepo.Save(task)
 	// SSE 推送
+	w.sseManager.Push(task.ID, sse.SSEEvent{
+		Event: "progress",
+		Data:  fmt.Sprintf(`{"progress":%d,"step":"%s"}`, progress, step),
+	})
+}
+
+// updateTask 只更新 DB 的 progress + current_step（不追加 task_steps，用于 simulate 中间态）
+func (w *GenerateUIWorkflow) updateProgressDB(taskID string, step string, progress int) {
+	_ = w.taskRepo.UpdateProgress(taskID, progress, step)
 	w.sseManager.Push(taskID, sse.SSEEvent{
 		Event: "progress",
 		Data:  fmt.Sprintf(`{"progress":%d,"step":"%s"}`, progress, step),
@@ -99,11 +111,11 @@ func (w *GenerateUIWorkflow) simulateProgress(ctx context.Context, taskID string
 		case <-ctx.Done():
 			return
 		case <-time.After(time.Duration(delay) * time.Millisecond):
-			w.pushProgress(taskID, step, p)
+			w.updateProgressDB(taskID, step, p)
 		}
 	}
 	// 确保终点精确
-	w.pushProgress(taskID, step, to)
+	w.updateProgressDB(taskID, step, to)
 }
 
 // streamCode 将代码按行拆分为 SSE message 事件逐步推送
@@ -158,7 +170,7 @@ func (w *GenerateUIWorkflow) Execute(ctx context.Context, task *model.Task) erro
 	_ = w.taskRepo.UpdateStatus(task.ID, model.TaskStatusRunning)
 
 	// ── Step 1: 准备图片（取 URL + 下载转 base64）──
-	w.pushProgress(task.ID, StepDownloadImages, 5)
+	w.pushProgress(task, StepDownloadImages, 5)
 	w.log.Infof("[Workflow] step 1/6: 准备图片 (%d 张)...", len(task.Images))
 	imageURLs := make([]string, len(task.Images))
 	imagesBase64 := make([]string, 0, len(task.Images))
@@ -176,7 +188,7 @@ func (w *GenerateUIWorkflow) Execute(ctx context.Context, task *model.Task) erro
 	w.simulateProgress(ctx, task.ID, StepDownloadImages, 5, 20, 400)
 
 	// ── Step 2: VisionAnalyzeSkill → DSL ──────────
-	w.pushProgress(task.ID, StepVisionAnalyzeSkill, 20)
+	w.pushProgress(task, StepVisionAnalyzeSkill, 20)
 	w.log.Infof("[Workflow] step 2/6: 视觉分析 (VisionAnalyzeSkill)...")
 	w.simulateProgress(ctx, task.ID, StepVisionAnalyzeSkill, 20, 35, 300)
 
@@ -192,7 +204,7 @@ func (w *GenerateUIWorkflow) Execute(ctx context.Context, task *model.Task) erro
 
 	// ── Step 3: GeneratorSkill → Code + Preview ───
 	genStep := getGeneratorStepName(task.Target)
-	w.pushProgress(task.ID, genStep, 50)
+	w.pushProgress(task, genStep, 50)
 	w.log.Infof("[Workflow] step 3/6: 代码生成 (%s)...", genStep)
 	w.simulateProgress(ctx, task.ID, genStep, 50, 65, 300)
 
@@ -204,8 +216,9 @@ func (w *GenerateUIWorkflow) Execute(ctx context.Context, task *model.Task) erro
 
 	genSkill := generator.GeneratorFunc(task.Target, genAI)
 	genOutput, err := genSkill.Execute(ctx, generator.Input{
-		DSL:    dsl,
-		Images: imagesBase64,
+		DSL:      dsl,
+		Images:   imagesBase64,
+		Platform: task.Platform,
 	})
 	if err != nil {
 		w.handleError(task.ID, fmt.Errorf("代码生成失败: %w", err))
@@ -220,7 +233,7 @@ func (w *GenerateUIWorkflow) Execute(ctx context.Context, task *model.Task) erro
 	w.simulateProgress(ctx, task.ID, genStep, 65, 75, 200)
 
 	// ── Step 4: CodeToHtmlSkill → HTML Preview ────
-	w.pushProgress(task.ID, StepConvertPreview, 75)
+	w.pushProgress(task, StepConvertPreview, 75)
 	w.log.Infof("[Workflow] step 4/6: 代码转 HTML 预览 (CodeToHtmlSkill)...")
 
 	// 将图像 URL 拼接成逗号分隔字符串
@@ -249,7 +262,7 @@ func (w *GenerateUIWorkflow) Execute(ctx context.Context, task *model.Task) erro
 	})
 
 	// ── Step 5: 保存结果到 DB ─────────────────────
-	w.pushProgress(task.ID, StepSaveResult, 85)
+	w.pushProgress(task, StepSaveResult, 85)
 	w.log.Infof("[Workflow] step 5/6: 保存结果...")
 	result := &model.Result{
 		TaskID:    task.ID,
@@ -267,7 +280,7 @@ func (w *GenerateUIWorkflow) Execute(ctx context.Context, task *model.Task) erro
 
 	// ── Step 6: Done ───────────────────────────────
 	_ = w.taskRepo.UpdateStatus(task.ID, model.TaskStatusSuccess)
-	w.pushProgress(task.ID, StepDone, 100)
+	w.pushProgress(task, StepDone, 100)
 
 	// 推送 done 事件
 	w.sseManager.Push(task.ID, sse.SSEEvent{

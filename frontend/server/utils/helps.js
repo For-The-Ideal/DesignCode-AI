@@ -1,6 +1,5 @@
 
 import CryptoJS from "crypto-js";
-import { cryptoConfig } from "~/config/index.js";
 
 /**
  * 解密数据
@@ -11,11 +10,12 @@ export const getDecrypt = (encryptedStr) => {
     return null
   }
   try {
+    const runConfig = useRuntimeConfig()
     const decrypted = CryptoJS.AES.decrypt(
       encryptedStr,
-      CryptoJS.enc.Utf8.parse(cryptoConfig.key),
+      CryptoJS.enc.Utf8.parse(runConfig.public.cryptoKey),
       {
-        iv: CryptoJS.enc.Utf8.parse(cryptoConfig.iv),
+        iv: CryptoJS.enc.Utf8.parse(runConfig.public.cryptoIv),
         mode: CryptoJS.mode.CBC,
         padding: CryptoJS.pad.Pkcs7,
       }
@@ -23,12 +23,13 @@ export const getDecrypt = (encryptedStr) => {
     const resultUtf8 = decrypted.toString(CryptoJS.enc.Utf8)
     try {
       const parsed = JSON.parse(resultUtf8)
-      console.log("✅ 解密成功，解析为JSON:", parsed)
       return parsed
     } catch (jsonError) {
+      console.log("解密失败，解析为JSON:", jsonError)
       return resultUtf8
     }
   } catch (error) {
+    console.log("解密失败，解析为JSON:", error)
     return null
   }
 }

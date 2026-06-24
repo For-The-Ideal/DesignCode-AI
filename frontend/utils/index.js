@@ -1,6 +1,6 @@
 import CryptoJS from "crypto-js";
-import { cryptoConfig } from "~/config/index.js";
 import { ElMessage } from 'element-plus'
+import {useEnv} from "@/composables/useEnv"
 
 // 创建原生通知的函数
 export const showElectronNotification = (options) => {
@@ -65,12 +65,13 @@ export const setEncrypt = (data) => {
     return null
   }
   try {
+    const {cryptoKey,cryptoIv} = useEnv()
     const dataStr = typeof data === "string" ? data : JSON.stringify(data)
     const encrypted = CryptoJS.AES.encrypt(
       dataStr,
-      CryptoJS.enc.Utf8.parse(cryptoConfig.key),
+      CryptoJS.enc.Utf8.parse(cryptoKey),
       {
-        iv: CryptoJS.enc.Utf8.parse(cryptoConfig.iv),
+        iv: CryptoJS.enc.Utf8.parse(cryptoIv),
         mode: CryptoJS.mode.CBC,
         padding: CryptoJS.pad.Pkcs7,
       }

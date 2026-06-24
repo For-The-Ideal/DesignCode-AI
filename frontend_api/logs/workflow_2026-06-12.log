@@ -2206,3 +2206,184 @@
 [2026-06-12 18:03:22] [INFO] [workflow] [Workflow] pushProgress: task=20260612180105.179_8ef11c3a step=SaveResult progress=95
 [2026-06-12 18:03:22] [INFO] [workflow] [Workflow] pushProgress: task=20260612180105.179_8ef11c3a step=Done progress=100
 [2026-06-12 18:03:22] [INFO] [workflow] [Workflow] 任务完成: 20260612180105.179_8ef11c3a
+[2026-06-12 18:04:35] [INFO] [workflow] [Workflow] 开始执行任务: 20260612180434.998_91a7f3b7, target=vue3
+[2026-06-12 18:04:35] [INFO] [workflow] [Workflow] pushProgress: task=20260612180434.998_91a7f3b7 step=PrepareImages progress=5
+[2026-06-12 18:04:35] [INFO] [workflow] [Workflow] step 1/6: 准备图片 (1 张)...
+[2026-06-12 18:04:35] [INFO] [workflow] [Workflow]   图片[0]: https://upload-image-1301638170.cos.ap-guangzhou.myqcloud.com/uploads/2026/06/12/1781258671081900100.png
+[2026-06-12 18:04:35] [INFO] [workflow] [Workflow]   图片[0] base64 转换完成: 184598 bytes
+[2026-06-12 18:04:35] [INFO] [workflow] [Workflow] pushProgress: task=20260612180434.998_91a7f3b7 step=PrepareImages progress=8
+[2026-06-12 18:04:36] [INFO] [workflow] [Workflow] pushProgress: task=20260612180434.998_91a7f3b7 step=PrepareImages progress=11
+[2026-06-12 18:04:36] [INFO] [workflow] [Workflow] pushProgress: task=20260612180434.998_91a7f3b7 step=PrepareImages progress=14
+[2026-06-12 18:04:36] [INFO] [workflow] [Workflow] pushProgress: task=20260612180434.998_91a7f3b7 step=PrepareImages progress=17
+[2026-06-12 18:04:36] [INFO] [workflow] [Workflow] pushProgress: task=20260612180434.998_91a7f3b7 step=PrepareImages progress=20
+[2026-06-12 18:04:37] [INFO] [workflow] [Workflow] pushProgress: task=20260612180434.998_91a7f3b7 step=VisionAnalyzeSkill progress=20
+[2026-06-12 18:04:37] [INFO] [workflow] [Workflow] step 2/6: 视觉分析 (VisionAnalyzeSkill)...
+[2026-06-12 18:04:37] [INFO] [workflow] [Workflow] pushProgress: task=20260612180434.998_91a7f3b7 step=VisionAnalyzeSkill progress=23
+[2026-06-12 18:04:37] [INFO] [workflow] [Workflow] pushProgress: task=20260612180434.998_91a7f3b7 step=VisionAnalyzeSkill progress=26
+[2026-06-12 18:04:38] [INFO] [workflow] [Workflow] pushProgress: task=20260612180434.998_91a7f3b7 step=VisionAnalyzeSkill progress=29
+[2026-06-12 18:04:38] [INFO] [workflow] [Workflow] pushProgress: task=20260612180434.998_91a7f3b7 step=VisionAnalyzeSkill progress=32
+[2026-06-12 18:04:38] [INFO] [workflow] [Workflow] pushProgress: task=20260612180434.998_91a7f3b7 step=VisionAnalyzeSkill progress=35
+[2026-06-12 18:04:44] [INFO] [workflow] [Workflow] step 2/6 完成, DSL: {
+  "page_name": "算力明细",
+  "layout": "垂直分层布局（顶部状态区 + 功能操作区 + 明细列表区）",
+  "components": [
+    "导航栏（含返回箭头、页面标题、更多操作按钮、扫描图标）",
+    "当前可用值卡片（含闪电图标、数值、副标题、过期提示）",
+    "功能获取模块（标题‘赚取灵感点’，含两个横向卡片：每日登录签到、邀请好友注册）",
+    "标签切换栏（‘全部’‘获取’‘消耗’，当前选中‘全部’）",
+    "收支明细列表（多条带时间戳的交易记录，每条含项目名称、状态标签、金额、有效期说明）"
+  ]
+}
+[2026-06-12 18:04:44] [INFO] [workflow] [Workflow] pushProgress: task=20260612180434.998_91a7f3b7 step=VisionAnalyzeSkill progress=38
+[2026-06-12 18:04:44] [INFO] [workflow] [Workflow] pushProgress: task=20260612180434.998_91a7f3b7 step=VisionAnalyzeSkill progress=41
+[2026-06-12 18:04:44] [INFO] [workflow] [Workflow] pushProgress: task=20260612180434.998_91a7f3b7 step=VisionAnalyzeSkill progress=44
+[2026-06-12 18:04:45] [INFO] [workflow] [Workflow] pushProgress: task=20260612180434.998_91a7f3b7 step=VisionAnalyzeSkill progress=47
+[2026-06-12 18:04:45] [INFO] [workflow] [Workflow] pushProgress: task=20260612180434.998_91a7f3b7 step=VisionAnalyzeSkill progress=50
+[2026-06-12 18:04:45] [INFO] [workflow] [Workflow] pushProgress: task=20260612180434.998_91a7f3b7 step=Vue3GenerateSkill progress=50
+[2026-06-12 18:04:45] [INFO] [workflow] [Workflow] step 3/6: 代码生成 (Vue3GenerateSkill)...
+[2026-06-12 18:04:45] [INFO] [workflow] [Workflow] pushProgress: task=20260612180434.998_91a7f3b7 step=Vue3GenerateSkill progress=53
+[2026-06-12 18:04:45] [INFO] [workflow] [Workflow] pushProgress: task=20260612180434.998_91a7f3b7 step=Vue3GenerateSkill progress=56
+[2026-06-12 18:04:46] [INFO] [workflow] [Workflow] pushProgress: task=20260612180434.998_91a7f3b7 step=Vue3GenerateSkill progress=59
+[2026-06-12 18:04:46] [INFO] [workflow] [Workflow] pushProgress: task=20260612180434.998_91a7f3b7 step=Vue3GenerateSkill progress=62
+[2026-06-12 18:04:46] [INFO] [workflow] [Workflow] pushProgress: task=20260612180434.998_91a7f3b7 step=Vue3GenerateSkill progress=65
+[2026-06-12 18:05:03] [INFO] [workflow] [Workflow] step 3/6 完成, code=7646 chars
+[2026-06-12 18:05:13] [INFO] [workflow] [Workflow] pushProgress: task=20260612180434.998_91a7f3b7 step=Vue3GenerateSkill progress=68
+[2026-06-12 18:05:13] [INFO] [workflow] [Workflow] pushProgress: task=20260612180434.998_91a7f3b7 step=Vue3GenerateSkill progress=71
+[2026-06-12 18:05:13] [INFO] [workflow] [Workflow] pushProgress: task=20260612180434.998_91a7f3b7 step=Vue3GenerateSkill progress=74
+[2026-06-12 18:05:13] [INFO] [workflow] [Workflow] pushProgress: task=20260612180434.998_91a7f3b7 step=Vue3GenerateSkill progress=75
+[2026-06-12 18:05:13] [INFO] [workflow] [Workflow] pushProgress: task=20260612180434.998_91a7f3b7 step=CodeToHtmlSkill progress=75
+[2026-06-12 18:05:13] [INFO] [workflow] [Workflow] step 4/6: 代码转 HTML 预览 (CodeToHtmlSkill)...
+[2026-06-12 18:05:32] [INFO] [workflow] [Workflow] pushProgress: task=20260612180434.998_91a7f3b7 step=CodeToHtmlSkill progress=78
+[2026-06-12 18:05:32] [INFO] [workflow] [Workflow] pushProgress: task=20260612180434.998_91a7f3b7 step=CodeToHtmlSkill progress=81
+[2026-06-12 18:05:32] [INFO] [workflow] [Workflow] pushProgress: task=20260612180434.998_91a7f3b7 step=CodeToHtmlSkill progress=84
+[2026-06-12 18:05:32] [INFO] [workflow] [Workflow] pushProgress: task=20260612180434.998_91a7f3b7 step=CodeToHtmlSkill progress=85
+[2026-06-12 18:05:32] [INFO] [workflow] [Workflow] pushProgress: task=20260612180434.998_91a7f3b7 step=SaveResult progress=85
+[2026-06-12 18:05:32] [INFO] [workflow] [Workflow] step 5/6: 保存结果...
+[2026-06-12 18:05:33] [INFO] [workflow] [Workflow] pushProgress: task=20260612180434.998_91a7f3b7 step=SaveResult progress=88
+[2026-06-12 18:05:33] [INFO] [workflow] [Workflow] pushProgress: task=20260612180434.998_91a7f3b7 step=SaveResult progress=91
+[2026-06-12 18:05:33] [INFO] [workflow] [Workflow] pushProgress: task=20260612180434.998_91a7f3b7 step=SaveResult progress=94
+[2026-06-12 18:05:33] [INFO] [workflow] [Workflow] pushProgress: task=20260612180434.998_91a7f3b7 step=SaveResult progress=95
+[2026-06-12 18:05:33] [INFO] [workflow] [Workflow] pushProgress: task=20260612180434.998_91a7f3b7 step=Done progress=100
+[2026-06-12 18:05:33] [INFO] [workflow] [Workflow] 任务完成: 20260612180434.998_91a7f3b7
+[2026-06-12 18:06:11] [INFO] [workflow] [Workflow] 开始执行任务: 20260612180611.714_63c07017, target=vue3
+[2026-06-12 18:06:11] [INFO] [workflow] [Workflow] pushProgress: task=20260612180611.714_63c07017 step=PrepareImages progress=5
+[2026-06-12 18:06:11] [INFO] [workflow] [Workflow] step 1/6: 准备图片 (1 张)...
+[2026-06-12 18:06:11] [INFO] [workflow] [Workflow]   图片[0]: https://upload-image-1301638170.cos.ap-guangzhou.myqcloud.com/uploads/2026/06/12/1781258769536475700.png
+[2026-06-12 18:06:12] [INFO] [workflow] [Workflow]   图片[0] base64 转换完成: 184598 bytes
+[2026-06-12 18:06:12] [INFO] [workflow] [Workflow] pushProgress: task=20260612180611.714_63c07017 step=PrepareImages progress=8
+[2026-06-12 18:06:13] [INFO] [workflow] [Workflow] pushProgress: task=20260612180611.714_63c07017 step=PrepareImages progress=11
+[2026-06-12 18:06:13] [INFO] [workflow] [Workflow] pushProgress: task=20260612180611.714_63c07017 step=PrepareImages progress=14
+[2026-06-12 18:06:14] [INFO] [workflow] [Workflow] pushProgress: task=20260612180611.714_63c07017 step=PrepareImages progress=17
+[2026-06-12 18:06:14] [INFO] [workflow] [Workflow] pushProgress: task=20260612180611.714_63c07017 step=PrepareImages progress=20
+[2026-06-12 18:06:14] [INFO] [workflow] [Workflow] pushProgress: task=20260612180611.714_63c07017 step=VisionAnalyzeSkill progress=20
+[2026-06-12 18:06:14] [INFO] [workflow] [Workflow] step 2/6: 视觉分析 (VisionAnalyzeSkill)...
+[2026-06-12 18:06:15] [INFO] [workflow] [Workflow] pushProgress: task=20260612180611.714_63c07017 step=VisionAnalyzeSkill progress=23
+[2026-06-12 18:06:15] [INFO] [workflow] [Workflow] pushProgress: task=20260612180611.714_63c07017 step=VisionAnalyzeSkill progress=26
+[2026-06-12 18:06:16] [INFO] [workflow] [Workflow] pushProgress: task=20260612180611.714_63c07017 step=VisionAnalyzeSkill progress=29
+[2026-06-12 18:06:16] [INFO] [workflow] [Workflow] pushProgress: task=20260612180611.714_63c07017 step=VisionAnalyzeSkill progress=32
+[2026-06-12 18:06:16] [INFO] [workflow] [Workflow] pushProgress: task=20260612180611.714_63c07017 step=VisionAnalyzeSkill progress=35
+[2026-06-12 18:06:23] [INFO] [workflow] [Workflow] step 2/6 完成, DSL: {
+  "page_name": "算力明细",
+  "layout": "垂直滚动单列布局，顶部为状态摘要区，中部为任务获取区，底部为收支明细列表区",
+  "components": [
+    "导航栏（含返回箭头、页面标题、右侧三点菜单与圆形图标）",
+    "状态摘要卡片（含灵感点数值、说明文字、过期提示）",
+    "任务获取模块（含两个任务卡片：每日登录签到、邀请好友注册，各含图标、标题、收益说明、操作按钮）",
+    "标签导航栏（含‘全部’‘获取’‘消耗’三个标签，当前选中‘全部’）",
+    "收支明细列表（含多条记录项，每项包含标题、标签、时间戳、金额及有效期说明）"
+  ]
+}
+[2026-06-12 18:06:23] [INFO] [workflow] [Workflow] pushProgress: task=20260612180611.714_63c07017 step=VisionAnalyzeSkill progress=38
+[2026-06-12 18:06:23] [INFO] [workflow] [Workflow] pushProgress: task=20260612180611.714_63c07017 step=VisionAnalyzeSkill progress=41
+[2026-06-12 18:06:23] [INFO] [workflow] [Workflow] pushProgress: task=20260612180611.714_63c07017 step=VisionAnalyzeSkill progress=44
+[2026-06-12 18:06:23] [INFO] [workflow] [Workflow] pushProgress: task=20260612180611.714_63c07017 step=VisionAnalyzeSkill progress=47
+[2026-06-12 18:06:23] [INFO] [workflow] [Workflow] pushProgress: task=20260612180611.714_63c07017 step=VisionAnalyzeSkill progress=50
+[2026-06-12 18:06:23] [INFO] [workflow] [Workflow] pushProgress: task=20260612180611.714_63c07017 step=Vue3GenerateSkill progress=50
+[2026-06-12 18:06:23] [INFO] [workflow] [Workflow] step 3/6: 代码生成 (Vue3GenerateSkill)...
+[2026-06-12 18:06:24] [INFO] [workflow] [Workflow] pushProgress: task=20260612180611.714_63c07017 step=Vue3GenerateSkill progress=53
+[2026-06-12 18:06:24] [INFO] [workflow] [Workflow] pushProgress: task=20260612180611.714_63c07017 step=Vue3GenerateSkill progress=56
+[2026-06-12 18:06:24] [INFO] [workflow] [Workflow] pushProgress: task=20260612180611.714_63c07017 step=Vue3GenerateSkill progress=59
+[2026-06-12 18:06:25] [INFO] [workflow] [Workflow] pushProgress: task=20260612180611.714_63c07017 step=Vue3GenerateSkill progress=62
+[2026-06-12 18:06:25] [INFO] [workflow] [Workflow] pushProgress: task=20260612180611.714_63c07017 step=Vue3GenerateSkill progress=65
+[2026-06-12 18:06:46] [INFO] [workflow] [Workflow] step 3/6 完成, code=8673 chars
+[2026-06-12 18:06:59] [INFO] [workflow] [Workflow] pushProgress: task=20260612180611.714_63c07017 step=Vue3GenerateSkill progress=68
+[2026-06-12 18:06:59] [INFO] [workflow] [Workflow] pushProgress: task=20260612180611.714_63c07017 step=Vue3GenerateSkill progress=71
+[2026-06-12 18:06:59] [INFO] [workflow] [Workflow] pushProgress: task=20260612180611.714_63c07017 step=Vue3GenerateSkill progress=74
+[2026-06-12 18:06:59] [INFO] [workflow] [Workflow] pushProgress: task=20260612180611.714_63c07017 step=Vue3GenerateSkill progress=75
+[2026-06-12 18:06:59] [INFO] [workflow] [Workflow] pushProgress: task=20260612180611.714_63c07017 step=CodeToHtmlSkill progress=75
+[2026-06-12 18:06:59] [INFO] [workflow] [Workflow] step 4/6: 代码转 HTML 预览 (CodeToHtmlSkill)...
+[2026-06-12 18:07:22] [INFO] [workflow] [Workflow] pushProgress: task=20260612180611.714_63c07017 step=CodeToHtmlSkill progress=78
+[2026-06-12 18:07:22] [INFO] [workflow] [Workflow] pushProgress: task=20260612180611.714_63c07017 step=CodeToHtmlSkill progress=81
+[2026-06-12 18:07:22] [INFO] [workflow] [Workflow] pushProgress: task=20260612180611.714_63c07017 step=CodeToHtmlSkill progress=84
+[2026-06-12 18:07:22] [INFO] [workflow] [Workflow] pushProgress: task=20260612180611.714_63c07017 step=CodeToHtmlSkill progress=85
+[2026-06-12 18:07:22] [INFO] [workflow] [Workflow] pushProgress: task=20260612180611.714_63c07017 step=SaveResult progress=85
+[2026-06-12 18:07:22] [INFO] [workflow] [Workflow] step 5/6: 保存结果...
+[2026-06-12 18:07:23] [INFO] [workflow] [Workflow] pushProgress: task=20260612180611.714_63c07017 step=SaveResult progress=88
+[2026-06-12 18:07:23] [INFO] [workflow] [Workflow] pushProgress: task=20260612180611.714_63c07017 step=SaveResult progress=91
+[2026-06-12 18:07:23] [INFO] [workflow] [Workflow] pushProgress: task=20260612180611.714_63c07017 step=SaveResult progress=94
+[2026-06-12 18:07:23] [INFO] [workflow] [Workflow] pushProgress: task=20260612180611.714_63c07017 step=SaveResult progress=95
+[2026-06-12 18:07:23] [INFO] [workflow] [Workflow] pushProgress: task=20260612180611.714_63c07017 step=Done progress=100
+[2026-06-12 18:07:23] [INFO] [workflow] [Workflow] 任务完成: 20260612180611.714_63c07017
+[2026-06-12 18:09:57] [INFO] [workflow] [Workflow] 开始执行任务: 20260612180957.094_82e3c7f8, target=vue3
+[2026-06-12 18:09:57] [INFO] [workflow] [Workflow] pushProgress: task=20260612180957.094_82e3c7f8 step=PrepareImages progress=5
+[2026-06-12 18:09:57] [INFO] [workflow] [Workflow] step 1/6: 准备图片 (1 张)...
+[2026-06-12 18:09:57] [INFO] [workflow] [Workflow]   图片[0]: https://upload-image-1301638170.cos.ap-guangzhou.myqcloud.com/uploads/2026/06/12/1781258994184498100.png
+[2026-06-12 18:09:57] [INFO] [workflow] [Workflow]   图片[0] base64 转换完成: 184598 bytes
+[2026-06-12 18:09:57] [INFO] [workflow] [Workflow] pushProgress: task=20260612180957.094_82e3c7f8 step=PrepareImages progress=8
+[2026-06-12 18:09:58] [INFO] [workflow] [Workflow] pushProgress: task=20260612180957.094_82e3c7f8 step=PrepareImages progress=11
+[2026-06-12 18:09:58] [INFO] [workflow] [Workflow] pushProgress: task=20260612180957.094_82e3c7f8 step=PrepareImages progress=14
+[2026-06-12 18:09:59] [INFO] [workflow] [Workflow] pushProgress: task=20260612180957.094_82e3c7f8 step=PrepareImages progress=17
+[2026-06-12 18:09:59] [INFO] [workflow] [Workflow] pushProgress: task=20260612180957.094_82e3c7f8 step=PrepareImages progress=20
+[2026-06-12 18:09:59] [INFO] [workflow] [Workflow] pushProgress: task=20260612180957.094_82e3c7f8 step=VisionAnalyzeSkill progress=20
+[2026-06-12 18:09:59] [INFO] [workflow] [Workflow] step 2/6: 视觉分析 (VisionAnalyzeSkill)...
+[2026-06-12 18:09:59] [INFO] [workflow] [Workflow] pushProgress: task=20260612180957.094_82e3c7f8 step=VisionAnalyzeSkill progress=23
+[2026-06-12 18:10:00] [INFO] [workflow] [Workflow] pushProgress: task=20260612180957.094_82e3c7f8 step=VisionAnalyzeSkill progress=26
+[2026-06-12 18:10:00] [INFO] [workflow] [Workflow] pushProgress: task=20260612180957.094_82e3c7f8 step=VisionAnalyzeSkill progress=29
+[2026-06-12 18:10:00] [INFO] [workflow] [Workflow] pushProgress: task=20260612180957.094_82e3c7f8 step=VisionAnalyzeSkill progress=32
+[2026-06-12 18:10:00] [INFO] [workflow] [Workflow] pushProgress: task=20260612180957.094_82e3c7f8 step=VisionAnalyzeSkill progress=35
+[2026-06-12 18:10:08] [INFO] [workflow] [Workflow] step 2/6 完成, DSL: {
+  "page_name": "算力明细",
+  "layout": "垂直滚动单列布局，顶部为状态摘要区，中部为任务获取区，底部为收支明细列表区，采用卡片式分组设计",
+  "components": [
+    "导航栏（含返回箭头、页面标题、更多操作图标、设置/切换图标）",
+    "当前可用灵感点摘要卡片（含闪电图标、数值、说明文字、过期提醒）",
+    "赚取灵感点功能区（两个独立功能卡片：每日登录签到、邀请好友注册）",
+    "功能卡片内含图标、标题、副标题、操作按钮（签到按钮、即将上线灰显按钮）",
+    "收支明细标签页导航（全部/获取/消耗，当前选中‘全部’）",
+    "收支明细列表项（每项包含：事件描述、状态标签、时间戳、金额及有效期说明）",
+    "状态标签（如‘系统返还’黑色胶囊标签）",
+    "时间戳（统一格式：YYYY-MM-DD HH:MM:SS）",
+    "金额与有效期说明（右对齐，含正负号、单位‘点’、有效期标注）"
+  ]
+}
+[2026-06-12 18:10:08] [INFO] [workflow] [Workflow] pushProgress: task=20260612180957.094_82e3c7f8 step=VisionAnalyzeSkill progress=38
+[2026-06-12 18:10:08] [INFO] [workflow] [Workflow] pushProgress: task=20260612180957.094_82e3c7f8 step=VisionAnalyzeSkill progress=41
+[2026-06-12 18:10:09] [INFO] [workflow] [Workflow] pushProgress: task=20260612180957.094_82e3c7f8 step=VisionAnalyzeSkill progress=44
+[2026-06-12 18:10:09] [INFO] [workflow] [Workflow] pushProgress: task=20260612180957.094_82e3c7f8 step=VisionAnalyzeSkill progress=47
+[2026-06-12 18:10:09] [INFO] [workflow] [Workflow] pushProgress: task=20260612180957.094_82e3c7f8 step=VisionAnalyzeSkill progress=50
+[2026-06-12 18:10:09] [INFO] [workflow] [Workflow] pushProgress: task=20260612180957.094_82e3c7f8 step=Vue3GenerateSkill progress=50
+[2026-06-12 18:10:09] [INFO] [workflow] [Workflow] step 3/6: 代码生成 (Vue3GenerateSkill)...
+[2026-06-12 18:10:09] [INFO] [workflow] [Workflow] pushProgress: task=20260612180957.094_82e3c7f8 step=Vue3GenerateSkill progress=53
+[2026-06-12 18:10:09] [INFO] [workflow] [Workflow] pushProgress: task=20260612180957.094_82e3c7f8 step=Vue3GenerateSkill progress=56
+[2026-06-12 18:10:10] [INFO] [workflow] [Workflow] pushProgress: task=20260612180957.094_82e3c7f8 step=Vue3GenerateSkill progress=59
+[2026-06-12 18:10:10] [INFO] [workflow] [Workflow] pushProgress: task=20260612180957.094_82e3c7f8 step=Vue3GenerateSkill progress=62
+[2026-06-12 18:10:10] [INFO] [workflow] [Workflow] pushProgress: task=20260612180957.094_82e3c7f8 step=Vue3GenerateSkill progress=65
+[2026-06-12 18:10:42] [INFO] [workflow] [Workflow] step 3/6 完成, code=8426 chars
+[2026-06-12 18:10:53] [INFO] [workflow] [Workflow] pushProgress: task=20260612180957.094_82e3c7f8 step=Vue3GenerateSkill progress=68
+[2026-06-12 18:10:53] [INFO] [workflow] [Workflow] pushProgress: task=20260612180957.094_82e3c7f8 step=Vue3GenerateSkill progress=71
+[2026-06-12 18:10:53] [INFO] [workflow] [Workflow] pushProgress: task=20260612180957.094_82e3c7f8 step=Vue3GenerateSkill progress=74
+[2026-06-12 18:10:53] [INFO] [workflow] [Workflow] pushProgress: task=20260612180957.094_82e3c7f8 step=Vue3GenerateSkill progress=75
+[2026-06-12 18:10:53] [INFO] [workflow] [Workflow] pushProgress: task=20260612180957.094_82e3c7f8 step=CodeToHtmlSkill progress=75
+[2026-06-12 18:10:53] [INFO] [workflow] [Workflow] step 4/6: 代码转 HTML 预览 (CodeToHtmlSkill)...
+[2026-06-12 18:11:11] [INFO] [workflow] [Workflow] pushProgress: task=20260612180957.094_82e3c7f8 step=CodeToHtmlSkill progress=78
+[2026-06-12 18:11:11] [INFO] [workflow] [Workflow] pushProgress: task=20260612180957.094_82e3c7f8 step=CodeToHtmlSkill progress=81
+[2026-06-12 18:11:11] [INFO] [workflow] [Workflow] pushProgress: task=20260612180957.094_82e3c7f8 step=CodeToHtmlSkill progress=84
+[2026-06-12 18:11:11] [INFO] [workflow] [Workflow] pushProgress: task=20260612180957.094_82e3c7f8 step=CodeToHtmlSkill progress=85
+[2026-06-12 18:11:11] [INFO] [workflow] [Workflow] pushProgress: task=20260612180957.094_82e3c7f8 step=SaveResult progress=85
+[2026-06-12 18:11:11] [INFO] [workflow] [Workflow] step 5/6: 保存结果...
+[2026-06-12 18:11:11] [INFO] [workflow] [Workflow] pushProgress: task=20260612180957.094_82e3c7f8 step=SaveResult progress=88
+[2026-06-12 18:11:11] [INFO] [workflow] [Workflow] pushProgress: task=20260612180957.094_82e3c7f8 step=SaveResult progress=91
+[2026-06-12 18:11:12] [INFO] [workflow] [Workflow] pushProgress: task=20260612180957.094_82e3c7f8 step=SaveResult progress=94
+[2026-06-12 18:11:12] [INFO] [workflow] [Workflow] pushProgress: task=20260612180957.094_82e3c7f8 step=SaveResult progress=95
+[2026-06-12 18:11:12] [INFO] [workflow] [Workflow] pushProgress: task=20260612180957.094_82e3c7f8 step=Done progress=100
+[2026-06-12 18:11:12] [INFO] [workflow] [Workflow] 任务完成: 20260612180957.094_82e3c7f8

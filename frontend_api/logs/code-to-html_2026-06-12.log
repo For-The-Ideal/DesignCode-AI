@@ -7869,3 +7869,1273 @@ function onTaskAction(task: { id: number, done: boolean }) {
 </style>
 ```
 [2026-06-12 18:03:20] [INFO] [code-to-html] [CodeToHtmlSkill] 转换完成, html=8731 chars
+[2026-06-12 18:05:14] [INFO] [code-to-html] [CodeToHtmlSkill] 开始转换, framework=vue3, code_length=7646
+[2026-06-12 18:05:14] [INFO] [code-to-html] [CodeToHtmlSkill] 原始代码:
+```vue
+<template>
+  <div class="page">
+    <!-- 导航栏 -->
+    <nav class="navbar">
+      <span class="back-arrow">←</span>
+      <h1 class="page-title">算力明细</h1>
+      <div class="nav-actions">
+        <button class="more-btn">···</button>
+        <span class="scan-icon">📷</span>
+      </div>
+    </nav>
+
+    <!-- 顶部状态区 -->
+    <section class="status-section">
+      <!-- 当前可用值卡片 -->
+      <div class="card-balance">
+        <div class="balance-header">
+          <span class="lightning-icon">⚡</span>
+          <span class="balance-value">1280</span>
+        </div>
+        <span class="balance-subtitle">当前可用灵感点</span>
+        <span class="expire-tip">12天后过期</span>
+      </div>
+    </section>
+
+    <!-- 功能操作区 -->
+    <section class="action-section">
+      <h2 class="section-title">赚取灵感点</h2>
+      <div class="card-row">
+        <div class="action-card">
+          <span class="card-icon">📅</span>
+          <div class="card-info">
+            <span class="card-title">每日登录签到</span>
+            <span class="card-desc">每日签到领取</span>
+          </div>
+          <button class="card-btn">签到</button>
+        </div>
+        <div class="action-card">
+          <span class="card-icon">👥</span>
+          <div class="card-info">
+            <span class="card-title">邀请好友注册</span>
+            <span class="card-desc">邀请即得50点</span>
+          </div>
+          <button class="card-btn">邀请</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 标签切换栏 -->
+    <div class="tab-bar">
+      <button
+        v-for="tab in tabs"
+        :key="tab.key"
+        :class="['tab-item', { active: activeTab === tab.key }]"
+        @click="activeTab = tab.key"
+      >
+        {{ tab.label }}
+      </button>
+    </div>
+
+    <!-- 明细列表区 -->
+    <section class="list-section">
+      <div class="list-item" v-for="(item, index) in filteredList" :key="index">
+        <div class="item-left">
+          <span class="item-name">{{ item.name }}</span>
+          <span :class="['item-status', item.statusClass]">{{ item.status }}</span>
+        </div>
+        <div class="item-right">
+          <span :class="['item-amount', item.amountClass]">{{ item.amount }}</span>
+          <span class="item-validity">{{ item.validity }}</span>
+        </div>
+      </div>
+    </section>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed } from 'vue'
+
+interface Transaction {
+  name: string
+  status: string
+  statusClass: string
+  amount: string
+  amountClass: string
+  validity: string
+  type: 'get' | 'consume'
+}
+
+const tabs = [
+  { key: 'all', label: '全部' },
+  { key: 'get', label: '获取' },
+  { key: 'consume', label: '消耗' }
+]
+
+const activeTab = ref('all')
+
+const allList: Transaction[] = [
+  {
+    name: '每日登录签到',
+    status: '已签到',
+    statusClass: 'success',
+    amount: '+10',
+    amountClass: 'positive',
+    validity: '30天后过期',
+    type: 'get'
+  },
+  {
+    name: '邀请好友奖励',
+    status: '已到账',
+    statusClass: 'success',
+    amount: '+50',
+    amountClass: 'positive',
+    validity: '60天后过期',
+    type: 'get'
+  },
+  {
+    name: 'AI绘图创作',
+    status: '消耗',
+    statusClass: 'warning',
+    amount: '-20',
+    amountClass: 'negative',
+    validity: '—',
+    type: 'consume'
+  },
+  {
+    name: '创作灵感生成',
+    status: '消耗',
+    statusClass: 'warning',
+    amount: '-30',
+    amountClass: 'negative',
+    validity: '—',
+    type: 'consume'
+  },
+  {
+    name: '每日登录签到',
+    status: '已签到',
+    statusClass: 'success',
+    amount: '+10',
+    amountClass: 'positive',
+    validity: '30天后过期',
+    type: 'get'
+  }
+]
+
+const filteredList = computed(() => {
+  if (activeTab.value === 'all') return allList
+  return allList.filter(item => item.type === activeTab.value)
+})
+</script>
+
+<style scoped>
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: #f5f5f5;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #333;
+  padding-bottom: 20px;
+}
+
+/* 导航栏 */
+.navbar {
+  display: flex;
+  align-items: center;
+  padding: 16px 20px;
+  background: #fff;
+  border-bottom: 1px solid #eee;
+}
+.back-arrow {
+  font-size: 22px;
+  cursor: pointer;
+  margin-right: 12px;
+}
+.page-title {
+  flex: 1;
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+}
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.more-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px;
+}
+.scan-icon {
+  font-size: 20px;
+  cursor: pointer;
+}
+
+/* 状态区 */
+.status-section {
+  padding: 20px;
+}
+.card-balance {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 16px;
+  padding: 20px;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.balance-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.lightning-icon {
+  font-size: 28px;
+}
+.balance-value {
+  font-size: 36px;
+  font-weight: 700;
+}
+.balance-subtitle {
+  font-size: 14px;
+  opacity: 0.9;
+}
+.expire-tip {
+  font-size: 12px;
+  opacity: 0.7;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  padding: 4px 12px;
+  align-self: flex-start;
+}
+
+/* 功能操作区 */
+.action-section {
+  padding: 0 20px 16px;
+}
+.section-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: #444;
+}
+.card-row {
+  display: flex;
+  gap: 12px;
+}
+.action-card {
+  flex: 1;
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.card-icon {
+  font-size: 32px;
+}
+.card-info {
+  text-align: center;
+}
+.card-title {
+  font-size: 14px;
+  font-weight: 600;
+  display: block;
+}
+.card-desc {
+  font-size: 12px;
+  color: #888;
+  display: block;
+  margin-top: 4px;
+}
+.card-btn {
+  background: #667eea;
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  padding: 6px 24px;
+  font-size: 13px;
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+/* 标签切换栏 */
+.tab-bar {
+  display: flex;
+  background: #fff;
+  border-radius: 12px;
+  margin: 0 20px 12px;
+  padding: 4px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.tab-item {
+  flex: 1;
+  text-align: center;
+  padding: 10px 0;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 500;
+  color: #666;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.tab-item.active {
+  background: #667eea;
+  color: #fff;
+  font-weight: 600;
+}
+
+/* 明细列表 */
+.list-section {
+  padding: 0 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.list-item {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+.item-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.item-name {
+  font-size: 14px;
+  font-weight: 500;
+}
+.item-status {
+  font-size: 12px;
+  background: #f0f0f0;
+  border-radius: 12px;
+  padding: 2px 8px;
+  align-self: flex-start;
+}
+.item-status.success {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+.item-status.warning {
+  background: #fff3e0;
+  color: #ef6c00;
+}
+.item-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+.item-amount {
+  font-size: 16px;
+  font-weight: 700;
+}
+.item-amount.positive {
+  color: #2e7d32;
+}
+.item-amount.negative {
+  color: #d32f2f;
+}
+.item-validity {
+  font-size: 11px;
+  color: #aaa;
+}
+</style>
+```
+[2026-06-12 18:05:32] [INFO] [code-to-html] [CodeToHtmlSkill] 转换完成, html=8418 chars
+[2026-06-12 18:06:59] [INFO] [code-to-html] [CodeToHtmlSkill] 开始转换, framework=vue3, code_length=8673
+[2026-06-12 18:06:59] [INFO] [code-to-html] [CodeToHtmlSkill] 原始代码:
+```vue
+<template>
+  <div class="page">
+    <!-- 导航栏 -->
+    <nav class="nav-bar">
+      <div class="nav-left" @click="goBack">
+        <span class="back-arrow">←</span>
+      </div>
+      <div class="nav-title">算力明细</div>
+      <div class="nav-right">
+        <span class="menu-dots">⋯</span>
+        <span class="circle-icon"></span>
+      </div>
+    </nav>
+
+    <!-- 状态摘要卡片 -->
+    <section class="summary-card">
+      <div class="points-value">1,280</div>
+      <div class="points-label">灵感点</div>
+      <div class="points-desc">每日登录可获取灵感点，用于生成创意内容</div>
+      <div class="expiry-hint">
+        <span class="expiry-icon">⏳</span>
+        <span>灵感点将于 2025-01-31 过期</span>
+      </div>
+    </section>
+
+    <!-- 任务获取模块 -->
+    <section class="task-section">
+      <div class="task-card" v-for="task in tasks" :key="task.id">
+        <img :src="task.icon" alt="icon" class="task-icon" />
+        <div class="task-info">
+          <div class="task-title">{{ task.title }}</div>
+          <div class="task-reward">{{ task.reward }}</div>
+        </div>
+        <button class="task-btn" @click="handleTask(task.id)">
+          {{ task.btnText }}
+        </button>
+      </div>
+    </section>
+
+    <!-- 标签导航栏 -->
+    <div class="tab-bar">
+      <span
+        v-for="tab in tabs"
+        :key="tab.value"
+        class="tab-item"
+        :class="{ active: activeTab === tab.value }"
+        @click="activeTab = tab.value"
+      >
+        {{ tab.label }}
+      </span>
+    </div>
+
+    <!-- 收支明细列表 -->
+    <section class="list-section">
+      <div v-if="filteredList.length === 0" class="empty-state">暂无记录</div>
+      <div
+        class="list-item"
+        v-for="(item, index) in filteredList"
+        :key="index"
+      >
+        <div class="item-left">
+          <div class="item-title">{{ item.title }}</div>
+          <div class="item-tag">{{ item.tag }}</div>
+          <div class="item-time">{{ item.time }}</div>
+        </div>
+        <div class="item-right">
+          <div class="item-amount" :class="item.type === 'consume' ? 'negative' : 'positive'">
+            {{ item.type === 'consume' ? '-' : '+' }}{{ item.amount }}
+          </div>
+          <div class="item-expiry">{{ item.expiry }}</div>
+        </div>
+      </div>
+    </section>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed } from 'vue'
+
+// 模拟数据
+interface Task {
+  id: number
+  icon: string
+  title: string
+  reward: string
+  btnText: string
+}
+
+const tasks: Task[] = [
+  {
+    id: 1,
+    icon: 'https://via.placeholder.com/40?text=签到',
+    title: '每日登录签到',
+    reward: '+5 灵感点',
+    btnText: '签到'
+  },
+  {
+    id: 2,
+    icon: 'https://via.placeholder.com/40?text=邀请',
+    title: '邀请好友注册',
+    reward: '+20 灵感点',
+    btnText: '邀请'
+  }
+]
+
+interface Tab {
+  label: string
+  value: string
+}
+
+const tabs: Tab[] = [
+  { label: '全部', value: 'all' },
+  { label: '获取', value: 'acquire' },
+  { label: '消耗', value: 'consume' }
+]
+
+const activeTab = ref<string>('all')
+
+interface RecordItem {
+  title: string
+  tag: string
+  time: string
+  amount: number
+  type: 'acquire' | 'consume'
+  expiry: string
+}
+
+const listData: RecordItem[] = [
+  { title: '签到奖励', tag: '每日任务', time: '2025-01-15 08:30', amount: 5, type: 'acquire', expiry: '2025-02-15' },
+  { title: '邀请注册成功', tag: '任务奖励', time: '2025-01-14 14:22', amount: 20, type: 'acquire', expiry: '2025-02-14' },
+  { title: '创意内容生成', tag: '消耗', time: '2025-01-13 19:45', amount: 50, type: 'consume', expiry: '-' },
+  { title: '登录奖励', tag: '每日任务', time: '2025-01-12 07:10', amount: 5, type: 'acquire', expiry: '2025-02-12' },
+  { title: '模型训练消耗', tag: '消耗', time: '2025-01-11 21:00', amount: 100, type: 'consume', expiry: '-' },
+]
+
+const filteredList = computed(() => {
+  if (activeTab.value === 'all') return listData
+  return listData.filter(item => item.type === activeTab.value)
+})
+
+// 导航返回（模拟）
+function goBack() {
+  alert('返回上一页')
+}
+
+// 任务按钮处理
+function handleTask(id: number) {
+  alert(`执行任务：${id}`)
+}
+</script>
+
+<style scoped>
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+.page {
+  max-width: 480px;
+  margin: 0 auto;
+  background: #f5f5f5;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+/* 导航栏 */
+.nav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: #ffffff;
+  border-bottom: 1px solid #e0e0e0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.nav-left {
+  cursor: pointer;
+  font-size: 24px;
+  line-height: 1;
+  color: #333;
+}
+
+.nav-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111;
+}
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.menu-dots {
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.circle-icon {
+  display: inline-block;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #ddd;
+  cursor: pointer;
+}
+
+/* 状态摘要卡片 */
+.summary-card {
+  margin: 12px 16px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 16px;
+  padding: 20px 24px;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.points-value {
+  font-size: 36px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.points-label {
+  font-size: 14px;
+  opacity: 0.9;
+  margin-top: 4px;
+}
+
+.points-desc {
+  font-size: 13px;
+  margin-top: 12px;
+  opacity: 0.85;
+  line-height: 1.4;
+}
+
+.expiry-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  background: rgba(255,255,255,0.2);
+  padding: 8px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  color: #ffe082;
+}
+
+.expiry-icon {
+  font-size: 14px;
+}
+
+/* 任务获取模块 */
+.task-section {
+  margin: 8px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.task-card {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border-radius: 12px;
+  padding: 14px 18px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  transition: transform 0.2s;
+}
+
+.task-card:active {
+  transform: scale(0.98);
+}
+
+.task-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: #f0f0f0;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.task-info {
+  flex: 1;
+  margin-left: 14px;
+}
+
+.task-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: #222;
+}
+
+.task-reward {
+  font-size: 13px;
+  color: #667eea;
+  margin-top: 4px;
+}
+
+.task-btn {
+  background: #667eea;
+  color: #fff;
+  border: none;
+  padding: 8px 20px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+
+.task-btn:hover {
+  background: #5a6fd1;
+}
+
+.task-btn:active {
+  background: #4f63b8;
+}
+
+/* 标签导航栏 */
+.tab-bar {
+  display: flex;
+  background: #fff;
+  margin: 12px 16px;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+.tab-item {
+  flex: 1;
+  text-align: center;
+  padding: 12px 0;
+  font-size: 15px;
+  font-weight: 500;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.25s;
+  position: relative;
+}
+
+.tab-item.active {
+  color: #667eea;
+  background: #f0f2ff;
+}
+
+.tab-item.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 25%;
+  width: 50%;
+  height: 3px;
+  background: #667eea;
+  border-radius: 2px;
+}
+
+/* 收支明细列表 */
+.list-section {
+  margin: 0 16px 20px;
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+
+.empty-state {
+  padding: 40px 0;
+  text-align: center;
+  color: #999;
+  font-size: 15px;
+}
+
+.list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 18px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.list-item:last-child {
+  border-bottom: none;
+}
+
+.item-left {
+  flex: 1;
+}
+
+.item-title {
+  font-size: 15px;
+  font-weight: 500;
+  color: #222;
+}
+
+.item-tag {
+  display: inline-block;
+  background: #f0f2ff;
+  color: #667eea;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-top: 4px;
+}
+
+.item-time {
+  font-size: 12px;
+  color: #999;
+  margin-top: 4px;
+}
+
+.item-right {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.item-amount {
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.item-amount.positive {
+  color: #4caf50;
+}
+
+.item-amount.negative {
+  color: #f44336;
+}
+
+.item-expiry {
+  font-size: 11px;
+  color: #aaa;
+  margin-top: 4px;
+}
+</style>
+```
+[2026-06-12 18:07:22] [INFO] [code-to-html] [CodeToHtmlSkill] 转换完成, html=9535 chars
+[2026-06-12 18:10:53] [INFO] [code-to-html] [CodeToHtmlSkill] 开始转换, framework=vue3, code_length=8426
+[2026-06-12 18:10:53] [INFO] [code-to-html] [CodeToHtmlSkill] 原始代码:
+```vue
+<template>
+  <div class="app">
+    <!-- 导航栏 -->
+    <header class="navbar">
+      <button class="nav-btn" @click="goBack">←</button>
+      <h1 class="page-title">算力明细</h1>
+      <div class="nav-right">
+        <button class="nav-btn" @click="moreActions">⋯</button>
+        <button class="nav-btn" @click="toggleSettings">⚙</button>
+      </div>
+    </header>
+
+    <!-- 滚动内容 -->
+    <main class="scroll-content">
+      <!-- 当前可用灵感点摘要卡片 -->
+      <section class="summary-card">
+        <div class="summary-left">
+          <span class="lightning">⚡</span>
+          <span class="point-value">{{ summary.points.toLocaleString() }}</span>
+          <span class="point-unit">{{ summary.unit }}</span>
+        </div>
+        <div class="summary-right">
+          <p class="summary-label">可用灵感点</p>
+          <p class="expiry-notice">将于 {{ summary.expiry }} 过期</p>
+        </div>
+      </section>
+
+      <!-- 赚取灵感点功能区 -->
+      <section class="earn-section">
+        <div class="earn-card">
+          <div class="card-icon">📅</div>
+          <div class="card-content">
+            <h3>每日登录签到</h3>
+            <p>连续签到享更多奖励</p>
+            <button class="action-btn primary" @click="signIn">签到</button>
+          </div>
+        </div>
+        <div class="earn-card">
+          <div class="card-icon">👥</div>
+          <div class="card-content">
+            <h3>邀请好友注册</h3>
+            <p>每邀请一人得200点</p>
+            <button class="action-btn disabled" disabled>即将上线</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 收支明细标签页导航 -->
+      <nav class="tab-nav">
+        <button
+          v-for="tab in tabs"
+          :key="tab"
+          :class="['tab-item', { active: activeTab === tab }]"
+          @click="activeTab = tab"
+        >
+          {{ tab }}
+        </button>
+      </nav>
+
+      <!-- 收支明细列表 -->
+      <ul class="transaction-list">
+        <li
+          v-for="item in filteredTransactions"
+          :key="item.id"
+          class="transaction-item"
+        >
+          <div class="item-left">
+            <p class="item-description">{{ item.description }}</p>
+            <span class="status-tag">{{ item.status }}</span>
+            <p class="item-timestamp">{{ item.timestamp }}</p>
+          </div>
+          <div class="item-right">
+            <span :class="['amount', item.amount >= 0 ? 'positive' : 'negative']">
+              {{ item.amount >= 0 ? '+' : '' }}{{ item.amount }}{{ item.unit }}
+            </span>
+            <p class="expiry">有效期至 {{ item.expiry }}</p>
+          </div>
+        </li>
+      </ul>
+    </main>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed } from 'vue'
+
+// ----- 类型定义 -----
+interface PointSummary {
+  points: number
+  unit: string
+  expiry: string
+}
+
+interface Transaction {
+  id: number
+  description: string
+  status: string
+  timestamp: string
+  amount: number // 正数为获取，负数为消耗
+  unit: string
+  expiry: string
+}
+
+type TabType = '全部' | '获取' | '消耗'
+
+// ----- 模拟数据 -----
+const summary: PointSummary = {
+  points: 2560,
+  unit: '点',
+  expiry: '2025-12-31'
+}
+
+const transactions: Transaction[] = [
+  {
+    id: 1,
+    description: '每日登录签到',
+    status: '系统返还',
+    timestamp: '2025-04-01 08:00:00',
+    amount: 50,
+    unit: '点',
+    expiry: '2025-05-01'
+  },
+  {
+    id: 2,
+    description: '邀请好友注册奖励',
+    status: '系统返还',
+    timestamp: '2025-04-02 10:30:00',
+    amount: 200,
+    unit: '点',
+    expiry: '2025-05-02'
+  },
+  {
+    id: 3,
+    description: '算力任务完成',
+    status: '任务奖励',
+    timestamp: '2025-04-03 14:00:00',
+    amount: -30,
+    unit: '点',
+    expiry: '2025-05-03'
+  }
+]
+
+const tabs: TabType[] = ['全部', '获取', '消耗']
+
+// ----- 响应式状态 -----
+const activeTab = ref<TabType>('全部')
+
+// ----- 计算属性：根据标签过滤 -----
+const filteredTransactions = computed(() => {
+  if (activeTab.value === '全部') return transactions
+  if (activeTab.value === '获取') return transactions.filter(t => t.amount > 0)
+  return transactions.filter(t => t.amount < 0)
+})
+
+// ----- 方法（简单占位） -----
+function goBack() {
+  console.log('返回')
+}
+
+function moreActions() {
+  console.log('更多操作')
+}
+
+function toggleSettings() {
+  console.log('设置/切换')
+}
+
+function signIn() {
+  console.log('签到')
+}
+</script>
+
+<style scoped>
+/* 全局重置与字体 */
+.app {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background-color: #f5f5f5;
+  color: #333;
+}
+
+/* 导航栏 */
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background-color: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  z-index: 10;
+}
+
+.nav-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: #333;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.page-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.nav-right {
+  display: flex;
+  gap: 4px;
+}
+
+/* 滚动内容区域 */
+.scroll-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* 摘要卡片 */
+.summary-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.summary-left {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.lightning {
+  font-size: 28px;
+}
+
+.point-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: #222;
+}
+
+.point-unit {
+  font-size: 16px;
+  color: #666;
+}
+
+.summary-right {
+  text-align: right;
+}
+
+.summary-label {
+  font-size: 14px;
+  color: #888;
+  margin: 0;
+}
+
+.expiry-notice {
+  font-size: 12px;
+  color: #e67e22;
+  margin: 4px 0 0;
+}
+
+/* 赚取功能区 */
+.earn-section {
+  display: flex;
+  gap: 16px;
+}
+
+.earn-card {
+  flex: 1;
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.card-icon {
+  font-size: 36px;
+  margin-bottom: 8px;
+}
+
+.card-content h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 4px;
+}
+
+.card-content p {
+  font-size: 13px;
+  color: #888;
+  margin: 0 0 12px;
+}
+
+.action-btn {
+  padding: 8px 24px;
+  border-radius: 20px;
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.action-btn.primary {
+  background-color: #409eff;
+  color: #fff;
+}
+
+.action-btn.primary:active {
+  background-color: #3a8ee6;
+}
+
+.action-btn.disabled {
+  background-color: #e0e0e0;
+  color: #999;
+  cursor: not-allowed;
+}
+
+/* 标签页导航 */
+.tab-nav {
+  display: flex;
+  background-color: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.tab-item {
+  flex: 1;
+  padding: 12px 0;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 500;
+  color: #666;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s, background 0.2s;
+}
+
+.tab-item.active {
+  color: #409eff;
+  background-color: #ecf5ff;
+  font-weight: 600;
+}
+
+/* 交易列表 */
+.transaction-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.transaction-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.item-left {
+  flex: 1;
+}
+
+.item-description {
+  font-size: 15px;
+  font-weight: 500;
+  margin: 0 0 6px;
+}
+
+.status-tag {
+  display: inline-block;
+  background-color: #333;
+  color: #fff;
+  font-size: 11px;
+  padding: 2px 10px;
+  border-radius: 12px;
+  margin-bottom: 6px;
+}
+
+.item-timestamp {
+  font-size: 12px;
+  color: #999;
+  margin: 0;
+}
+
+.item-right {
+  text-align: right;
+  flex-shrink: 0;
+  margin-left: 16px;
+}
+
+.amount {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.amount.positive {
+  color: #67c23a;
+}
+
+.amount.negative {
+  color: #f56c6c;
+}
+
+.expiry {
+  font-size: 11px;
+  color: #999;
+  margin: 4px 0 0;
+}
+</style>
+```
+[2026-06-12 18:11:10] [INFO] [code-to-html] [CodeToHtmlSkill] 转换完成, html=7443 chars

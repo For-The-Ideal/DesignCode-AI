@@ -73,7 +73,6 @@ class HttpRequest {
         if (options.server){
           fetchOptions.server = options.server;
         } 
-
         const startTime = Date.now();
         
         const res = await $fetch(DEFAULT_CONFIG.SERVER_URL, fetchOptions);

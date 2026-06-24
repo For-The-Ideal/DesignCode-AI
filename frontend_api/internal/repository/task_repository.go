@@ -66,3 +66,12 @@ func (r *TaskRepository) UpdateProgress(id string, progress int, currentStep str
 			"current_step": currentStep,
 		}).Error
 }
+
+// Save 完整保存Task（含 task_steps JSON）
+func (r *TaskRepository) Save(task *model.Task) error {
+	db := mysql.GetDB()
+	if db == nil {
+		return nil
+	}
+	return db.Save(task).Error
+}
