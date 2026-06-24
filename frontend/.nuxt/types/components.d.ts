@@ -21,10 +21,15 @@ interface _GlobalComponents {
   AuthRegister: typeof import("../../components/auth/Register.vue")['default']
   CodeEditor: typeof import("../../components/code/CodeEditor.vue")['default']
   CodePreview: typeof import("../../components/code/CodePreview.vue")['default']
+  CodeSidebar: typeof import("../../components/code/CodeSidebar.vue")['default']
+  CodeConfigPanel: typeof import("../../components/code/ConfigPanel.vue")['default']
+  CodeFileCard: typeof import("../../components/code/FileCard.vue")['default']
+  CodeFlowSteps: typeof import("../../components/code/FlowSteps.vue")['default']
   CodeGeneratingOverlay: typeof import("../../components/code/GeneratingOverlay.vue")['default']
   CodeMonacoEditorCore: typeof import("../../components/code/MonacoEditorCore.vue")['default']
   CodeOptimizationPanel: typeof import("../../components/code/OptimizationPanel.vue")['default']
   CodeSyntaxHighlighter: typeof import("../../components/code/SyntaxHighlighter.vue")['default']
+  CodeUploadZone: typeof import("../../components/code/UploadZone.vue")['default']
   CommonFlutterTemplate: typeof import("../../components/common/FlutterTemplate.vue")['default']
   CommonReactTemplate: typeof import("../../components/common/ReactTemplate.vue")['default']
   CommonVueTemplate: typeof import("../../components/common/VueTemplate.vue")['default']
@@ -80,10 +85,15 @@ interface _GlobalComponents {
   LazyAuthRegister: LazyComponent<typeof import("../../components/auth/Register.vue")['default']>
   LazyCodeEditor: LazyComponent<typeof import("../../components/code/CodeEditor.vue")['default']>
   LazyCodePreview: LazyComponent<typeof import("../../components/code/CodePreview.vue")['default']>
+  LazyCodeSidebar: LazyComponent<typeof import("../../components/code/CodeSidebar.vue")['default']>
+  LazyCodeConfigPanel: LazyComponent<typeof import("../../components/code/ConfigPanel.vue")['default']>
+  LazyCodeFileCard: LazyComponent<typeof import("../../components/code/FileCard.vue")['default']>
+  LazyCodeFlowSteps: LazyComponent<typeof import("../../components/code/FlowSteps.vue")['default']>
   LazyCodeGeneratingOverlay: LazyComponent<typeof import("../../components/code/GeneratingOverlay.vue")['default']>
   LazyCodeMonacoEditorCore: LazyComponent<typeof import("../../components/code/MonacoEditorCore.vue")['default']>
   LazyCodeOptimizationPanel: LazyComponent<typeof import("../../components/code/OptimizationPanel.vue")['default']>
   LazyCodeSyntaxHighlighter: LazyComponent<typeof import("../../components/code/SyntaxHighlighter.vue")['default']>
+  LazyCodeUploadZone: LazyComponent<typeof import("../../components/code/UploadZone.vue")['default']>
   LazyCommonFlutterTemplate: LazyComponent<typeof import("../../components/common/FlutterTemplate.vue")['default']>
   LazyCommonReactTemplate: LazyComponent<typeof import("../../components/common/ReactTemplate.vue")['default']>
   LazyCommonVueTemplate: LazyComponent<typeof import("../../components/common/VueTemplate.vue")['default']>

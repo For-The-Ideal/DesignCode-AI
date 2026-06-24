@@ -31,7 +31,7 @@
             <path d="M20 21V19C20 16.8 18.2 15 16 15H8C5.8 15 4 16.8 4 19V21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
             <path d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z" stroke="currentColor" stroke-width="1.5"/>
           </svg>
-          登录
+          登录 / 注册
         </button>
 
         <!-- 已登录：头像 + 下拉菜单 -->
@@ -112,10 +112,6 @@ const navList = ref([
     name:"代码生成",
     link:"/code",
   },
-  // {
-  //   name:"模型对比",
-  //   link:"/compare",
-  // },
   {
     name:"历史记录",
     link:"/history",

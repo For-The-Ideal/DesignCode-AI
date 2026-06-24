@@ -32,10 +32,26 @@ func Run() {
 
 	// 自动迁移表结构（Task、Result、User）
 	if mysql.GetDB() != nil {
-		if err := mysql.GetDB().AutoMigrate(&model.Task{}, &model.Result{}, &model.User{}); err != nil {
+		if err := mysql.GetDB().AutoMigrate(
+			&model.Task{},
+			&model.Result{},
+			&model.User{},
+			&model.ComponentLibrary{},
+		); err != nil {
 			log.Fatalf("[AutoMigrate] 自动建表失败: %v", err)
 		}
-		log.Println("[AutoMigrate] 表结构同步完成")
+		// 初始化组件库种子数据
+		var count int64
+		mysql.GetDB().Model(&model.ComponentLibrary{}).Count(&count)
+		if count == 0 {
+			seeds := model.SeedComponentLibraries()
+			for i := range seeds {
+				if err := mysql.GetDB().Create(&seeds[i]).Error; err != nil {
+					log.Printf("[Seed] 插入组件库数据失败: %v", err)
+				}
+			}
+			log.Printf("[Seed] 组件库种子数据已插入 %d 条", len(seeds))
+		}
 	}
 
 	// 3. 初始化 COS 客户端
