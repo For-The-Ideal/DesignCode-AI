@@ -1,0 +1,855 @@
+[2026-06-24 10:27:05] [INFO] [code-to-html] [CodeToHtmlSkill] 开始转换, framework=flutter, code_length=8034
+[2026-06-24 10:27:05] [INFO] [code-to-html] [CodeToHtmlSkill] 原始代码:
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Onboarding Welcome',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        useMaterial3: true,
+        colorSchemeSeed: Colors.blueGrey,
+        brightness: Brightness.light,
+      ),
+      home: const OnboardingScreen(),
+    );
+  }
+}
+
+class OnboardingScreen extends StatelessWidget {
+  const OnboardingScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // Responsive sizing based on screen width
+            final double horizontalPadding = constraints.maxWidth * 0.08;
+            final double verticalSpacing = constraints.maxHeight * 0.03;
+            final double headerSubtitleFontSize = constraints.maxWidth * 0.045;
+            final double headerTitleFontSize = constraints.maxWidth * 0.12;
+            final double iconSize = constraints.maxWidth * 0.25;
+            final double mapleLeafSize = constraints.maxWidth * 0.6;
+            final double narrativeFontSize = constraints.maxWidth * 0.05;
+
+            return SingleChildScrollView(
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: horizontalPadding,
+                  vertical: constraints.maxHeight * 0.04,
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Header Text Block
+                    Column(
+                      children: [
+                        Text(
+                          'Hello World!',
+                          style: TextStyle(
+                            fontSize: headerTitleFontSize,
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'What a beautiful day.',
+                          style: TextStyle(
+                            fontSize: headerSubtitleFontSize,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withOpacity(0.7),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: verticalSpacing * 2),
+
+                    // Central Decorative Icon (4-petal flower/heart)
+                    Center(
+                      child: SizedBox(
+                        width: iconSize * 2,
+                        height: iconSize * 2,
+                        child: CustomPaint(
+                          painter: FourPetalFlowerPainter(
+                            color: Theme.of(context).colorScheme.secondary,
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: verticalSpacing * 2),
+
+                    // Transition Screen (Maple Leaf Silhouette + Narrative Text)
+                    Column(
+                      children: [
+                        Center(
+                          child: SizedBox(
+                            width: mapleLeafSize,
+                            height: mapleLeafSize,
+                            child: CustomPaint(
+                              painter: MapleLeafPainter(
+                                color: Theme.of(context).colorScheme.tertiary,
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: verticalSpacing),
+                        Text(
+                          'I Saw The Sign.\nAnd it opened up my mind!',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: narrativeFontSize,
+                            fontWeight: FontWeight.w500,
+                            fontStyle: FontStyle.italic,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withOpacity(0.8),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+// ------------------ Custom Painters ------------------
+
+/// Paints a stylized 4‑petal flower / heart motif.
+class FourPetalFlowerPainter extends CustomPainter {
+  final Color color;
+
+  FourPetalFlowerPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 4;
+
+    // Draw 4 petals at 0°, 90°, 180°, 270°
+    for (int i = 0; i < 4; i++) {
+      final angle = i * (3.1415926535 / 2);
+      final petalCenter = Offset(
+        center.dx + radius * 0.7 * cos(angle),
+        center.dy + radius * 0.7 * sin(angle),
+      );
+
+      // Each petal is a rounded rect / heart shape approximated by an oval
+      final rect = Rect.fromCenter(
+        center: petalCenter,
+        width: radius * 1.2,
+        height: radius * 1.2,
+      );
+      canvas.drawOval(rect, paint);
+    }
+
+    // Central circle
+    canvas.drawCircle(center, radius * 0.35, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant FourPetalFlowerPainter oldDelegate) =>
+      oldDelegate.color != color;
+}
+
+/// Paints a stylized maple leaf silhouette.
+/// Approximated by a 5‑pointed leaf shape.
+class MapleLeafPainter extends CustomPainter {
+  final Color color;
+
+  MapleLeafPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill
+      ..strokeWidth = 2;
+
+    final path = Path();
+    final w = size.width;
+    final h = size.height;
+    final cx = w / 2;
+    final cy = h / 2;
+
+    // Draw a simple maple‑like shape using bezier curves
+    // Starting from bottom center
+    path.moveTo(cx, h - 0.15 * h);
+
+    // Left lobe
+    path.cubicTo(
+      cx - 0.1 * w, h - 0.2 * h,
+      cx - 0.35 * w, h - 0.45 * h,
+      cx - 0.25 * w, h - 0.55 * h,
+    );
+    // Top left
+    path.cubicTo(
+      cx - 0.2 * w, h - 0.6 * h,
+      cx - 0.3 * w, h - 0.75 * h,
+      cx - 0.2 * w, h - 0.7 * h,
+    );
+    // Upper left
+    path.cubicTo(
+      cx - 0.15 * w, h - 0.75 * h,
+      cx - 0.2 * w, h - 0.85 * h,
+      cx - 0.1 * w, h - 0.8 * h,
+    );
+    // Top point
+    path.cubicTo(
+      cx - 0.05 * w, h - 0.85 * h,
+      cx, h - 0.95 * h,
+      cx + 0.05 * w, h - 0.85 * h,
+    );
+    // Upper right
+    path.cubicTo(
+      cx + 0.2 * w, h - 0.85 * h,
+      cx + 0.15 * w, h - 0.75 * h,
+      cx + 0.2 * w, h - 0.7 * h,
+    );
+    // Top right
+    path.cubicTo(
+      cx + 0.3 * w, h - 0.75 * h,
+      cx + 0.2 * w, h - 0.6 * h,
+      cx + 0.25 * w, h - 0.55 * h,
+    );
+    // Right lobe
+    path.cubicTo(
+      cx + 0.35 * w, h - 0.45 * h,
+      cx + 0.1 * w, h - 0.2 * h,
+      cx + 0.15 * w, h - 0.15 * h,
+    );
+    // Bottom
+    path.cubicTo(
+      cx + 0.2 * w, h - 0.1 * h,
+      cx + 0.1 * w, h - 0.05 * h,
+      cx, h - 0.02 * h,
+    );
+    path.cubicTo(
+      cx - 0.1 * w, h - 0.05 * h,
+      cx - 0.2 * w, h - 0.1 * h,
+      cx - 0.15 * w, h - 0.15 * h,
+    );
+    path.close();
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant MapleLeafPainter oldDelegate) =>
+      oldDelegate.color != color;
+}
+```
+[2026-06-24 10:28:30] [INFO] [code-to-html] [CodeToHtmlSkill] 转换完成, html=1772 chars
+[2026-06-24 10:30:27] [INFO] [code-to-html] [CodeToHtmlSkill] 开始转换, framework=flutter, code_length=4541
+[2026-06-24 10:30:27] [INFO] [code-to-html] [CodeToHtmlSkill] 原始代码:
+```dart
+import 'dart:math';
+import 'package:flutter/material.dart';
+
+void main() => runApp(const MyApp());
+
+class MyApp extends StatelessWidget {
+  const MyApp({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: '空白装饰页',
+      theme: ThemeData(
+        useMaterial3: true,
+      ),
+      home: const BlankDecorPage(),
+    );
+  }
+}
+
+class BlankDecorPage extends StatelessWidget {
+  const BlankDecorPage({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('空白装饰页')),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final size = Size(constraints.maxWidth, constraints.maxHeight);
+          return Center(
+            child: CustomPaint(
+              size: size,
+              painter: HandDrawnArcPainter(
+                arcWidth: size.width * 0.6,
+                arcHeight: size.height * 0.3,
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class HandDrawnArcPainter extends CustomPainter {
+  final double arcWidth;
+  final double arcHeight;
+
+  HandDrawnArcPainter({
+    this.arcWidth = 300,
+    this.arcHeight = 150,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // 定义弧线的范围
+    final centerX = size.width / 2;
+    final centerY = size.height / 2;
+    final left = centerX - arcWidth / 2;
+    final right = centerX + arcWidth / 2;
+    final top = centerY - arcHeight / 2;
+    final bottom = centerY + arcHeight / 2;
+
+    // 生成弧线上的点（拱形，类似微笑曲线）
+    const pointCount = 60;
+    final random = Random(42); // 固定种子保证手绘效果一致
+    final points = <Offset>[];
+
+    for (int i = 0; i <= pointCount; i++) {
+      final t = i / pointCount;
+      final x = left + t * arcWidth;
+      // 抛物线形式：y = top + 4 * (t - 0.5)^2 * arcHeight
+      // 向下弯曲，所以顶部在中间
+      final y = top + 4 * pow(t - 0.5, 2) * arcHeight;
+      // 添加手绘抖动
+      final jitterX = (random.nextDouble() - 0.5) * 3.0;
+      final jitterY = (random.nextDouble() - 0.5) * 3.0;
+      points.add(Offset(x + jitterX, y + jitterY));
+    }
+
+    // 创建主路径
+    final mainPath = Path();
+    mainPath.moveTo(points[0].dx, points[0].dy);
+    for (int i = 1; i < points.length; i++) {
+      mainPath.lineTo(points[i].dx, points[i].dy);
+    }
+
+    // 绘制数条抖动副本，营造手绘多重线效果
+    final basePaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5
+      ..isAntiAlias = true;
+
+    // 主色深灰
+    canvas.drawPath(
+      mainPath,
+      basePaint..color = Colors.grey[700]!,
+    );
+
+    // 稍浅的偏移副本
+    final offsetPaths = <Path>[];
+    for (int layer = 0; layer < 3; layer++) {
+      final path = Path();
+      // 重新生成随机抖动（使用不同种子）
+      final rng = Random(42 + layer);
+      final pts = <Offset>[];
+      for (int i = 0; i <= pointCount; i++) {
+        final t = i / pointCount;
+        final x = left + t * arcWidth;
+        final y = top + 4 * pow(t - 0.5, 2) * arcHeight;
+        final jitterX = (rng.nextDouble() - 0.5) * 4.0;
+        final jitterY = (rng.nextDouble() - 0.5) * 4.0;
+        pts.add(Offset(x + jitterX, y + jitterY));
+      }
+      path.moveTo(pts[0].dx, pts[0].dy);
+      for (int i = 1; i < pts.length; i++) {
+        path.lineTo(pts[i].dx, pts[i].dy);
+      }
+      canvas.drawPath(
+        path,
+        basePaint
+          ..color = Colors.grey.withOpacity(0.3 + layer * 0.1)
+          ..strokeWidth = 0.5 + layer * 0.3,
+      );
+    }
+
+    // 添加一些短小的装饰线段，模拟铅笔素描的质感
+    final tinyPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.8
+      ..color = Colors.grey[400]!;
+    for (int i = 0; i < 30; i++) {
+      final rng = Random(100 + i);
+      final t = rng.nextDouble();
+      final x = left + t * arcWidth;
+      final y = top + 4 * pow(t - 0.5, 2) * arcHeight;
+      final angle = rng.nextDouble() * 2 * pi;
+      final length = 2.0 + rng.nextDouble() * 4.0;
+      final dx = cos(angle) * length;
+      final dy = sin(angle) * length;
+      canvas.drawLine(
+        Offset(x, y),
+        Offset(x + dx, y + dy),
+        tinyPaint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant HandDrawnArcPainter oldDelegate) {
+    return oldDelegate.arcWidth != arcWidth || oldDelegate.arcHeight != arcHeight;
+  }
+}
+```
+[2026-06-24 10:31:56] [INFO] [code-to-html] [CodeToHtmlSkill] 转换完成, html=6356 chars
+[2026-06-24 11:36:09] [INFO] [code-to-html] [CodeToHtmlSkill] 开始转换, framework=flutter, code_length=12502
+[2026-06-24 11:36:09] [INFO] [code-to-html] [CodeToHtmlSkill] 原始代码:
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: '算力明细',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        useMaterial3: true,
+        colorSchemeSeed: Colors.indigo,
+      ),
+      home: const SuanLiDetailPage(),
+    );
+  }
+}
+
+class SuanLiDetailPage extends StatefulWidget {
+  const SuanLiDetailPage({super.key});
+
+  @override
+  State<SuanLiDetailPage> createState() => _SuanLiDetailPageState();
+}
+
+class _SuanLiDetailPageState extends State<SuanLiDetailPage> {
+  int _selectedTabIndex = 0;
+  final List<String> tabs = ['全部', '获取', '消耗'];
+
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    final horizontalPadding = width > 600 ? 24.0 : 16.0;
+
+    return Scaffold(
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildStatusBar(),
+            _buildNavigationBar(),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 16),
+                    _buildMainInfoCard(),
+                    const SizedBox(height: 16),
+                    _buildFunctionCards(),
+                    const SizedBox(height: 24),
+                    _buildTabSelector(),
+                    const SizedBox(height: 12),
+                    _buildTransactionList(),
+                    const SizedBox(height: 16),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      color: Colors.transparent,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const Text('9:41', style: TextStyle(fontWeight: FontWeight.w600)),
+          Row(
+            children: const [
+              Icon(Icons.signal_cellular_alt, size: 18),
+              SizedBox(width: 6),
+              Icon(Icons.wifi, size: 18),
+              SizedBox(width: 6),
+              Icon(Icons.battery_full, size: 18),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNavigationBar() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Row(
+        children: [
+          IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {},
+          ),
+          const Expanded(
+            child: Text(
+              '算力明细',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.more_vert),
+            onPressed: () {},
+          ),
+          const CircleAvatar(
+            radius: 16,
+            backgroundImage: NetworkImage('https://via.placeholder.com/32'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMainInfoCard() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.bolt, color: Colors.amber.shade700, size: 28),
+                const SizedBox(width: 8),
+                const Text(
+                  '890',
+                  style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '当前可用灵感点',
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                '部分点数即将过期',
+                style: TextStyle(fontSize: 12, color: Colors.orange.shade800),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFunctionCards() {
+    return Column(
+      children: [
+        _buildFunctionCard(
+          icon: Icons.calendar_today,
+          title: '每日登录签到',
+          description: '签到获取灵感点',
+          reward: '+10',
+          buttonLabel: '签到',
+          buttonColor: Colors.indigo,
+        ),
+        const SizedBox(height: 12),
+        _buildFunctionCard(
+          icon: Icons.person_add,
+          title: '邀请好友注册',
+          description: '每成功邀请一位好友',
+          reward: '+50',
+          buttonLabel: '邀请',
+          buttonColor: Colors.teal,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFunctionCard({
+    required IconData icon,
+    required String title,
+    required String description,
+    required String reward,
+    required String buttonLabel,
+    required Color buttonColor,
+  }) {
+    return Card(
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            CircleAvatar(
+              backgroundColor: buttonColor.withOpacity(0.1),
+              radius: 24,
+              child: Icon(icon, color: buttonColor),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    description,
+                    style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              margin: const EdgeInsets.only(right: 12),
+              child: Text(
+                reward,
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: buttonColor),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {},
+              style: ElevatedButton.styleFrom(
+                backgroundColor: buttonColor,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              ),
+              child: Text(buttonLabel),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTabSelector() {
+    return Row(
+      children: List.generate(tabs.length, (index) {
+        final isSelected = index == _selectedTabIndex;
+        return Expanded(
+          child: GestureDetector(
+            onTap: () => setState(() => _selectedTabIndex = index),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    color: isSelected ? Colors.indigo : Colors.transparent,
+                    width: 2,
+                  ),
+                ),
+              ),
+              child: Text(
+                tabs[index],
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  color: isSelected ? Colors.indigo : Colors.grey,
+                ),
+              ),
+            ),
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _buildTransactionList() {
+    final items = [
+      TransactionItem(
+        title: '每日签到奖励',
+        tag: '系统奖励',
+        time: '2025-01-15 09:30',
+        value: '+10',
+        validity: '当日24:00过期',
+        isPositive: true,
+      ),
+      TransactionItem(
+        title: '邀请好友注册',
+        tag: '邀请奖励',
+        time: '2025-01-14 14:20',
+        value: '+50',
+        validity: '永久有效',
+        isPositive: true,
+      ),
+      TransactionItem(
+        title: '生成灵感文章消耗',
+        tag: '消耗',
+        time: '2025-01-13 18:00',
+        value: '-30',
+        validity: '已使用',
+        isPositive: false,
+      ),
+      TransactionItem(
+        title: '系统补发',
+        tag: '系统返还',
+        time: '2025-01-12 10:00',
+        value: '+5',
+        validity: '永久有效',
+        isPositive: true,
+      ),
+      TransactionItem(
+        title: '连续签到7天奖励',
+        tag: '活动奖励',
+        time: '2025-01-11 08:00',
+        value: '+100',
+        validity: '7天后过期',
+        isPositive: true,
+      ),
+      TransactionItem(
+        title: 'AI模型调用消耗',
+        tag: '消耗',
+        time: '2025-01-10 22:15',
+        value: '-20',
+        validity: '已使用',
+        isPositive: false,
+      ),
+    ];
+
+    final filtered = items.where((item) {
+      if (tabs[_selectedTabIndex] == '全部') return true;
+      if (tabs[_selectedTabIndex] == '获取') return item.isPositive;
+      if (tabs[_selectedTabIndex] == '消耗') return !item.isPositive;
+      return true;
+    }).toList();
+
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: filtered.length,
+      separatorBuilder: (_, __) => const Divider(height: 1),
+      itemBuilder: (context, index) {
+        final item = filtered[index];
+        return _buildTransactionRow(item);
+      },
+    );
+  }
+
+  Widget _buildTransactionRow(TransactionItem item) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.title,
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade200,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        item.tag,
+                        style: TextStyle(fontSize: 11, color: Colors.grey.shade700),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      item.time,
+                      style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  item.validity,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: item.validity.contains('过期') ? Colors.orange : Colors.green.shade700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            item.value,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: item.isPositive ? Colors.green : Colors.red,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class TransactionItem {
+  final String title;
+  final String tag;
+  final String time;
+  final String value;
+  final String validity;
+  final bool isPositive;
+
+  TransactionItem({
+    required this.title,
+    required this.tag,
+    required this.time,
+    required this.value,
+    required this.validity,
+    required this.isPositive,
+  });
+}
+```
+[2026-06-24 11:37:03] [INFO] [code-to-html] [CodeToHtmlSkill] 转换完成, html=13070 chars

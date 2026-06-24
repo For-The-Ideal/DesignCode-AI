@@ -1,0 +1,35 @@
+[2026-06-24 10:26:28] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿 (3 张图片)...
+[2026-06-24 10:26:32] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回: {
+  "page_name": "Onboarding / Welcome Screen",
+  "layout": "Vertical Stack (Header + Central Graphic + Footer Text)",
+  "components": [
+    "Header Text Block (Title: 'Hello World!', Subtitle: 'What a beautiful day.')",
+    "Central Decorative Icon (Stylized 4-petal flower/heart motif)",
+    "Transition Screen (Maple Leaf Silhouette with Narrative Text: 'I Saw The Sign. And it opened up my mind!')"
+  ]
+}
+[2026-06-24 10:26:32] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回非标准 DSL JSON: json: cannot unmarshal string into Go struct field DSL.components of type model.DSLComponent
+[2026-06-24 10:29:53] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿 (1 张图片)...
+[2026-06-24 10:29:56] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回: {
+  "page_name": "空白装饰页",
+  "layout": "单元素居中横向布局",
+  "components": [
+    "手绘风格弧形装饰线"
+  ]
+}
+[2026-06-24 10:29:56] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回非标准 DSL JSON: json: cannot unmarshal string into Go struct field DSL.components of type model.DSLComponent
+[2026-06-24 11:35:08] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿 (1 张图片)...
+[2026-06-24 11:35:17] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回: {
+  "page_name": "算力明细",
+  "layout": "垂直分层布局，顶部状态栏+标题栏，中部为当前可用值卡片，中下部为功能操作区（赚取灵感点），底部为标签页切换的收支明细列表",
+  "components": [
+    "状态栏（时间、信号、电量）",
+    "导航栏（返回箭头、页面标题“算力明细”、右侧三点菜单与圆形图标）",
+    "主信息卡片（含闪电图标、当前可用值890、副标题“当前可用灵感点”、过期提示）",
+    "功能操作区（两个圆角卡片：每日登录签到、邀请好友注册，含图标、文字说明、奖励数值、状态按钮）",
+    "标签页导航（“全部”“获取”“消耗”，当前选中“全部”）",
+    "收支明细列表项（每项含标题、标签、时间戳、数值及有效期说明，共6条记录）",
+    "状态标签（如“系统返还”“当日24:00过期”“永久有效”等辅助说明标签）"
+  ]
+}
+[2026-06-24 11:35:17] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回非标准 DSL JSON: json: cannot unmarshal string into Go struct field DSL.components of type model.DSLComponent

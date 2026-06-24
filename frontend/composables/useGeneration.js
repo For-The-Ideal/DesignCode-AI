@@ -176,7 +176,7 @@ export function useGeneration () {
 
   // ═══ 模板数据初始化 ═════════════════════════════════════
 
-  const initTemplateData = async (id = 1) => {
+  const initTemplateData = async (id) => {
     if (sse.status.value === 'streaming') return
 
     if (!dataLoaded) {

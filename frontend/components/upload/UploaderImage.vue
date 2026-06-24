@@ -1,143 +1,120 @@
 <template>
   <div class="upload-section">
-    <div class="tech-card">
-      <div class="card-title">
-        <i class="fas fa-cloud-upload-alt"></i>
-        <span>上传设计稿</span>
-      </div>
-      <div class="upload-content">
-        <div 
-          class="dropzone" 
-          :class="{ 'dropzone-disabled': isMaxReached, 'drag-over': isDragging }"
-          @click="!isMaxReached && triggerFileInput()" 
-          @dragover.prevent="!isMaxReached && (isDragging = true)" 
-          @dragleave.prevent="isDragging = false" 
-          @drop.prevent="!isMaxReached && handleDrop($event)">
-          <div class="dropzone-icon">
-            <i class="fas fa-file-image"></i>
-          </div>
-          <p v-if="!isMaxReached">点击或拖拽上传设计稿</p>
-          <p v-else class="max-warning">已达到上传上限 ({{ maxLen }}/{{ maxLen }})</p>
-          <span>支持 PNG、JPG、JPEG，最多 {{ maxLen }} 张</span>
-          <input type="file" ref="fileInput" :disabled="isMaxReached" multiple 
-          accept="image/*" style="display: none" @change="handleFileSelect" />
+    <!-- ═══ 左栏：上传区 ═══ -->
+    <div class="upload-panel">
+      <div class="tech-card">
+        <div class="card-title">
+          <i class="fas fa-cloud-upload-alt"></i>
+          <span>上传设计稿</span>
         </div>
-
-        <!-- 预览区域 -->
-        <div class="preview-area" v-if="images.length > 0">
-          <div class="preview-header">
-            <span><i class="fas fa-images"></i> 已上传 ({{ images.length }}/{{ maxLen }})</span>
-            <span v-if="uploadedCount < images.length" class="upload-progress">{{ uploadedCount }}/{{ images.length }} 已上传完成</span>
-            <button class="clear-btn" @click="clearAll">清空全部</button>
+        <div class="upload-content">
+          <div 
+            class="dropzone" 
+            :class="{ 'dropzone-disabled': isMaxReached, 'drag-over': isDragging }"
+            @click="!isMaxReached && triggerFileInput()" 
+            @dragover.prevent="!isMaxReached && (isDragging = true)" 
+            @dragleave.prevent="isDragging = false" 
+            @drop.prevent="!isMaxReached && handleDrop($event)">
+            <div class="dropzone-icon">
+              <i class="fas fa-file-image"></i>
+            </div>
+            <p v-if="!isMaxReached">点击或拖拽上传设计稿</p>
+            <p v-else class="max-warning">已达到上传上限 ({{ maxLen }}/{{ maxLen }})</p>
+            <span>支持 PNG、JPG、JPEG，最多 {{ maxLen }} 张</span>
+            <input type="file" ref="fileInput" :disabled="isMaxReached" multiple 
+            accept="image/*" style="display: none" @change="handleFileSelect" />
           </div>
-          <div class="preview-grid">
-            <div v-for="(img, idx) in images" :key="img.id" class="preview-item"
-                          :class="{ 'upload-error': img.uploadError, 'drag-active': dragIdx === idx, 'drag-over': dragOverIdx === idx }"
-                          draggable="true"
-                          @dragstart="onDragStart($event, idx)"
-                          @dragover.prevent="onDragOver($event, idx)"
-                          @dragleave="dragOverIdx = -1"
-                          @drop.prevent="onDrop(idx)"
-                          @dragend="onDragEnd">
-              <img :src="img.preview" alt="预览" />
-      
-              <!-- 上传状态 -->
-              <div v-if="img.uploading" class="upload-status uploading">
-                <i class="fas fa-spinner fa-spin"></i>
-                <span>上传中...</span>
-              </div>
-              <div v-else-if="img.cosUrl" class="upload-status done">
-                <i class="fas fa-check-circle"></i>
-                <span>已上传</span>
-              </div>
-              <div v-else-if="img.uploadError" class="upload-status failed">
-                <i class="fas fa-exclamation-circle"></i>
-                <span>上传失败</span>
-              </div>
-              <div class="preview-remove" @click="removeImage(idx)">×</div>
-              <!-- 描述显示区域 -->
-              <div class="image-description" v-if="img.description" @click="openDescModal(idx)">
-                <div class="desc-content">
-                  <i class="fas fa-quote-left"></i>
-                  <span class="desc-text">{{ truncateText(img.description, 40) }}</span>
+
+          <!-- 预览区域 -->
+          <div class="preview-area" v-if="images.length > 0">
+            <div class="preview-header">
+              <span><i class="fas fa-images"></i> 已上传 ({{ images.length }}/{{ maxLen }})</span>
+              <span v-if="uploadedCount < images.length" class="upload-progress">{{ uploadedCount }}/{{ images.length }} 已上传完成</span>
+              <button class="clear-btn" @click="clearAll">清空全部</button>
+            </div>
+            <div class="preview-grid">
+              <div v-for="(img, idx) in images" :key="img.id" class="preview-item"
+                :class="{ 'upload-error': img.uploadError, 'drag-active': dragIdx === idx, 'drag-over': dragOverIdx === idx }"
+                draggable="true"
+                @dragstart="onDragStart($event, idx)"
+                @dragover.prevent="onDragOver($event, idx)"
+                @dragleave="dragOverIdx = -1"
+                @drop.prevent="onDrop(idx)"
+                @dragend="onDragEnd">
+                <img :src="img.preview" alt="预览" />
+                <!-- 上传状态 -->
+                <div v-if="img.uploading" class="upload-status uploading">
+                  <i class="fas fa-spinner fa-spin"></i>
+                  <span>上传中...</span>
                 </div>
-                <div class="desc-footer">
-                  <span class="desc-type">{{ img.type || '设计稿' }}</span>
-                  <span class="desc-edit"><i class="fas fa-pen"></i> 编辑</span>
+                <div v-else-if="img.cosUrl" class="upload-status done">
+                  <i class="fas fa-check-circle"></i>
+                  <span>已上传</span>
                 </div>
-              </div>
-              <div class="image-description empty" v-else @click="openDescModal(idx)">
-                <i class="fas fa-plus-circle"></i>
-                <span>添加描述</span>
+                <div v-else-if="img.uploadError" class="upload-status failed">
+                  <i class="fas fa-exclamation-circle"></i>
+                  <span>上传失败</span>
+                </div>
+                <div class="preview-remove" @click="removeImage(idx)">×</div>
+                <!-- 描述显示区域 -->
+                <div class="image-description" v-if="img.description" @click="openDescModal(idx)">
+                  <div class="desc-content">
+                    <i class="fas fa-quote-left"></i>
+                    <span class="desc-text">{{ truncateText(img.description, 40) }}</span>
+                  </div>
+                  <div class="desc-footer">
+                    <span class="desc-type">{{ img.type || '设计稿' }}</span>
+                    <span class="desc-edit"><i class="fas fa-pen"></i> 编辑</span>
+                  </div>
+                </div>
+                <div class="image-description empty" v-else @click="openDescModal(idx)">
+                  <i class="fas fa-plus-circle"></i>
+                  <span>添加描述</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-
-      <!-- 配置卡片 -->
-    <div class="tech-card config-card">
-      <div class="card-title">
-        <i class="fas fa-sliders-h"></i>
-        <span>生成配置</span>
-      </div>
-
-      <div class="framework-selector">
-        <div v-for="fw in frameworks" :key="fw.key"
-          class="framework-btn" :class="{ active: framework === fw.key }"
-          @click="framework = fw.key">
-          <i :class="fw.icon"></i> {{ fw.label }}
-        </div>
-      </div>
-
-      <!-- 平台选择 -->
-      <div class="platform-selector">
-        <div class="slider-label"><span>目标平台</span></div>
-        <div class="platform-row">
-          <div v-for="p in platforms" :key="p.key"
-            class="platform-btn" :class="{ active: platform === p.key }"
-            @click="platform = p.key">
-            <i :class="p.icon"></i> {{ p.label }}
-          </div>
-        </div>
-      </div>
-
-      <div class="slider-container">
-        <div class="slider-label">
-          <span>质量要求</span>
-          <span class="quality-value">{{ qualityValue }}</span>
-        </div>
-        <div class="slider-wrapper">
-          <input type="range" v-model.number="qualityValue" min="60" max="100" step="1" class="quality-slider" />
-          <div class="slider-marks">
-            <span v-for="mark in [60, 65, 70, 75, 80, 85, 90, 95, 100]" 
-                  :key="mark" 
-                  class="slider-mark"
-                  :class="{ active: qualityValue >= mark }"
-                  @click="qualityValue = mark">
-              {{ mark }}
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-      <!-- AI 智能分析提示 -->
-      <div v-if="images.length > 0" class="ai-tip">
-        <i class="fas fa-robot"></i>
-        <span>AI 将结合图片和描述生成更精准的代码，描述越详细效果越好</span>
-      </div>
     </div>
 
-    
+    <!-- ═══ 右栏：配置区 ═══ -->
+    <div class="config-panel">
+      <div class="tech-card">
+        <div class="card-title">
+          <i class="fas fa-sliders-h"></i>
+          <span>生成配置</span>
+        </div>
 
-    <!-- 生成按钮 -->
-    <button class="generate-btn" @click="generateCode" :disabled="images.length === 0 || !allUploaded || generating || (taskProgress > 0 && taskProgress < 100)">
-      <i v-if="taskProgress > 0 && taskProgress < 100" class="fas fa-hourglass-half"></i>
-      <i v-else-if="generating" class="fas fa-spinner fa-spin"></i>
-      <i v-else class="fas fa-play"></i>
-      {{ (taskProgress > 0 && taskProgress < 100) ? '任务执行中...' : generating ? '正在生成...' : '开始生成' }}
-    </button>
+        <div class="framework-selector">
+          <div v-for="fw in frameworks" :key="fw.key"
+            class="framework-btn" :class="{ active: framework === fw.key }"
+            @click="framework = fw.key">
+            <i :class="fw.icon"></i> {{ fw.label }}
+          </div>
+        </div>
+
+        <div class="platform-selector">
+          <div class="form-label"><span>目标平台</span></div>
+          <div class="platform-row">
+            <div v-for="p in platforms" :key="p.key"
+              class="platform-btn" :class="{ active: platform === p.key }"
+              @click="platform = p.key">
+              <i :class="p.icon"></i> {{ p.label }}
+            </div>
+          </div>
+        </div>
+
+      
+
+        <button class="generate-btn" @click="generateCode" :disabled="images.length === 0 || !allUploaded || generating || (taskProgress > 0 && taskProgress < 100)">
+          <i v-if="taskProgress > 0 && taskProgress < 100" class="fas fa-hourglass-half"></i>
+          <i v-else-if="generating" class="fas fa-spinner fa-spin"></i>
+          <i v-else class="fas fa-play"></i>
+          {{ (taskProgress > 0 && taskProgress < 100) ? '任务执行中...' : generating ? '正在生成...' : '开始生成' }}
+        </button>
+      </div>
+    </div>
 
     <!-- 描述编辑弹窗 -->
     <DescEditorModal
@@ -185,7 +162,6 @@ const framework = computed({
   get: () => props.modelValue,
   set: (val) => emit('update:modelValue', val),
 })
-const qualityValue = ref(90)
 const maxLen = ref(3) // 最多5张
 const platform = ref('mobile') // mobile | desktop | tablet
 const platforms = [
@@ -381,7 +357,7 @@ const generateCode = async () => {
         desc: img.description || '',
         sort_order: i + 1,
       })),
-      quality: qualityValue.value,
+      quality: 90,
     }
 
     console.log('[Uploader] payload:', payload)
@@ -464,7 +440,14 @@ watch(status, (val) => {
   color: #00ffff;
 }
 
-/* 上传区 + 预览区 左右布局 */
+/* ═══ 整体左右分栏 ═══ */
+.upload-section { display: flex; gap: 24px; align-items: stretch }
+/* ═══ 左栏 ═══ */
+.upload-panel { flex: 1.5; min-width: 0 }
+/* ═══ 右栏 ═══ */
+.config-panel { flex: 1; min-width: 280px }
+.config-panel .generate-btn { width: 100%; margin-top: 16px }
+.config-panel .tech-card { margin-bottom: 0 }
 .upload-content {
   display: flex;
   gap: 20px;
@@ -573,9 +556,12 @@ watch(status, (val) => {
 .preview-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
+  gap: 14px;
 }
 
 @media (max-width: 768px) {
+  .upload-section { flex-direction: column }
+  .config-panel { min-width: 0 }
   .upload-content {
     flex-direction: column;
   }
@@ -670,10 +656,6 @@ watch(status, (val) => {
 }
 .preview-item.upload-error {
   box-shadow: 0 0 0 1px rgba(255, 71, 87, 0.5);
-}
-
-.config-card{
-  margin-top: 20px;
 }
 
 /* 描述显示区域 */
@@ -804,70 +786,12 @@ watch(status, (val) => {
 .platform-btn.active { background: linear-gradient(135deg, rgba(0,255,255,.2), rgba(255,0,255,.2)); border-color:#00ffff; color:#00ffff }
 
 /* 滑块区域 */
-.slider-container {
-  margin-top: 8px;
-}
-
-.slider-label {
+.form-label, .slider-label {
   display: flex;
   justify-content: space-between;
   margin-bottom: 12px;
   font-size: 14px;
   color: #aaa;
-}
-
-.quality-value {
-  color: #00ffff;
-  font-weight: 600;
-}
-
-.slider-wrapper {
-  position: relative;
-  padding-bottom: 24px;
-}
-
-.quality-slider {
-  width: 100%;
-  height: 4px;
-  -webkit-appearance: none;
-  background: #333;
-  border-radius: 2px;
-  margin: 0;
-}
-
-.quality-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 16px;
-  height: 16px;
-  background: #00ffff;
-  border-radius: 50%;
-  cursor: pointer;
-  box-shadow: 0 0 8px #00ffff;
-}
-
-.slider-marks {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 8px;
-  padding: 0 2px;
-}
-
-.slider-mark {
-  font-size: 10px;
-  color: #555;
-  cursor: pointer;
-  transition: all 0.2s;
-  text-align: center;
-  flex: 1;
-}
-
-.slider-mark:hover {
-  color: #00ffff;
-}
-
-.slider-mark.active {
-  color: #00ffff;
-  font-weight: 600;
 }
 
 /* 生成按钮 */

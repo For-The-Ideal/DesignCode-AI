@@ -1,5 +1,6 @@
 <template>
   <div class="app">
+
     <div class="screens-container">
       <!-- 第一屏 -->
       <HeroSection @getStarted="scrollToSecond" @watchDemo="playDemo" />

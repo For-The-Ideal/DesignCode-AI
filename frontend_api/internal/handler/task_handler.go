@@ -52,7 +52,6 @@ type CreateTaskRequest struct {
 	Target   string            `json:"target" binding:"required"`
 	Platform string            `json:"platform" binding:"required"`
 	Images   []model.ImageItem `json:"images" binding:"required,min=1,max=5"`
-	Quality  int               `json:"quality"`
 }
 
 // TaskHandler 任务处理器
@@ -107,7 +106,7 @@ func (h *TaskHandler) CreateTask(c *gin.Context) {
 		Target:    req.Target,
 		Platform:  req.Platform,
 		Images:    req.Images,
-		Quality:   req.Quality,
+		Quality:   90, // 后端固定90，后续可以通过逻辑来控制
 		Status:    model.TaskStatusPending,
 		Progress:  0,
 		CreatedAt: time.Now(),

@@ -32,8 +32,9 @@ import { useGeneration } from '@/composables/useGeneration'
 import CodeEditor from '@/components/code/CodeEditor.vue'
 import FlutterTemplate from '@/components/common/FlutterTemplate.vue'
 
+const route = useRoute()
 const screenRef = ref(null)
-
+const templateId = ref(route.query.template || 1)
 const {
   template,
   initTemplateData,
@@ -47,7 +48,7 @@ onMounted(() => {
   observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
-        initTemplateData()
+        initTemplateData(templateId.value)
       } else {
         pauseStreaming()
       }

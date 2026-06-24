@@ -59,7 +59,7 @@
                 <i class="fas fa-mobile-alt"></i>
                 <span>实时预览</span>
               </div>
-              <span class="device-badge" v-if="generatedFramework">iPhone 15 Pro</span>
+              <span class="device-badge" v-if="deviceLabel">{{ deviceLabel }}</span>
             </div>
             <div class="panel-body preview-body">
               <FlutterTemplate :html="taskProgress >= 100 ? template.previewCode : ''" :showBottomNav="false" />
@@ -72,7 +72,7 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { ref, watch, computed, onMounted, onUnmounted } from 'vue'
 import FlutterTemplate from '@/components/common/FlutterTemplate.vue'
 import UploaderImage from '~/components/upload/UploaderImage.vue'
 import GeneratingOverlay from '~/components/code/GeneratingOverlay.vue'
@@ -96,12 +96,19 @@ const generatedLang = ref('Dart')
 const generatedFramework = ref('')
 const codeLanguage = ref('dart')
 const restoredImages = ref([])
+const restoredPlatform = ref('')
 
 const langMap = {
   vue: { label: 'Vue', lang: 'html' },
   react: { label: 'TypeScript', lang: 'typescript' },
   flutter: { label: 'Dart', lang: 'dart' },
 }
+const deviceMap = {
+  mobile: 'iPhone 15 Pro',
+  desktop: 'MacBook Pro 16"',
+  tablet: 'iPad Pro 12.9"',
+}
+const deviceLabel = computed(() => deviceMap[restoredPlatform.value] || '')
 
 // ═══ 监听 SSE 流式输出 → 驱动视图更新 ═══
 
@@ -141,6 +148,10 @@ const checkTaskStatus = async() => {
   // 恢复已上传的图片回显
   if (restored.images && restored.images.length > 0) {
     restoredImages.value = restored.images
+  }
+
+  if (restored.platform) {
+    restoredPlatform.value = restored.platform
   }
 
   if (restored.framework && langMap[restored.framework]) {
