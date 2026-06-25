@@ -113,6 +113,7 @@ declare global {
   const useAttrs: typeof import('vue').useAttrs
   const useCardSpreadAnimation: typeof import('../../composables/useCardSpreadAnimation').useCardSpreadAnimation
   const useColorMode: typeof import('../../node_modules/.pnpm/@nuxtjs+color-mode@4.0.1_magicast@0.5.3/node_modules/@nuxtjs/color-mode/dist/runtime/composables').useColorMode
+  const useCommonStore: typeof import('../../stores/common').useCommonStore
   const useCookie: typeof import('../../node_modules/.pnpm/nuxt@4.4.8_@babel+plugin-sy_99ff0ff52633701d5303af6e8aaecd08/node_modules/nuxt/dist/app/composables/cookie').useCookie
   const useCssModule: typeof import('vue').useCssModule
   const useCssVars: typeof import('vue').useCssVars
@@ -336,6 +337,7 @@ declare module 'vue' {
     readonly useAttrs: UnwrapRef<typeof import('vue')['useAttrs']>
     readonly useCardSpreadAnimation: UnwrapRef<typeof import('../../composables/useCardSpreadAnimation')['useCardSpreadAnimation']>
     readonly useColorMode: UnwrapRef<typeof import('../../node_modules/.pnpm/@nuxtjs+color-mode@4.0.1_magicast@0.5.3/node_modules/@nuxtjs/color-mode/dist/runtime/composables')['useColorMode']>
+    readonly useCommonStore: UnwrapRef<typeof import('../../stores/common')['useCommonStore']>
     readonly useCookie: UnwrapRef<typeof import('../../node_modules/.pnpm/nuxt@4.4.8_@babel+plugin-sy_99ff0ff52633701d5303af6e8aaecd08/node_modules/nuxt/dist/app/composables/cookie')['useCookie']>
     readonly useCssModule: UnwrapRef<typeof import('vue')['useCssModule']>
     readonly useCssVars: UnwrapRef<typeof import('vue')['useCssVars']>

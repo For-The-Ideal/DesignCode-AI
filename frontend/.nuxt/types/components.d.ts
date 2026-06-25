@@ -20,39 +20,26 @@ interface _GlobalComponents {
   AuthPassword: typeof import("../../components/auth/Password.vue")['default']
   AuthRegister: typeof import("../../components/auth/Register.vue")['default']
   CodeEditor: typeof import("../../components/code/CodeEditor.vue")['default']
-  CodePreview: typeof import("../../components/code/CodePreview.vue")['default']
   CodeSidebar: typeof import("../../components/code/CodeSidebar.vue")['default']
   CodeConfigPanel: typeof import("../../components/code/ConfigPanel.vue")['default']
-  CodeFileCard: typeof import("../../components/code/FileCard.vue")['default']
   CodeFlowSteps: typeof import("../../components/code/FlowSteps.vue")['default']
   CodeGeneratingOverlay: typeof import("../../components/code/GeneratingOverlay.vue")['default']
   CodeMonacoEditorCore: typeof import("../../components/code/MonacoEditorCore.vue")['default']
-  CodeOptimizationPanel: typeof import("../../components/code/OptimizationPanel.vue")['default']
-  CodeSyntaxHighlighter: typeof import("../../components/code/SyntaxHighlighter.vue")['default']
-  CodeUploadZone: typeof import("../../components/code/UploadZone.vue")['default']
   CommonFlutterTemplate: typeof import("../../components/common/FlutterTemplate.vue")['default']
-  CommonReactTemplate: typeof import("../../components/common/ReactTemplate.vue")['default']
-  CommonVueTemplate: typeof import("../../components/common/VueTemplate.vue")['default']
-  ComparisonDiffViewer: typeof import("../../components/comparison/DiffViewer.vue")['default']
-  ComparisonModelComparison: typeof import("../../components/comparison/ModelComparison.vue")['default']
-  ComparisonVersionTimeline: typeof import("../../components/comparison/VersionTimeline.vue")['default']
   DialogModel: typeof import("../../components/dialog/DialogModel.vue")['default']
-  EvaluationQualityGauge: typeof import("../../components/evaluation/QualityGauge.vue")['default']
-  EvaluationScoreCard: typeof import("../../components/evaluation/ScoreCard.vue")['default']
-  EvaluationSuggestionList: typeof import("../../components/evaluation/SuggestionList.vue")['default']
+  LandingDiagnosticBubbles: typeof import("../../components/landing/DiagnosticBubbles.vue")['default']
+  LandingHeroSection: typeof import("../../components/landing/HeroSection.vue")['default']
+  LandingSSEGenerator: typeof import("../../components/landing/SSEGenerator.vue")['default']
   LayoutAppFooter: typeof import("../../components/layout/AppFooter.vue")['default']
   LayoutAppHeader: typeof import("../../components/layout/AppHeader.vue")['default']
+  LayoutAppSidebar: typeof import("../../components/layout/AppSidebar.vue")['default']
   LayoutParticlesBackground: typeof import("../../components/layout/ParticlesBackground.vue")['default']
-  OptimizationCompareModal: typeof import("../../components/optimization/CompareModal.vue")['default']
-  OptimizationProgressModal: typeof import("../../components/optimization/ProgressModal.vue")['default']
-  ScreenDiagnosticBubbles: typeof import("../../components/screen/DiagnosticBubbles.vue")['default']
-  ScreenHeroSection: typeof import("../../components/screen/HeroSection.vue")['default']
-  ScreenSSEGenerator: typeof import("../../components/screen/SSEGenerator.vue")['default']
+  PreviewTempLateComputer: typeof import("../../components/previewTempLate/computer.vue")['default']
+  PreviewTempLate: typeof import("../../components/previewTempLate/index.vue")['default']
+  PreviewTempLateMobile: typeof import("../../components/previewTempLate/mobile.vue")['default']
+  TasksSidebar: typeof import("../../components/tasks/TasksSidebar.vue")['default']
   UploadDescEditorModal: typeof import("../../components/upload/DescEditorModal.vue")['default']
-  UploadDragDropZone: typeof import("../../components/upload/DragDropZone.vue")['default']
-  UploadPreviewImage: typeof import("../../components/upload/PreviewImage.vue")['default']
-  UploadScoreCard: typeof import("../../components/upload/ScoreCard.vue")['default']
-  UploadUploaderImage: typeof import("../../components/upload/UploaderImage.vue")['default']
+  UploadZone: typeof import("../../components/upload/UploadZone.vue")['default']
   NuxtWelcome: typeof import("../../node_modules/.pnpm/nuxt@4.4.8_@babel+plugin-sy_99ff0ff52633701d5303af6e8aaecd08/node_modules/nuxt/dist/app/components/welcome.vue")['default']
   NuxtLayout: typeof import("../../node_modules/.pnpm/nuxt@4.4.8_@babel+plugin-sy_99ff0ff52633701d5303af6e8aaecd08/node_modules/nuxt/dist/app/components/nuxt-layout")['default']
   NuxtErrorBoundary: typeof import("../../node_modules/.pnpm/nuxt@4.4.8_@babel+plugin-sy_99ff0ff52633701d5303af6e8aaecd08/node_modules/nuxt/dist/app/components/nuxt-error-boundary.vue")['default']
@@ -84,39 +71,26 @@ interface _GlobalComponents {
   LazyAuthPassword: LazyComponent<typeof import("../../components/auth/Password.vue")['default']>
   LazyAuthRegister: LazyComponent<typeof import("../../components/auth/Register.vue")['default']>
   LazyCodeEditor: LazyComponent<typeof import("../../components/code/CodeEditor.vue")['default']>
-  LazyCodePreview: LazyComponent<typeof import("../../components/code/CodePreview.vue")['default']>
   LazyCodeSidebar: LazyComponent<typeof import("../../components/code/CodeSidebar.vue")['default']>
   LazyCodeConfigPanel: LazyComponent<typeof import("../../components/code/ConfigPanel.vue")['default']>
-  LazyCodeFileCard: LazyComponent<typeof import("../../components/code/FileCard.vue")['default']>
   LazyCodeFlowSteps: LazyComponent<typeof import("../../components/code/FlowSteps.vue")['default']>
   LazyCodeGeneratingOverlay: LazyComponent<typeof import("../../components/code/GeneratingOverlay.vue")['default']>
   LazyCodeMonacoEditorCore: LazyComponent<typeof import("../../components/code/MonacoEditorCore.vue")['default']>
-  LazyCodeOptimizationPanel: LazyComponent<typeof import("../../components/code/OptimizationPanel.vue")['default']>
-  LazyCodeSyntaxHighlighter: LazyComponent<typeof import("../../components/code/SyntaxHighlighter.vue")['default']>
-  LazyCodeUploadZone: LazyComponent<typeof import("../../components/code/UploadZone.vue")['default']>
   LazyCommonFlutterTemplate: LazyComponent<typeof import("../../components/common/FlutterTemplate.vue")['default']>
-  LazyCommonReactTemplate: LazyComponent<typeof import("../../components/common/ReactTemplate.vue")['default']>
-  LazyCommonVueTemplate: LazyComponent<typeof import("../../components/common/VueTemplate.vue")['default']>
-  LazyComparisonDiffViewer: LazyComponent<typeof import("../../components/comparison/DiffViewer.vue")['default']>
-  LazyComparisonModelComparison: LazyComponent<typeof import("../../components/comparison/ModelComparison.vue")['default']>
-  LazyComparisonVersionTimeline: LazyComponent<typeof import("../../components/comparison/VersionTimeline.vue")['default']>
   LazyDialogModel: LazyComponent<typeof import("../../components/dialog/DialogModel.vue")['default']>
-  LazyEvaluationQualityGauge: LazyComponent<typeof import("../../components/evaluation/QualityGauge.vue")['default']>
-  LazyEvaluationScoreCard: LazyComponent<typeof import("../../components/evaluation/ScoreCard.vue")['default']>
-  LazyEvaluationSuggestionList: LazyComponent<typeof import("../../components/evaluation/SuggestionList.vue")['default']>
+  LazyLandingDiagnosticBubbles: LazyComponent<typeof import("../../components/landing/DiagnosticBubbles.vue")['default']>
+  LazyLandingHeroSection: LazyComponent<typeof import("../../components/landing/HeroSection.vue")['default']>
+  LazyLandingSSEGenerator: LazyComponent<typeof import("../../components/landing/SSEGenerator.vue")['default']>
   LazyLayoutAppFooter: LazyComponent<typeof import("../../components/layout/AppFooter.vue")['default']>
   LazyLayoutAppHeader: LazyComponent<typeof import("../../components/layout/AppHeader.vue")['default']>
+  LazyLayoutAppSidebar: LazyComponent<typeof import("../../components/layout/AppSidebar.vue")['default']>
   LazyLayoutParticlesBackground: LazyComponent<typeof import("../../components/layout/ParticlesBackground.vue")['default']>
-  LazyOptimizationCompareModal: LazyComponent<typeof import("../../components/optimization/CompareModal.vue")['default']>
-  LazyOptimizationProgressModal: LazyComponent<typeof import("../../components/optimization/ProgressModal.vue")['default']>
-  LazyScreenDiagnosticBubbles: LazyComponent<typeof import("../../components/screen/DiagnosticBubbles.vue")['default']>
-  LazyScreenHeroSection: LazyComponent<typeof import("../../components/screen/HeroSection.vue")['default']>
-  LazyScreenSSEGenerator: LazyComponent<typeof import("../../components/screen/SSEGenerator.vue")['default']>
+  LazyPreviewTempLateComputer: LazyComponent<typeof import("../../components/previewTempLate/computer.vue")['default']>
+  LazyPreviewTempLate: LazyComponent<typeof import("../../components/previewTempLate/index.vue")['default']>
+  LazyPreviewTempLateMobile: LazyComponent<typeof import("../../components/previewTempLate/mobile.vue")['default']>
+  LazyTasksSidebar: LazyComponent<typeof import("../../components/tasks/TasksSidebar.vue")['default']>
   LazyUploadDescEditorModal: LazyComponent<typeof import("../../components/upload/DescEditorModal.vue")['default']>
-  LazyUploadDragDropZone: LazyComponent<typeof import("../../components/upload/DragDropZone.vue")['default']>
-  LazyUploadPreviewImage: LazyComponent<typeof import("../../components/upload/PreviewImage.vue")['default']>
-  LazyUploadScoreCard: LazyComponent<typeof import("../../components/upload/ScoreCard.vue")['default']>
-  LazyUploadUploaderImage: LazyComponent<typeof import("../../components/upload/UploaderImage.vue")['default']>
+  LazyUploadZone: LazyComponent<typeof import("../../components/upload/UploadZone.vue")['default']>
   LazyNuxtWelcome: LazyComponent<typeof import("../../node_modules/.pnpm/nuxt@4.4.8_@babel+plugin-sy_99ff0ff52633701d5303af6e8aaecd08/node_modules/nuxt/dist/app/components/welcome.vue")['default']>
   LazyNuxtLayout: LazyComponent<typeof import("../../node_modules/.pnpm/nuxt@4.4.8_@babel+plugin-sy_99ff0ff52633701d5303af6e8aaecd08/node_modules/nuxt/dist/app/components/nuxt-layout")['default']>
   LazyNuxtErrorBoundary: LazyComponent<typeof import("../../node_modules/.pnpm/nuxt@4.4.8_@babel+plugin-sy_99ff0ff52633701d5303af6e8aaecd08/node_modules/nuxt/dist/app/components/nuxt-error-boundary.vue")['default']>

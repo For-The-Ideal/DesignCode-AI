@@ -7,6 +7,17 @@
           <div class="dot dot-yellow"></div>
           <div class="dot dot-green"></div>
         </div>
+        <div class="editor-title">{{ language }}</div>
+        <div class="editor-actions">
+          <button class="editor-btn" @click="copy" title="复制代码">
+            <i class="fas fa-copy"></i>
+            <span>复制</span>
+          </button>
+          <button class="editor-btn" @click="format" title="格式化代码">
+            <i class="fas fa-align-left"></i>
+            <span>格式化</span>
+          </button>
+        </div>
       </div>
 
       <div v-show="isLoading" class="code-editor-loading">
@@ -112,6 +123,18 @@ const copy = async () => {
   }
 }
 
+// ========== 格式化代码 ==========
+const format = async () => {
+  const editor = editorCoreRef.value?.getEditor()
+  if (!editor) return
+  try {
+    await editor.getAction('editor.action.formatDocument')?.run()
+    emit('format')
+  } catch (err) {
+    console.error('格式化失败:', err)
+  }
+}
+
 // ========== 获取编辑器实例 ==========
 const getEditor = () => editorCoreRef.value?.getEditor()
 
@@ -136,7 +159,8 @@ defineExpose({
   setValue,
   getValue,
   focus,
-  copy
+  copy,
+  format
 })
 </script>
 
@@ -159,7 +183,7 @@ defineExpose({
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
+  padding: 10px 16px;
   background: rgba(0, 0, 0, 0.5);
   border-bottom: 1px solid rgba(0, 255, 255, 0.2);
 }
@@ -167,18 +191,54 @@ defineExpose({
 .editor-dots {
   display: flex;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .dot {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  transition: all 0.2s;
 }
 
 .dot-red { background: #ff5f56; }
 .dot-yellow { background: #ffbd2e; }
 .dot-green { background: #27c93f; }
+
+.editor-title {
+  flex: 1;
+  text-align: center;
+  font-size: 14px;
+  color: #fff;
+  text-transform: capitalize;
+}
+
+.editor-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.editor-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+  white-space: nowrap;
+}
+.editor-btn i { font-size: 11px; }
+.editor-btn:hover {
+  background: rgba(0, 255, 255, 0.1);
+  border-color: rgba(0, 255, 255, 0.3);
+  color: #00ffff;
+}
 
 .code-editor-loading {
   z-index: 10;

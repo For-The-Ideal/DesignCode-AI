@@ -2,11 +2,12 @@
   <el-dialog
     v-model="visible"
     :width="width"
+    :top="top"
     :center="true"
-    :show-close="false"
+    :show-close="showClose"
     :close-on-click-modal="closeOnClickModal"
     :close-on-press-escape="closeOnPressEscape"
-    class="auth-dialog"
+    :class="['auth-dialog', customClass]"
     :before-close="handleBeforeClose">
     <template #header>
       <slot name="header" />
@@ -24,8 +25,11 @@
 import { ref } from "vue";
 const props = defineProps({
   width: { type: String, default: "460px" },
+  top: { type: String, default: "15vh" },
+  showClose: { type: Boolean, default: false },
   closeOnClickModal: { type: Boolean, default: true },
   closeOnPressEscape: { type: Boolean, default: true },
+  customClass: { type: String, default: "" },
 });
 const emit = defineEmits(["close"]);
 

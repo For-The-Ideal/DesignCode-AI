@@ -21,6 +21,7 @@ func InitV1Routes(r *gin.Engine,
 	uploadHandler *handler.UploadHandler,
 	authHandler *handler.AuthHandler,
 	userHandler *handler.UserHandler,
+	adminHandler *handler.AdminHandler,
 ) {
 	// /api/v1 路由组
 	v1 := r.Group("/api/v1")
@@ -33,4 +34,7 @@ func InitV1Routes(r *gin.Engine,
 
 	// 代码生成路由
 	InitGenerateRoutes(v1, taskHandler, sseHandler, uploadHandler)
+
+	// 管理路由
+	InitAdminRoutes(v1, adminHandler)
 }

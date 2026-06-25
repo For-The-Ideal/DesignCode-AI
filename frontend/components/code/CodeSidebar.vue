@@ -1,26 +1,17 @@
 <template>
-  <aside class="code-sidebar">
-    <!-- 导航菜单 -->
-    <nav class="sidebar-nav">
-      <NuxtLink
-        v-for="item in navItems"
-        :key="item.label"
-        :to="item.to"
-        class="nav-item"
-        :class="{ 'nav-item--active': item.active }"
-      >
-        <i :class="item.icon" class="nav-icon"></i>
-        {{ item.label }}
-      </NuxtLink>
-    </nav>
-
-    <div class="sidebar-divider"></div>
-
-    <!-- 底部区域 -->
-    <div class="sidebar-bottom">
-      <!-- 本月使用情况（SVG 圆环） -->
+  <AppSidebar
+    brand="代码生成"
+    :nav-items="navItems"
+    expanded-width="225px"
+    @nav-click="handleNavClick"
+  >
+    <!-- 底部区域：用量 + 升级（仅登录后显示） -->
+    <div class="sidebar-bottom" v-if="isLogin">
+      <!-- 使用情况（SVG 圆环） -->
       <div class="usage-card">
-        <div class="usage-label">本月使用情况</div>
+        <div class="usage-label">
+          <span>本月使用情况</span>
+        </div>
         <div class="usage-row">
           <div class="usage-ring-wrap">
             <svg class="usage-ring" viewBox="0 0 80 80">
@@ -43,7 +34,7 @@
           </div>
           <div class="usage-info">
             <span class="usage-remaining">
-              剩余 <span class="usage-remaining-num">{{ usageRemaining }}</span> 次
+              剩余 <span class="usage-remaining-num">{{ credits }}</span> 次
             </span>
             <p class="usage-total">共 {{ usageTotal }} 次</p>
           </div>
@@ -58,85 +49,58 @@
         <button class="upgrade-btn">立即升级</button>
       </div>
     </div>
-  </aside>
+  </AppSidebar>
 </template>
 
 <script setup>
+import { computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { useGeneration } from '~/composables/useGeneration'
+import AppSidebar from '~/components/layout/AppSidebar.vue'
+
+const { isLogin, credits, openLoginModal } = useGeneration()
+const route = useRoute()
+const router = useRouter()
 const navItems = [
-  { icon: 'fa-solid fa-code', label: '代码生成', active: true, to: '/code' },
-  { icon: 'fa-regular fa-copy', label: '模板市场', to: '#' },
-  { icon: 'fa-regular fa-folder', label: '我的项目', to: '#' },
+  { icon: 'fa-solid fa-code', label: '代码生成', active: route.path === '/code', to: '/code' },
+  { icon: 'fa-regular fa-copy', label: '模板市场', active: route.path === '/templates', to: '/templates' },
+  { icon: 'fa-regular fa-folder', label: '任务列表', active: route.path === '/tasks', to: '/tasks' },
+  { icon: 'fa-regular fa-file', label: '我的项目', active: route.path === '/projects', to: '/projects' },
 ]
 
-const usagePercent = 68
+const handleNavClick = (item) => {
+  // 1. 已激活 → 不重复跳转
+  if (item.active) return
+  // 2. 未登录 → 弹出登录弹窗
+  if (!isLogin.value) {
+    openLoginModal()
+    return
+  }
+  router.push(item.to)
+}
+
+
 const usageTotal = 100
-const usageRemaining = 32
+
+const usagePercent = computed(() => {
+  if (usageTotal <= 0) return 0
+  const used = Math.max(0, usageTotal - credits.value)
+  return Math.round((used / usageTotal) * 100)
+})
 
 const ringStyle = computed(() => {
   const r = 34
   const circumference = 2 * Math.PI * r
-  const offset = circumference * (1 - usagePercent / 100)
+  const offset = circumference * (1 - usagePercent.value / 100)
   return {
     strokeDasharray: `${circumference}`,
     strokeDashoffset: `${offset}`,
   }
 })
+
 </script>
 
 <style scoped>
-.code-sidebar {
-  width: 225px;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
-  padding: 16px 12px;
-  background: rgba(10, 10, 15, 0.95);
-  border-right: 1px solid rgba(0, 255, 255, 0.06);
-}
-
-/* 导航 */
-.sidebar-nav {
-  flex: 0;
-}
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 14px;
-  border-radius: 12px;
-  font-size: 14px;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.4);
-  text-decoration: none;
-  transition: all 0.2s;
-  margin-bottom: 2px;
-}
-.nav-item:hover {
-  color: rgba(255, 255, 255, 0.7);
-  background: rgba(255, 255, 255, 0.04);
-}
-.nav-item--active {
-  color: #e2e8f0;
-  background: rgba(0, 255, 255, 0.06);
-}
-.nav-icon {
-  width: 20px;
-  text-align: center;
-}
-.nav-item--active .nav-icon {
-  color: #00ffff;
-}
-.nav-item:not(.nav-item--active) .nav-icon {
-  color: rgba(255, 255, 255, 0.35);
-}
-
-.sidebar-divider {
-  height: 1px;
-  background: rgba(0, 255, 255, 0.06);
-  margin: 12px 0;
-}
-
 /* 底部 */
 .sidebar-bottom {
   display: flex;
@@ -173,7 +137,6 @@ const ringStyle = computed(() => {
   flex-direction: column;
   align-items: flex-start;
   justify-content: center;
-  gap: 5px;
   margin-left: 12px;
 }
 .usage-ring {
@@ -219,7 +182,7 @@ const ringStyle = computed(() => {
 
 .usage-total {
   font-size: 12px;
-  color: #ccc;
+  color: gray;
 }
 
 /* ═══ 升级卡片（主题色版） ═══ */
@@ -275,11 +238,5 @@ const ringStyle = computed(() => {
 .upgrade-btn:hover {
   box-shadow: 0 4px 28px rgba(0, 255, 255, 0.35);
   transform: translateY(-1px);
-}
-
-@media (max-width: 768px) {
-  .code-sidebar {
-    display: none;
-  }
 }
 </style>

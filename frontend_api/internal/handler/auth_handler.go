@@ -183,11 +183,13 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	}
 
 	utils.Success(c, gin.H{
-		"token":    tokenString,
-		"id":       user.ID,
-		"email":    user.Email,
-		"nickname": user.Nickname,
-		"avatar":   user.Avatar,
+		"token":        tokenString,
+		"id":           user.ID,
+		"email":        user.Email,
+		"nickname":     user.Nickname,
+		"avatar":       user.Avatar,
+		"credits":      user.Credits,
+		"credits_used": user.CreditsUsed,
 	}, "登录成功")
 }
 

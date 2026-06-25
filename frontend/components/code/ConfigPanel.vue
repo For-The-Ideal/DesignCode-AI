@@ -97,14 +97,20 @@
     </div>
 
     <!-- 开始生成 -->
-    <button class="generate-btn" @click="$emit('generate')">
-      <i class="fa-solid fa-wand-magic-sparkles"></i>
-      开始生成代码
+    <button class="generate-btn" 
+    :disabled="btnState.disabled" @click="onGenerate">
+      <i :class="btnState.icon"></i>
+      {{ btnState.text }}
     </button>
   </div>
 </template>
 
 <script setup>
+import { computed } from 'vue'
+import { useGeneration } from '~/composables/useGeneration'
+
+const { isLogin, taskStatus, openLoginModal } = useGeneration()
+
 const props = defineProps({
   modelValue: {
     type: Object,
@@ -113,9 +119,10 @@ const props = defineProps({
       platform: 'mobile',
       options: ['responsive'],
       advanced: [],
-      componentLib: 'material',
+      componentLib: 'Material Design',
     }),
   },
+  canGenerate: { type: Boolean, default: false },
 })
 const emit = defineEmits(['update:modelValue', 'generate'])
 
@@ -144,6 +151,14 @@ const toggleOption = (val) => {
   idx === -1 ? opts.push(val) : opts.splice(idx, 1)
   emit('update:modelValue', { ...props.modelValue, options: opts })
 }
+
+const onGenerate = () => {
+  if (!isLogin.value) {
+    openLoginModal()
+    return
+  }
+  emit('generate')
+}
 const toggleAdvanced = (val) => {
   const adv = [...props.modelValue.advanced]
   const idx = adv.indexOf(val)
@@ -151,19 +166,31 @@ const toggleAdvanced = (val) => {
   emit('update:modelValue', { ...props.modelValue, advanced: adv })
 }
 
-// 各框架对应的组件库选项
+// 各框架对应的组件库选项（前端写死，与后端 seed 同步）
 const componentLibs = {
   Flutter: [
-    { label: 'Material Design', value: 'material' },
+    { label: 'Material Design', value: 'Material Design' },
+    { label: 'Cupertino', value: 'Cupertino' },
+    { label: 'Flutter Element', value: 'Flutter Element' },
+    { label: 'GetWidget', value: 'GetWidget' },
   ],
   React: [
-    { label: 'Ant Design', value: 'antd' },
-    { label: 'Material UI', value: 'mui' },
+    { label: 'Ant Design', value: 'Ant Design' },
+    { label: 'Material UI (MUI)', value: 'Material UI (MUI)' },
+    { label: 'Arco Design React', value: 'Arco Design React' },
+    { label: 'Semi Design', value: 'Semi Design' },
+    { label: 'React Vant', value: 'React Vant' },
+    { label: 'Chakra UI', value: 'Chakra UI' },
+    { label: 'Next UI', value: 'Next UI' },
   ],
   Vue: [
-    { label: 'Element Plus', value: 'element-plus' },
-    { label: 'Ant Design Vue', value: 'antdv' },
-    { label: 'Naive UI', value: 'naive-ui' },
+    { label: 'Element Plus', value: 'Element Plus' },
+    { label: 'Ant Design Vue 4.x', value: 'Ant Design Vue 4.x' },
+    { label: 'Naive UI', value: 'Naive UI' },
+    { label: 'Vant 4', value: 'Vant 4' },
+    { label: 'PrimeVue', value: 'PrimeVue' },
+    { label: 'Arco Design Vue', value: 'Arco Design Vue' },
+    { label: 'Quasar', value: 'Quasar' },
   ],
 }
 
@@ -172,6 +199,22 @@ const currentLibs = computed(() => {
 })
 
 const defaultLib = computed(() => currentLibs.value[0]?.value)
+
+const btnState = computed(() => {
+  if (!isLogin.value) {
+    return { text: '请先登录', icon: 'fa-solid fa-wand-magic-sparkles', disabled: true }
+  }
+  if (!props.canGenerate) {
+    return { text: '开始生成', icon: 'fa-solid fa-wand-magic-sparkles', disabled: true }
+  }
+  if (taskStatus.value === 'pending' || taskStatus.value === 'running') {
+    return { text: '生成中...', icon: 'fa-solid fa-spinner fa-spin', disabled: true }
+  }
+  if (taskStatus.value === 'success') {
+    return { text: '生成完成', icon: 'fa-solid fa-check-circle', disabled: true }
+  }
+  return { text: '开始生成', icon: 'fa-solid fa-wand-magic-sparkles', disabled: false }
+})
 </script>
 
 <style scoped>
@@ -344,8 +387,12 @@ const defaultLib = computed(() => currentLibs.value[0]?.value)
   box-shadow: 0 4px 20px rgba(96, 165, 250, 0.25);
   transition: all 0.3s;
 }
-.generate-btn:hover {
+.generate-btn:hover:not(:disabled) {
   box-shadow: 0 6px 30px rgba(96, 165, 250, 0.4);
   transform: translateY(-1px);
+}
+.generate-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>

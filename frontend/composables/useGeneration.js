@@ -2,6 +2,9 @@ import { reactive, ref, computed, watch, onUnmounted } from 'vue'
 import { useSSE } from './useSSE'
 import { useStreamRenderer } from './useStreamRenderer'
 import { commonApi } from '~/api/common'
+import { useUserStore } from '~/stores/user'
+import { useCommonStore } from '~/stores/common'
+import { storeToRefs } from 'pinia'
 
 /**
  * useGeneration — 代码生成流程编排 composable
@@ -11,6 +14,7 @@ import { commonApi } from '~/api/common'
  *   2. 协调 SSE 数据源 → 渲染输出
  *   3. 模板数据初始化（API）→ 流式渲染
  *   4. 向外暴露统一的 template 接口
+ *   5. 全局生成状态 & 用户会员信息
  *
  * 数据流：
  *   SSE 推送  ──→ useSSE.sseData ──→ watch ──→ template.templateCode
@@ -28,11 +32,21 @@ const taskCurrentStep = ref('')
 const taskErrorMsg = ref('')
 const RESTORE_KEY = 'gen_active_task'
 
-const isBusy = computed(() =>
-  taskStatus.value === 'pending' || taskStatus.value === 'running'
-)
-
 export function useGeneration () {
+  // ═══ 用户 & 全局生成状态 ═══
+  const userStore = useUserStore()
+  const commonStore = useCommonStore()
+  const { isLogin, credits, creditsUsed } = storeToRefs(userStore)
+  const { loginModalVisible, isGenerating } = storeToRefs(commonStore)
+
+  function startGenerating() { commonStore.startGenerating() }
+  function finishGenerating() { commonStore.finishGenerating() }
+  function openLoginModal() { commonStore.openLoginModal() }
+  function closeLoginModal() { commonStore.closeLoginModal() }
+  async function refreshCredits() {
+    if (isLogin.value) { await userStore.initialize() }
+  }
+
   // ═══ 子系统 ═══
   const sse = useSSE()
   const renderer = useStreamRenderer()
@@ -79,8 +93,12 @@ export function useGeneration () {
 
   // ═══ SSE 状态 → 任务状态 ═══
   watch(sse.status, (val) => {
+    // pending → running: SSE 开始推送数据，worker 已接手
+    if (val === 'streaming' && taskStatus.value === 'pending') {
+      taskStatus.value = 'running'
+    }
+    // running → success: SSE 流结束，任务完成
     if (val === 'idle' && taskStatus.value === 'running') {
-      // SSE 流结束，任务完成
       taskStatus.value = 'success'
       taskProgress.value = 100
       localStorage.removeItem(RESTORE_KEY)
@@ -103,7 +121,7 @@ export function useGeneration () {
   const saveActiveTask = (taskId, framework) => {
     activeTaskId.value = taskId
     activeTaskFramework.value = framework
-    taskStatus.value = 'running'
+    taskStatus.value = 'pending'
     // 清空上一次残留数据
     template.templateCode = ''
     template.previewCode = ''
@@ -214,6 +232,18 @@ export function useGeneration () {
   // ═══ 对外接口 ═══
 
   return {
+    // ── 全局生成状态 & 用户信息 ──
+    isLogin,
+    isGenerating,
+    credits,
+    creditsUsed,
+    loginModalVisible,
+    startGenerating,
+    finishGenerating,
+    openLoginModal,
+    closeLoginModal,
+    refreshCredits,
+
     // ── 统一数据出口 ──
     template,
 
@@ -223,7 +253,6 @@ export function useGeneration () {
     taskProgress,
     taskCurrentStep,
     taskErrorMsg,
-    isBusy,
     saveActiveTask,
     clearActiveTask,
     restoreTask,

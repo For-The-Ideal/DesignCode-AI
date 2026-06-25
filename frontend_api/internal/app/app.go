@@ -36,21 +36,8 @@ func Run() {
 			&model.Task{},
 			&model.Result{},
 			&model.User{},
-			&model.ComponentLibrary{},
 		); err != nil {
 			log.Fatalf("[AutoMigrate] 自动建表失败: %v", err)
-		}
-		// 初始化组件库种子数据
-		var count int64
-		mysql.GetDB().Model(&model.ComponentLibrary{}).Count(&count)
-		if count == 0 {
-			seeds := model.SeedComponentLibraries()
-			for i := range seeds {
-				if err := mysql.GetDB().Create(&seeds[i]).Error; err != nil {
-					log.Printf("[Seed] 插入组件库数据失败: %v", err)
-				}
-			}
-			log.Printf("[Seed] 组件库种子数据已插入 %d 条", len(seeds))
 		}
 	}
 
@@ -92,6 +79,7 @@ func Run() {
 	uploadHandler := handler.NewUploadHandler()
 	authHandler := handler.NewAuthHandler()
 	userHandler := handler.NewUserHandler()
+	adminHandler := handler.NewAdminHandler()
 
 	// 10. 设置 Gin
 	r := gin.Default()
@@ -99,7 +87,7 @@ func Run() {
 	r.Use(middleware.CORSMiddleware())
 
 	// 11. 初始化路由（新架构 + 保持旧接口兼容）
-	routes.InitV1Routes(r, taskHandler, sseHandler, uploadHandler, authHandler, userHandler)
+	routes.InitV1Routes(r, taskHandler, sseHandler, uploadHandler, authHandler, userHandler, adminHandler)
 
 	// 12. 启动服务器
 	appLog.Infof("Server starting on %s", config.AppConfig.Server.Local+config.AppConfig.Server.Port)

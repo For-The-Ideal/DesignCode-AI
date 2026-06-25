@@ -6,19 +6,19 @@
       <HeroSection @getStarted="scrollToSecond" @watchDemo="playDemo" />
 
       <!-- 第二屏 -->
-      <SSEGenerator ref="secondScreenRef" />
+      <!-- <SSEGenerator ref="secondScreenRef" /> -->
 
       <!-- 第三屏 -->
-      <DiagnosticBubbles ref="thirdScreenRef" />
+      <!-- <DiagnosticBubbles ref="thirdScreenRef" /> -->
     </div>
   </div>
 </template>
 
 <script setup>
 import { ElMessage } from 'element-plus'
-import HeroSection from "~/components/screen/HeroSection.vue";
-import SSEGenerator from "~/components/screen/SSEGenerator.vue";
-import DiagnosticBubbles from "~/components/screen/DiagnosticBubbles.vue";
+import HeroSection from "~/components/landing/HeroSection.vue";
+import SSEGenerator from "~/components/landing/SSEGenerator.vue";
+import DiagnosticBubbles from "~/components/landing/DiagnosticBubbles.vue";
 
 
 const scrollToSecond = () => {

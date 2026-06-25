@@ -49,7 +49,7 @@ func (s *FlutterSkill) Execute(ctx context.Context, input interface{}) (interfac
 
 	messages := []ai.Message{
 		{Role: "system", Content: prompt},
-		{Role: "user", Content: fmt.Sprintf("Platform: %s\nDSL:\n%s", gi.Platform, gi.DSL)},
+		{Role: "user", Content: fmt.Sprintf("Platform: %s\nOptions: %v\nComponentLib: %s\nDSL:\n%s", gi.Platform, gi.Options, gi.ComponentLib, gi.DSL)},
 	}
 
 	content, err := s.aiClient.Chat(ctx, messages, ai.WithDeepSeekThinking("high"), ai.WithMaxTokens(8192))

@@ -10,9 +10,9 @@ export default defineEventHandler(async (event) => {
     return { code: 400, message: "参数错误!", data: {} }
   }
   const req = getRequestHeaders(event)
-  const isBrowser = !!req.client
+  const isBrowser = !!req.design
 
-  // client 直发：body 就是 { url, method, params }
+  // design 直发：body 就是 { url, method, params }
   // SSR 请求：body = { aes: 加密串 }，需解密
   const { url = "", method = "post", params = {} } = isBrowser
     ? body

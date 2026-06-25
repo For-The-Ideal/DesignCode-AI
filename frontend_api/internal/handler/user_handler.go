@@ -24,6 +24,26 @@ func NewUserHandler() *UserHandler {
 	return &UserHandler{}
 }
 
+// CreditsResponse 积分信息响应
+type CreditsResponse struct {
+	Credits     int `json:"credits"`
+	CreditsUsed int `json:"credits_used"`
+}
+
+// GetUserCredits 获取当前用户积分
+func (h *UserHandler) GetUserCredits(c *gin.Context) {
+	userID, _ := c.Get("user_id")
+	var user model.User
+	if err := mysql.GetDB().First(&user, userID).Error; err != nil {
+		utils.Error(c, http.StatusNotFound, "用户不存在")
+		return
+	}
+	utils.Success(c, CreditsResponse{
+		Credits:     user.Credits,
+		CreditsUsed: user.CreditsUsed,
+	}, "获取积分成功")
+}
+
 // ChangePasswordRequest 修改密码请求
 type ChangePasswordRequest struct {
 	OldPassword string `json:"oldPassword" binding:"required"`
@@ -48,11 +68,13 @@ func (h *UserHandler) GetUserInfo(c *gin.Context) {
 	}
 	tokenString, _ := c.Get("token_string")
 	utils.Success(c, gin.H{
-		"id":       user.ID,
-		"email":    user.Email,
-		"nickname": user.Nickname,
-		"avatar":   user.Avatar,
-		"token":    tokenString,
+		"id":           user.ID,
+		"email":        user.Email,
+		"nickname":     user.Nickname,
+		"avatar":       user.Avatar,
+		"credits":      user.Credits,
+		"credits_used": user.CreditsUsed,
+		"token":        tokenString,
 	}, "获取用户信息成功")
 }
 

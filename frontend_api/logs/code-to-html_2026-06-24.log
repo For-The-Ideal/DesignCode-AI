@@ -853,3 +853,761 @@ class TransactionItem {
 }
 ```
 [2026-06-24 11:37:03] [INFO] [code-to-html] [CodeToHtmlSkill] 转换完成, html=13070 chars
+[2026-06-24 18:27:34] [INFO] [code-to-html] [CodeToHtmlSkill] 开始转换, framework=flutter, code_length=10804
+[2026-06-24 18:27:34] [INFO] [code-to-html] [CodeToHtmlSkill] 原始代码:
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'AI生成UI闭环优化流程图',
+      theme: ThemeData(
+        colorSchemeSeed: Colors.blue,
+        useMaterial3: true,
+        brightness: Brightness.light,
+      ),
+      home: const OptimizeFlowPage(),
+      debugShowCheckedModeBanner: false,
+    );
+  }
+}
+
+class OptimizeFlowPage extends StatelessWidget {
+  const OptimizeFlowPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final isWide = constraints.maxWidth > 600;
+          final padding = isWide ? 24.0 : 16.0;
+          final stepCardWidth = isWide ? 160.0 : 140.0;
+
+          return SingleChildScrollView(
+            padding: EdgeInsets.all(padding),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 页面标题
+                Center(
+                  child: Text(
+                    'AI生成UI闭环优化流程图',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // 顶部主流程横向六步流
+                _buildFlowSection(context, stepCardWidth),
+                const SizedBox(height: 32),
+
+                // 中部四栏对比说明区
+                _buildComparisonSection(context, isWide),
+                const SizedBox(height: 32),
+
+                // 底部推荐模型与实践建议区
+                _buildRecommendationSection(context, isWide),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // 顶部主流程横向六步流
+  Widget _buildFlowSection(BuildContext context, double cardWidth) {
+    final steps = [
+      {'icon': Icons.image, 'title': '步骤1', 'desc': '上传设计图\n(含手机预览、文件类型标注)'},
+      {'icon': Icons.code, 'title': '步骤2', 'desc': 'AI生成代码\n(含模板代码块、框架标识.vue)'},
+      {'icon': Icons.web, 'title': '步骤3', 'desc': '代码渲染→预览图\n(Headless浏览器渲染示意、PNG输出尺寸)'},
+      {'icon': Icons.compare, 'title': '步骤4', 'desc': '图像对比\n(原图 vs 生成预览图，含差异类型图标列表)'},
+      {'icon': Icons.analytics, 'title': '步骤5', 'desc': '差异分析结果\n(JSON结构化差异报告、相似度与差异项统计)'},
+      {'icon': Icons.autorenew, 'title': '步骤6', 'desc': '自动优化迭代\n(修复操作列表、循环迭代箭头)'},
+    ];
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: steps.map((step) {
+          return Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: SizedBox(
+              width: cardWidth,
+              child: Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(step['icon'] as IconData, size: 32, color: Theme.of(context).colorScheme.primary),
+                      const SizedBox(height: 8),
+                      Text(step['title'] as String, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 4),
+                      Text(step['desc'] as String, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodySmall),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  // 中部四栏对比说明区
+  Widget _buildComparisonSection(BuildContext context, bool isWide) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('对比技术说明模块', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 12),
+        // 四栏：视觉/结构/混合评分三类 + 对比结果可视化示例 + 差异原因与解决方案 + 模型选择指南
+        if (isWide)
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: _buildComparisonCard(context, '视觉/结构/混合评分', '三类评分标准说明', Icons.star)),
+              const SizedBox(width: 12),
+              Expanded(child: _buildComparisonCard(context, '对比结果可视化示例', '差异热力图、元素定位差异、结构树差异三子图', Icons.visibility)),
+              const SizedBox(width: 12),
+              Expanded(child: _buildComparisonCard(context, '生成图片差异原因与解决方案', '常见原因及修复建议', Icons.bug_report)),
+              const SizedBox(width: 12),
+              Expanded(child: _buildComparisonCard(context, '对比模型选择指南', '推荐模型与备选方案', Icons.model_training)),
+            ],
+          )
+        else
+          Column(
+            children: [
+              _buildComparisonCard(context, '视觉/结构/混合评分', '三类评分标准说明', Icons.star),
+              const SizedBox(height: 12),
+              _buildComparisonCard(context, '对比结果可视化示例', '差异热力图、元素定位差异、结构树差异三子图', Icons.visibility),
+              const SizedBox(height: 12),
+              _buildComparisonCard(context, '生成图片差异原因与解决方案', '常见原因及修复建议', Icons.bug_report),
+              const SizedBox(height: 12),
+              _buildComparisonCard(context, '对比模型选择指南', '推荐模型与备选方案', Icons.model_training),
+            ],
+          ),
+      ],
+    );
+  }
+
+  Widget _buildComparisonCard(BuildContext context, String title, String content, IconData icon) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, size: 28, color: Theme.of(context).colorScheme.primary),
+                const SizedBox(width: 8),
+                Expanded(child: Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold))),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(content, style: Theme.of(context).textTheme.bodyMedium),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 底部推荐模型与实践建议区
+  Widget _buildRecommendationSection(BuildContext context, bool isWide) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('推荐模型与实践建议', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 12),
+        // 推荐模型清单流程图（五阶段闭环）
+        _buildFlowChart(context),
+        const SizedBox(height: 16),
+        // 最佳实践建议模块（带勾选标记的四条实操建议）
+        _buildBestPractices(context),
+        const SizedBox(height: 16),
+        // 核心结论提示框
+        _buildConclusionBox(context),
+      ],
+    );
+  }
+
+  // 五阶段闭环流程图
+  Widget _buildFlowChart(BuildContext context) {
+    final phases = ['代码生成', '渲染', '对比', '分析', '优化'];
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: phases.asMap().entries.map((entry) {
+          final index = entry.key;
+          final phase = entry.value;
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(phase, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500)),
+              ),
+              if (index < phases.length - 1)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Icon(Icons.arrow_forward, size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                ),
+            ],
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  // 四条最佳实践（带勾选标记）
+  Widget _buildBestPractices(BuildContext context) {
+    final practices = [
+      '使用高分辨率设计图作为输入',
+      '选择与框架匹配的模型（如Vue推荐使用sketch2vue）',
+      '对比时启用结构感知评分',
+      '迭代优化时设置合理停止条件',
+    ];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: practices.map((practice) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.check_circle, color: Colors.green, size: 20),
+              const SizedBox(width: 8),
+              Expanded(child: Text(practice, style: Theme.of(context).textTheme.bodyMedium)),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  // 核心结论提示框（灯泡图标+总结性文字）
+  Widget _buildConclusionBox(BuildContext context) {
+    return Card(
+      color: Theme.of(context).colorScheme.secondaryContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(Icons.lightbulb, size: 32, color: Theme.of(context).colorScheme.onSecondaryContainer),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                '核心结论：AI生成UI闭环通过自动代码生成、渲染对比和迭代优化，可显著提升设计到代码的转换效率，推荐结合混合评分模型进行质量评估。',
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Theme.of(context).colorScheme.onSecondaryContainer),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+[2026-06-24 18:35:25] [INFO] [code-to-html] [CodeToHtmlSkill] 开始转换, framework=flutter, code_length=15092
+[2026-06-24 18:35:25] [INFO] [code-to-html] [CodeToHtmlSkill] 原始代码:
+```dart
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: '算力明细',
+      theme: ThemeData(
+        useMaterial3: true,
+        colorSchemeSeed: Colors.indigo,
+        brightness: Brightness.light,
+      ),
+      home: const IncaDetailPage(),
+    );
+  }
+}
+
+class IncaDetailPage extends StatefulWidget {
+  const IncaDetailPage({super.key});
+
+  @override
+  State<IncaDetailPage> createState() => _IncaDetailPageState();
+}
+
+class _IncaDetailPageState extends State<IncaDetailPage>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  int _viewMode = 0; // 0: 列表视图, 1: 卡片视图 (仅演示切换)
+  bool _signedIn = false; // 签到状态
+
+  // 模拟收支明细数据
+  final List<TransactionItem> _allTransactions = [
+    TransactionItem(
+      title: '每日签到',
+      tag: '获取',
+      timestamp: '2025-03-20 08:00',
+      amount: '+10',
+      expiry: '有效至 2025-04-20',
+    ),
+    TransactionItem(
+      title: '邀请好友-张三',
+      tag: '获取',
+      timestamp: '2025-03-19 14:30',
+      amount: '+50',
+      expiry: '有效至 2025-04-19',
+    ),
+    TransactionItem(
+      title: '每日签到',
+      tag: '获取',
+      timestamp: '2025-03-18 09:15',
+      amount: '+10',
+      expiry: '有效至 2025-04-18',
+    ),
+    TransactionItem(
+      title: '购买算力包',
+      tag: '消耗',
+      timestamp: '2025-03-17 20:00',
+      amount: '-200',
+      expiry: '无有效期',
+    ),
+    TransactionItem(
+      title: '高级模型调用',
+      tag: '消耗',
+      timestamp: '2025-03-16 11:45',
+      amount: '-50',
+      expiry: '无有效期',
+    ),
+    TransactionItem(
+      title: '邀请好友-李四',
+      tag: '获取',
+      timestamp: '2025-03-15 16:20',
+      amount: '+50',
+      expiry: '有效至 2025-04-15',
+    ),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  // 根据标签过滤
+  List<TransactionItem> _filteredTransactions(String tag) {
+    if (tag == '全部') return _allTransactions;
+    return _allTransactions.where((t) => t.tag == tag).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: const Text('算力明细'),
+        actions: [
+          // 切换视图按钮
+          IconButton(
+            icon: Icon(
+              _viewMode == 0 ? Icons.view_list : Icons.grid_view,
+            ),
+            tooltip: '切换视图',
+            onPressed: () {
+              setState(() {
+                _viewMode = (_viewMode + 1) % 2;
+              });
+            },
+          ),
+          // 更多操作按钮
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              // 示例操作
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('点击了 $value')),
+              );
+            },
+            itemBuilder: (BuildContext context) => [
+              const PopupMenuItem(value: '导出', child: Text('导出明细')),
+              const PopupMenuItem(value: '设置', child: Text('设置')),
+              const PopupMenuItem(value: '帮助', child: Text('帮助')),
+            ],
+          ),
+        ],
+      ),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          // 响应式：根据宽度决定内边距
+          final double horizontalPadding =
+              constraints.maxWidth < 360 ? 12.0 : 16.0;
+          return SingleChildScrollView(
+            padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 8),
+                // 状态摘要区：当前可用灵感点卡片
+                _buildInspirationCard(context),
+                const SizedBox(height: 16),
+                // 任务获取区
+                _buildTaskSection(context),
+                const SizedBox(height: 16),
+                // 收支明细标签页 + 列表区
+                _buildTransactionSection(context),
+                const SizedBox(height: 24),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // 状态摘要区：当前可用灵感点卡片
+  Widget _buildInspirationCard(BuildContext context) {
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          children: [
+            Icon(
+              Icons.auto_awesome,
+              size: 48,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    '当前可用灵感点',
+                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '1,280',
+                    style: TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '将于 7 天后过期',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 赚取灵感点功能区（两个卡片式任务项）
+  Widget _buildTaskSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '赚取灵感点',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: 8),
+        // 使用 Row 并配合 Expanded 实现两个卡片并排，响应式自动调整间距
+        Row(
+          children: [
+            Expanded(
+              child: _buildTaskCard(
+                context,
+                icon: Icons.calendar_today,
+                title: '每日签到',
+                reward: '+10 灵感点',
+                buttonText: _signedIn ? '已签到' : '签到',
+                onPressed: () {
+                  if (!_signedIn) {
+                    setState(() => _signedIn = true);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('签到成功，获得10灵感点！')),
+                    );
+                  }
+                },
+                isDisabled: _signedIn,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildTaskCard(
+                context,
+                icon: Icons.person_add,
+                title: '邀请好友',
+                reward: '+50 灵感点/人',
+                buttonText: '邀请',
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('已复制邀请链接')),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // 单个任务卡片（包含图标、标题、收益、状态按钮）
+  Widget _buildTaskCard(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String reward,
+    required String buttonText,
+    required VoidCallback onPressed,
+    bool isDisabled = false,
+  }) {
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, size: 32, color: Theme.of(context).colorScheme.primary),
+            const SizedBox(height: 8),
+            Text(
+              title,
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              reward,
+              style: TextStyle(
+                fontSize: 13,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: isDisabled ? null : onPressed,
+                style: ElevatedButton.styleFrom(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: Text(buttonText),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 收支明细标签页 + 列表区
+  Widget _buildTransactionSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '收支明细',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: 8),
+        // 标签导航 (全部/获取/消耗)
+        TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(text: '全部'),
+            Tab(text: '获取'),
+            Tab(text: '消耗'),
+          ],
+          indicatorColor: Theme.of(context).colorScheme.primary,
+          labelColor: Theme.of(context).colorScheme.primary,
+          unselectedLabelColor: Colors.grey,
+        ),
+        // 列表区域，高度根据内容自适应，但需要设置固定高度否则无法显示 TabBarView
+        // 使用 SizedBox 指定可用高度，或者使用 Expanded（但Column里需要限制）
+        // 这里采用手动计算或使用 LayoutBuilder 动态高度，但为了简单，使用 Column 内嵌套 TabBarView 需要指定高度
+        // 我们使用 Expanded 无法在 SingleChildScrollView 中，所以用 SizedBox 固定高度
+        SizedBox(
+          height: 400, // 固定高度，可根据所需列表项数量调整
+          child: TabBarView(
+            controller: _tabController,
+            children: [
+              _buildTransactionList(context, '全部'),
+              _buildTransactionList(context, '获取'),
+              _buildTransactionList(context, '消耗'),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // 构建特定标签下的明细列表（包含标题、标签、时间戳、金额、有效期）
+  Widget _buildTransactionList(BuildContext context, String tag) {
+    final items = _filteredTransactions(tag);
+    if (items.isEmpty) {
+      return const Center(child: Text('暂无数据'));
+    }
+    // 使用 ListView 确保滚动，但此 ListView 在固定高度内可以滚动
+    return ListView.separated(
+      itemCount: items.length,
+      separatorBuilder: (context, index) => const Divider(height: 1),
+      itemBuilder: (context, index) {
+        final item = items[index];
+        return _buildTransactionItem(context, item);
+      },
+    );
+  }
+
+  // 单条收支明细项
+  Widget _buildTransactionItem(BuildContext context, TransactionItem item) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 左侧信息：标题 + 标签 + 时间戳
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.title,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w500,
+                      ),
+                ),
+                const SizedBox(height: 4),
+                // 标签（带颜色）
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: item.tag == '获取'
+                        ? Colors.green.withOpacity(0.1)
+                        : Colors.red.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    item.tag,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: item.tag == '获取' ? Colors.green : Colors.red,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  item.timestamp,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Colors.grey,
+                      ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          // 右侧金额及有效期
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                item.amount,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: item.amount.startsWith('+')
+                      ? Colors.green
+                      : Colors.red,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                item.expiry,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.grey,
+                      fontSize: 11,
+                    ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// 收支明细数据模型
+class TransactionItem {
+  final String title;
+  final String tag; // '获取' 或 '消耗'
+  final String timestamp;
+  final String amount; // 例如 '+10' 或 '-200'
+  final String expiry; // 例如 '有效至 2025-04-20'
+
+  TransactionItem({
+    required this.title,
+    required this.tag,
+    required this.timestamp,
+    required this.amount,
+    required this.expiry,
+  });
+}
+```
+[2026-06-24 18:36:44] [INFO] [code-to-html] [CodeToHtmlSkill] 转换完成, html=10632 chars

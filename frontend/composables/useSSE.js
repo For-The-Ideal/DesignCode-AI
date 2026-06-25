@@ -77,7 +77,7 @@ export function useSSE () {
         log('SSE 连接已确认，等待 Broker 推送...')
         break
       case 'message':
-        sseData.templateCode += data
+        sseData.templateCode += data + '\n'
         log('收到 message 片段(' + data.length + '):', data.slice(0, 50))
         break
       case 'preview':

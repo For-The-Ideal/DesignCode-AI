@@ -12,10 +12,13 @@ import (
 	"frontend_api/internal/sse"
 	"frontend_api/pkg/ai"
 	"frontend_api/pkg/logger"
+	"frontend_api/pkg/mysql"
 	"io"
 	"net/http"
 	"strings"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 // ═══════════════════════════════════════════════
@@ -168,6 +171,7 @@ func (w *GenerateUIWorkflow) Execute(ctx context.Context, task *model.Task) erro
 
 	// ── 0. 更新状态为 running ──
 	_ = w.taskRepo.UpdateStatus(task.ID, model.TaskStatusRunning)
+	task.Status = model.TaskStatusRunning
 
 	// ── Step 1: 准备图片（取 URL + 下载转 base64）──
 	w.pushProgress(task, StepDownloadImages, 5)
@@ -194,7 +198,7 @@ func (w *GenerateUIWorkflow) Execute(ctx context.Context, task *model.Task) erro
 
 	visionOutput, err := w.visionSkill.Execute(ctx, vision.Input{Images: imageURLs})
 	if err != nil {
-		w.handleError(task.ID, fmt.Errorf("视觉分析失败: %w", err))
+		w.handleError(task, fmt.Errorf("视觉分析失败: %w", err))
 		return err
 	}
 
@@ -210,22 +214,29 @@ func (w *GenerateUIWorkflow) Execute(ctx context.Context, task *model.Task) erro
 
 	genAI, err := ai.SelectClient("write")
 	if err != nil {
-		w.handleError(task.ID, fmt.Errorf("获取AI客户端失败: %w", err))
+		w.handleError(task, fmt.Errorf("获取AI客户端失败: %w", err))
 		return err
 	}
 
 	genSkill := generator.GeneratorFunc(task.Target, genAI)
-	genOutput, err := genSkill.Execute(ctx, generator.Input{
+	genInput := generator.Input{
 		DSL:      dsl,
 		Images:   imagesBase64,
 		Platform: task.Platform,
-	})
+		Options:  task.Options,
+	}
+	if task.ComponentLib != "" {
+		genInput.ComponentLib = task.ComponentLib
+	}
+	genOutput, err := genSkill.Execute(ctx, genInput)
 	if err != nil {
-		w.handleError(task.ID, fmt.Errorf("代码生成失败: %w", err))
+		w.handleError(task, fmt.Errorf("代码生成失败: %w", err))
 		return err
 	}
 
 	out := genOutput.(generator.Output)
+	// 清洗 markdown 代码块包裹 (```dart ... ``` → 纯代码)
+	out.Code = cleanCodeBlock(out.Code)
 	w.log.Infof("[Workflow] step 3/6 完成, code=%d chars", len(out.Code))
 
 	// 逐步推送 templateCode（逐行，SSE message 事件）
@@ -265,20 +276,36 @@ func (w *GenerateUIWorkflow) Execute(ctx context.Context, task *model.Task) erro
 	w.pushProgress(task, StepSaveResult, 85)
 	w.log.Infof("[Workflow] step 5/6: 保存结果...")
 	result := &model.Result{
-		TaskID:    task.ID,
-		DSL:       dsl,
-		Code:      out.Code,
-		Preview:   previewHTML, // 使用转换后的 HTML
-		Score:     out.Score,
-		CodeType:  task.Target,
-		CreatedAt: time.Now(),
+		TaskID:           task.ID,
+		UserID:           task.UserID,
+		DSL:              dsl,
+		Code:             out.Code,
+		Preview:          previewHTML, // 使用转换后的 HTML
+		Score:            out.Score,
+		CodeType:         task.Target,
+		GenerationStatus: "success",
+		PointsDeducted:   task.RequiredPoints,
+		CreatedAt:        time.Now(),
 	}
 	if err := w.resultRepo.Create(result); err != nil {
 		w.log.Errorf("[Workflow] 保存结果失败: %v", err)
 	}
+
+	// ── 扣减积分（任务成功后扣减，失败不扣）──
+	if db := mysql.GetDB(); db != nil {
+		if err := db.Model(&model.User{}).Where("id = ?", task.UserID).
+			UpdateColumn("credits", gorm.Expr("credits - ?", task.RequiredPoints)).Error; err != nil {
+			w.log.Errorf("[Workflow] 扣减积分失败: %v", err)
+		}
+		if err := db.Model(&model.User{}).Where("id = ?", task.UserID).
+			UpdateColumn("credits_used", gorm.Expr("credits_used + ?", task.RequiredPoints)).Error; err != nil {
+			w.log.Errorf("[Workflow] 更新已用积分失败: %v", err)
+		}
+	}
 	w.simulateProgress(ctx, task.ID, StepSaveResult, 85, 95, 200)
 
 	// ── Step 6: Done ───────────────────────────────
+	task.Status = model.TaskStatusSuccess
 	_ = w.taskRepo.UpdateStatus(task.ID, model.TaskStatusSuccess)
 	w.pushProgress(task, StepDone, 100)
 
@@ -316,14 +343,44 @@ func urlToBase64(url string) (string, error) {
 	return fmt.Sprintf("data:%s;base64,%s", contentType, encoded), nil
 }
 
-// handleError 处理工作流错误
-func (w *GenerateUIWorkflow) handleError(taskID string, err error) {
-	w.log.Errorf("[Workflow] 任务失败: %s, error=%v", taskID, err)
-	_ = w.taskRepo.UpdateStatus(taskID, model.TaskStatusFailed)
+// handleError 处理工作流错误：更新任务状态、保存失败结果、推送 SSE
+func (w *GenerateUIWorkflow) handleError(task *model.Task, err error) {
+	w.log.Errorf("[Workflow] 任务失败: %s, error=%v", task.ID, err)
+
+	// 更新任务内存状态并落库
+	task.Status = model.TaskStatusFailed
+	_ = w.taskRepo.Save(task)
+
+	// 保存失败结果（含错误信息和积分记录）
+	result := &model.Result{
+		TaskID:           task.ID,
+		UserID:           task.UserID,
+		CodeType:         task.Target,
+		GenerationStatus: "failed",
+		PointsDeducted:   task.RequiredPoints,
+		ErrorMsg:         err.Error(),
+		CreatedAt:        time.Now(),
+	}
+	if createErr := w.resultRepo.Create(result); createErr != nil {
+		w.log.Errorf("[Workflow] 保存失败结果出错: %v", createErr)
+	}
 
 	// 推送 error 事件
-	w.sseManager.Push(taskID, sse.SSEEvent{
+	w.sseManager.Push(task.ID, sse.SSEEvent{
 		Event: "error",
 		Data:  fmt.Sprintf(`{"message":"%s"}`, err.Error()),
 	})
+}
+
+// cleanCodeBlock 去掉 AI 返回值的 ```language ... ``` 包裹
+func cleanCodeBlock(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if strings.HasPrefix(raw, "```") && strings.HasSuffix(raw, "```") {
+		if idx := strings.Index(raw, "\n"); idx != -1 {
+			raw = raw[idx+1:]
+		}
+		raw = strings.TrimSuffix(raw, "```")
+		raw = strings.TrimSpace(raw)
+	}
+	return raw
 }

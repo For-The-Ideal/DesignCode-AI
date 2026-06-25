@@ -37,18 +37,22 @@ type TaskStep struct {
 
 // Task 生成任务
 type Task struct {
-	ID          string      `json:"id" gorm:"primaryKey"`
-	Target      string      `json:"target"`                                      // flutter | vue3 | react
-	Platform    string      `json:"platform" gorm:"size:20;default:mobile"`      // mobile | desktop | tablet
-	Images      []ImageItem `json:"images" gorm:"column:images;serializer:json"` // 上传的图片列表
-	Quality     int         `json:"quality"`                                     // 质量要求 60-100
-	Status      TaskStatus  `json:"status" gorm:"size:20"`
-	Progress    int         `json:"progress"`                                            // 当前进度 0-100
-	CurrentStep string      `json:"current_step"`                                        // 当前执行步骤
-	TaskSteps   []TaskStep  `json:"task_steps" gorm:"column:task_steps;serializer:json"` // 执行步骤记录
-	UserID      uint        `json:"user_id"`
-	CreatedAt   time.Time   `json:"created_at"`
-	UpdatedAt   time.Time   `json:"updated_at"`
+	ID             string      `json:"id" gorm:"primaryKey"`
+	Target         string      `json:"target"`                                      // flutter | vue3 | react
+	Platform       string      `json:"platform" gorm:"size:20;default:mobile"`      // mobile | desktop | tablet
+	Images         []ImageItem `json:"images" gorm:"column:images;serializer:json"` // 上传的图片列表
+	Options        []string    `json:"options" gorm:"column:options;serializer:json"`
+	Advanced       []string    `json:"advanced" gorm:"column:advanced;serializer:json"`
+	ComponentLib   string      `json:"component_lib" gorm:"size:50"`
+	Quality        int         `json:"quality"`         // 质量要求 60-100
+	RequiredPoints int         `json:"required_points"` // 本次任务消耗的积分数
+	Status         TaskStatus  `json:"status" gorm:"size:20"`
+	Progress       int         `json:"progress"`                                            // 当前进度 0-100
+	CurrentStep    string      `json:"current_step"`                                        // 当前执行步骤
+	TaskSteps      []TaskStep  `json:"task_steps" gorm:"column:task_steps;serializer:json"` // 执行步骤记录
+	UserID         uint        `json:"user_id"`
+	CreatedAt      time.Time   `json:"created_at"`
+	UpdatedAt      time.Time   `json:"updated_at"`
 }
 
 // ── 任务状态查询响应 ──────────────────────────

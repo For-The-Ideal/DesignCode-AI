@@ -51,16 +51,16 @@ class HttpRequest {
       try {
         const req = useRequestHeaders();
         const { _route } = useNuxtApp();
-        const isClient = _route?.query?.client === 'show';
+        const isDesign = _route?.query?.design === 'show';
 
         const fetchOptions = {
           method: 'post',
           headers: {
             ...req,
             ...(isCookie && req.cookie ? { cookie: req.cookie } : {}),
-            ...(isClient ? { client: true } : {}),
+            ...(isDesign ? { design: true } : {}),
           },
-          body: isClient  ? { url, method, params } : { aes: setEncrypt({ url, method, params }) },
+          body: isDesign ? { url, method, params } : { aes: setEncrypt({ url, method, params }) },
           timeout,
           signal: controller.signal,
         };

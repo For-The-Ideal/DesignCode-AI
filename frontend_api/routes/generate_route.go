@@ -2,6 +2,7 @@ package routes
 
 import (
 	"frontend_api/internal/handler"
+	"frontend_api/middleware"
 
 	"github.com/gin-gonic/gin"
 )
@@ -36,8 +37,8 @@ func InitGenerateRoutes(v1 *gin.RouterGroup,
 	sseHandler *handler.SSEHandler,
 	uploadHandler *handler.UploadHandler,
 ) {
-	// POST /api/v1/generate-ui → 创建 UI 生成任务
-	v1.POST("/generate-ui", taskHandler.CreateTask)
+	// 生成任务需登录（AuthMiddleware 自动注入 user_id）
+	v1.POST("/generate-ui", middleware.AuthMiddleware(), taskHandler.CreateTask)
 
 	// GET /api/v1/task/:id → 查询任务状态
 	v1.GET("/task/:id", taskHandler.GetTask)

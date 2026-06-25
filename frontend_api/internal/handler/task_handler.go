@@ -45,13 +45,18 @@ func generateTaskID() string {
 //	target   - flutter | vue3 | react
 //	platform - mobile | desktop | tablet（必选）
 //	images   - 图片列表，每项含 url / desc / sort_order，最多5张
-//	quality  - 质量要求 60-100
+//	options  - 生成选项 responsive/comment/component
+//	advanced - 高级选项 perf/docs
+//	component_lib - 使用的组件库
 //
-//	示例：{"target":"flutter","platform":"mobile","images":[{"url":"https://...","desc":"首页","sort_order":1}],"quality":90}
+//	示例：{"target":"flutter","platform":"mobile","images":[{"url":"https://...","desc":"首页","sort_order":1}],"options":["responsive"],"advanced":[],"component_lib":"material"}
 type CreateTaskRequest struct {
-	Target   string            `json:"target" binding:"required"`
-	Platform string            `json:"platform" binding:"required"`
-	Images   []model.ImageItem `json:"images" binding:"required,min=1,max=5"`
+	Target       string            `json:"target" binding:"required"`
+	Platform     string            `json:"platform" binding:"required"`
+	Images       []model.ImageItem `json:"images" binding:"required,min=1,max=5"`
+	Options      []string          `json:"options"`
+	Advanced     []string          `json:"advanced"`
+	ComponentLib string            `json:"component_lib"`
 }
 
 // TaskHandler 任务处理器
@@ -100,21 +105,47 @@ func (h *TaskHandler) CreateTask(c *gin.Context) {
 		return
 	}
 
-	// 创建任务
-	task := &model.Task{
-		ID:        generateTaskID(),
-		Target:    req.Target,
-		Platform:  req.Platform,
-		Images:    req.Images,
-		Quality:   90, // 后端固定90，后续可以通过逻辑来控制
-		Status:    model.TaskStatusPending,
-		Progress:  0,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+	// 获取用户ID（由 AuthMiddleware 注入）
+	userID := getUserID(c)
+	if userID == 0 {
+		utils.Unauthorized(c, "请先登录")
+		return
 	}
 
-	// 保存到 DB
-	if err := h.taskRepo.Create(task); err != nil {
+	// 检查积分并扣减
+	db := mysql.GetDB()
+	var user model.User
+	if err := db.First(&user, userID).Error; err != nil {
+		utils.Error(c, 404, "用户不存在")
+		return
+	}
+
+	imageCount := len(req.Images)
+	if user.Credits < imageCount {
+		utils.Error(c, 403, "积分不足，需要 "+fmt.Sprintf("%d", imageCount)+" 积分，当前剩余 "+fmt.Sprintf("%d", user.Credits)+" 积分")
+		return
+	}
+
+	// 创建任务
+	task := &model.Task{
+		ID:             generateTaskID(),
+		Target:         req.Target,
+		Platform:       req.Platform,
+		Images:         req.Images,
+		Options:        req.Options,
+		Advanced:       req.Advanced,
+		ComponentLib:   req.ComponentLib,
+		Quality:        90, // 后端固定90，后续可以通过逻辑来控制
+		RequiredPoints: imageCount,
+		Status:         model.TaskStatusPending,
+		Progress:       0,
+		UserID:         userID,
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
+	}
+
+	// 只创建任务（积分在任务成功完成后才扣减）
+	if err := db.Create(task).Error; err != nil {
 		h.log.Errorf("保存任务失败: %v", err)
 		utils.InternalError(c, "创建任务失败")
 		return
@@ -127,7 +158,7 @@ func (h *TaskHandler) CreateTask(c *gin.Context) {
 		return
 	}
 
-	h.log.Infof("任务创建成功: id=%s, target=%s", task.ID, task.Target)
+	h.log.Infof("任务创建成功: id=%s, target=%s, images=%d, user=%d, credits_after=%d", task.ID, task.Target, imageCount, userID, user.Credits-imageCount)
 
 	utils.Success(c, gin.H{
 		"task_id": task.ID,

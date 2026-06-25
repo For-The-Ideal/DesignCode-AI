@@ -33,3 +33,37 @@
   ]
 }
 [2026-06-24 11:35:17] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回非标准 DSL JSON: json: cannot unmarshal string into Go struct field DSL.components of type model.DSLComponent
+[2026-06-24 18:26:40] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿 (1 张图片)...
+[2026-06-24 18:26:49] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回: {
+  "page_name": "AI生成UI闭环优化流程图",
+  "layout": "多区域网格布局（顶部主流程横向六步流 + 中部四栏对比说明区 + 底部推荐模型与实践建议区）",
+  "components": [
+    "步骤1：上传设计图（含手机预览、文件类型标注）",
+    "步骤2：AI生成代码（含模板代码块、框架标识.vue）",
+    "步骤3：代码渲染 → 预览图（含Headless浏览器渲染示意、PNG输出尺寸）",
+    "步骤4：图像对比（原图 vs 生成预览图，含差异类型图标列表）",
+    "步骤5：差异分析结果（JSON结构化差异报告、相似度与差异项统计）",
+    "步骤6：自动优化迭代（修复操作列表、循环迭代箭头）",
+    "对比技术说明模块（分视觉/结构/混合评分三类）",
+    "对比结果可视化示例模块（含差异热力图、元素定位差异、结构树差异三子图）",
+    "生成图片差异原因与解决方案模块",
+    "对比模型选择指南模块（推荐模型与备选方案）",
+    "推荐模型清单流程图（五阶段闭环：代码生成→渲染→对比→分析→优化）",
+    "最佳实践建议模块（带勾选标记的四条实操建议）",
+    "核心结论提示框（灯泡图标+总结性文字）"
+  ]
+}
+[2026-06-24 18:26:49] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回非标准 DSL JSON: json: cannot unmarshal string into Go struct field DSL.components of type model.DSLComponent
+[2026-06-24 18:34:23] [INFO] [vision-analyze] [VisionAnalyzeSkill] 开始分析设计稿 (1 张图片)...
+[2026-06-24 18:34:31] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回: {
+  "page_name": "算力明细",
+  "layout": "垂直滚动单列布局，顶部为状态摘要区，中部为任务获取区，底部为收支明细标签页+列表区",
+  "components": [
+    "导航栏（含返回箭头、页面标题、更多操作按钮、切换视图按钮）",
+    "当前可用灵感点卡片（含图标、数值、说明文字、过期提示）",
+    "赚取灵感点功能区（含两个卡片式任务项：每日登录签到、邀请好友注册，各含图标、标题、收益说明、状态按钮）",
+    "收支明细标签导航（全部/获取/消耗，当前选中‘全部’）",
+    "收支明细列表项（每项含标题、标签、时间戳、金额及有效期说明，共6条记录）"
+  ]
+}
+[2026-06-24 18:34:31] [INFO] [vision-analyze] [VisionAnalyzeSkill] AI 返回非标准 DSL JSON: json: cannot unmarshal string into Go struct field DSL.components of type model.DSLComponent
