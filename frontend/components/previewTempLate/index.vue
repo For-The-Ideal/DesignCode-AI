@@ -25,8 +25,8 @@
       <MobilePreview
         v-if="device === 'mobile'"
         :html="html"
-        :show-bottom-nav="showBottomNav"
-        :bottom-nav="bottomNav"
+        :showBottomNav="showBottomNav"
+        :bottomNav="bottomNav"
       />
       <ComputerPreview
         v-else

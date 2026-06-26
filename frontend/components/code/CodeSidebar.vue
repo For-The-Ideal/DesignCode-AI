@@ -1,7 +1,7 @@
 <template>
   <AppSidebar
     brand="代码生成"
-    :nav-items="navItems"
+    :navItems="navItems"
     expanded-width="225px"
     @nav-click="handleNavClick"
   >

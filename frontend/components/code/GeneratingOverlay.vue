@@ -4,13 +4,13 @@
   <div class="generating-wrapper">
     <!-- 底层：代码编辑器 -->
     <CodeEditor
-      :model-value="modelValue"
+      :modelValue="modelValue"
       :language="language"
       :readonly="readonly"
-      :auto-scroll="autoScroll"
+      :autoScroll="autoScroll"
       :height="height"
       :placeholder="placeholder"
-      @update:model-value="emit('update:modelValue', $event)"
+      @update:modelValue="emit('update:modelValue', $event)"
     />
     <!-- 上层：进度覆盖层 -->
     <div v-if="visible" class="generating-overlay">

@@ -137,3 +137,118 @@ a {
   border-color: rgba(0, 255, 255, 0.5);
   box-shadow: 0 0 30px rgba(0, 255, 255, 0.1);
 }
+
+/* ═══════════════ Element Plus 全局暗色主题变量 ═══════════════ */
+/* 所有 Element Plus 组件自动继承这些变量，无需逐页面覆盖 */
+:root {
+  /* —— 背景 —— */
+  --el-bg-color: #0d1117;
+  --el-bg-color-overlay: #0f1a1f;
+  --el-bg-color-page: #0a0a0f;
+  --el-fill-color: rgba(0,0,0,0.25);
+  --el-fill-color-light: rgba(0,0,0,0.15);
+  --el-fill-color-lighter: rgba(0,0,0,0.06);
+  --el-fill-color-blank: transparent;
+
+  /* —— 文字 —— */
+  --el-text-color-primary: #e2e8f0;
+  --el-text-color-regular: #cbd5e1;
+  --el-text-color-secondary: #94a3b8;
+  --el-text-color-placeholder: rgba(255,255,255,0.2);
+  --el-text-color-disabled: rgba(255,255,255,0.12);
+
+  /* —— 边框 —— */
+  --el-border-color: rgba(0, 255, 255, 0.1);
+  --el-border-color-light: rgba(0, 255, 255, 0.06);
+  --el-border-color-lighter: rgba(0, 255, 255, 0.04);
+  --el-border-color-extra-light: rgba(0, 255, 255, 0.025);
+  --el-border-color-dark: rgba(0, 255, 255, 0.18);
+
+  /* —— 品牌色 —— */
+  --el-color-primary: #00cfff;
+  --el-color-primary-light-3: rgba(0, 207, 255, 0.35);
+  --el-color-primary-light-5: rgba(0, 207, 255, 0.18);
+  --el-color-primary-light-7: rgba(0, 207, 255, 0.08);
+  --el-color-primary-light-9: rgba(0, 207, 255, 0.03);
+  --el-color-primary-dark-2: #00a8d4;
+  --el-color-success: #34d399;
+  --el-color-success-light-3: rgba(52, 211, 153, 0.35);
+  --el-color-success-light-5: rgba(52, 211, 153, 0.18);
+  --el-color-success-light-7: rgba(52, 211, 153, 0.08);
+  --el-color-success-light-9: rgba(52, 211, 153, 0.03);
+  --el-color-warning: #facc15;
+  --el-color-warning-light-3: rgba(250, 204, 21, 0.35);
+  --el-color-warning-light-5: rgba(250, 204, 21, 0.18);
+  --el-color-warning-light-7: rgba(250, 204, 21, 0.08);
+  --el-color-warning-light-9: rgba(250, 204, 21, 0.03);
+  --el-color-danger: #f87171;
+  --el-color-danger-light-3: rgba(248, 113, 113, 0.35);
+  --el-color-danger-light-5: rgba(248, 113, 113, 0.18);
+  --el-color-danger-light-7: rgba(248, 113, 113, 0.08);
+  --el-color-danger-light-9: rgba(248, 113, 113, 0.03);
+  --el-color-info: #94a3b8;
+  --el-color-info-light-3: rgba(148, 163, 184, 0.35);
+  --el-color-info-light-5: rgba(148, 163, 184, 0.18);
+  --el-color-info-light-7: rgba(148, 163, 184, 0.08);
+  --el-color-info-light-9: rgba(148, 163, 184, 0.03);
+
+  /* —— 禁用 —— */
+  --el-disabled-bg-color: rgba(0,0,0,0.25);
+  --el-disabled-text-color: rgba(255,255,255,0.12);
+  --el-disabled-border-color: rgba(255,255,255,0.04);
+
+  /* —— 输入框 —— */
+  --el-input-bg-color: rgba(0,0,0,0.35);
+  --el-input-border-color: rgba(0, 255, 255, 0.1);
+  --el-input-hover-border-color: rgba(0, 255, 255, 0.2);
+  --el-input-focus-border-color: rgba(0, 255, 255, 0.35);
+  --el-input-placeholder-color: rgba(255,255,255,0.2);
+
+  /* —— 弹窗/抽屉 —— */
+  --el-dialog-bg-color: #0d1117;
+  --el-dialog-border-color: rgba(0, 255, 255, 0.12);
+  --el-messagebox-bg-color: #0f1a1f;
+  --el-messagebox-border-color: rgba(0, 255, 255, 0.12);
+  --el-messagebox-title-color: #e2e8f0;
+  --el-messagebox-content-color: rgba(255,255,255,0.5);
+  --el-drawer-bg-color: #0d1117;
+
+  /* —— 遮罩 —— */
+  --el-overlay-color: rgba(0,0,0,0.6);
+  --el-overlay-color-light: rgba(0,0,0,0.4);
+
+  /* —— 圆角 —— */
+  --el-border-radius-base: 8px;
+  --el-border-radius-small: 6px;
+  --el-border-radius-round: 20px;
+
+  /* —— ⚠️ 表格专属（默认白色，必须覆盖）—— */
+  --el-table-bg-color: transparent;
+  --el-table-tr-bg-color: transparent;
+  --el-table-header-bg-color: #090B12;
+  --el-table-border-color: rgba(0, 255, 255, 0.06);
+  --el-table-row-hover-bg-color: rgba(0, 255, 255, 0.03);
+  --el-table-current-row-bg-color: rgba(0, 255, 255, 0.05);
+  --el-table-header-text-color: #94a3b8;
+  --el-table-text-color: #cbd5e1;
+
+  /* —— ⚠️ 下拉专属 —— */
+  --el-select-input-focus-border-color: rgba(0, 255, 255, 0.35);
+  --el-select-option-hover-bg-color: rgba(18, 26, 36, 0.7);
+  --el-select-option-selected-bg-color: rgba(15, 22, 32, 0.95);
+  --el-select-option-selected-text-color: #e2e8f0;
+
+  /* —— 进度条 —— */
+  --el-progress-bg-color: rgba(255,255,255,0.05);
+
+  /* —— 空状态 —— */
+  --el-empty-fill-color-0: rgba(255,255,255,0.04);
+  --el-empty-fill-color-1: rgba(255,255,255,0.02);
+  --el-empty-fill-color-2: rgba(255,255,255,0.03);
+  --el-empty-fill-color-3: rgba(255,255,255,0.01);
+  --el-empty-fill-color-4: rgba(255,255,255,0.02);
+  --el-empty-fill-color-5: rgba(255,255,255,0.01);
+  --el-empty-fill-color-6: rgba(255,255,255,0.015);
+  --el-empty-fill-color-7: rgba(255,255,255,0.02);
+  --el-empty-fill-color-8: rgba(255,255,255,0.01);
+}

@@ -11,7 +11,7 @@
             v-model="template.templateCode"
             language="dart"
             :readonly="true"
-            :auto-scroll="true"
+            :autoScroll="true"
             height="700px"
             placeholder="// 滚动到此处将自动开始流式生成 Flutter 代码..."
           />

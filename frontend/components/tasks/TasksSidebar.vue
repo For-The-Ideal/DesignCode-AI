@@ -2,7 +2,7 @@
   <!-- ═══ 任务列表（展开时显示） ═══ -->
   <Transition name="card-fade">
     <div v-show="sidebarOpen" class="task-list-wrapper">
-          <div class="task-list-header">
+          <div class="task-list-header" v-if="showTitle">
             <span class="task-count">共 {{ tasks.length }} 个任务</span>
           </div>
 
@@ -24,7 +24,7 @@
                   {{ statusLabel(task.status) }}
                 </span>
               </div>
-              <div v-if="task.status === 'pending' || task.status === 'running'" class="task-progress">
+              <div v-if="task.status !== 'failed'" class="task-progress">
                 <div class="task-progress-bar">
                   <div
                     class="task-progress-fill"
@@ -40,7 +40,7 @@
               </div>
               <div class="task-item-meta">
                 <span>平台：{{ task.framework }}</span>
-                <span>创建时间：{{ task.time }}</span>
+                <span>创建时间：{{ task.createdAt || task.time }}</span>
               </div>
             </div>
 
@@ -64,7 +64,7 @@
                       <span v-for="(tag, i) in taskTags(task)" :key="i" class="card-tag">{{ tag }}</span>
                     </div>
                   </div>
-                  <span class="card-time">{{ task.time }}</span>
+                  <span class="card-time">{{ task.createdAt || task.time }}</span>
                 </div>
 
                 <!-- 进度条 -->
@@ -100,6 +100,11 @@
                     </div>
                   </div>
                 </div>
+
+                <!-- 查看详情按钮 -->
+                <button class="view-detail-btn" @click.stop="goToDetail(task.id)" v-if="showDetail">
+                  <i class="fas fa-external-link-alt"></i> 查看完整详情
+                </button>
               </div>
             </Transition>
           </div>
@@ -118,12 +123,20 @@ const props = defineProps({
   tasks: { type: Array, required: true },
   expandedId: { type: [String, null], default: null },
   sidebarOpen: { type: Boolean, default: true },
+  collapsible: { type: Boolean, default: false },
+  showDetail: { type: Boolean, default: true },
+  showTitle: { type: Boolean, default: true },
 })
 
-const emit = defineEmits(['update:expandedId'])
+const emit = defineEmits(['update:expandedId', 'navigate'])
 
 const toggleExpand = (id) => {
+  if (!props.collapsible) return
   emit('update:expandedId', props.expandedId === id ? null : id)
+}
+
+const goToDetail = (id) => {
+  emit('navigate', id)
 }
 
 const STATUS_MAP = {
@@ -578,4 +591,28 @@ const taskTags = (task) => {
   display: block;
 }
 .task-empty p { font-size: 12px; }
+
+/* 查看详情按钮 */
+.view-detail-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  padding: 6px 12px;
+  margin-top: 12px;
+  border: 1px solid rgba(0,255,255,0.12);
+  border-radius: 8px;
+  background: rgba(0,255,255,0.04);
+  color: rgba(0,255,255,0.55);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+  justify-content: center;
+}
+.view-detail-btn:hover {
+  background: rgba(0,255,255,0.08);
+  border-color: rgba(0,255,255,0.25);
+  color: #00d8ff;
+}
 </style>

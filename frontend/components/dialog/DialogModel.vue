@@ -4,11 +4,11 @@
     :width="width"
     :top="top"
     :center="true"
-    :show-close="showClose"
-    :close-on-click-modal="closeOnClickModal"
-    :close-on-press-escape="closeOnPressEscape"
+    :showClose="showClose"
+    :closeOnClickModal="closeOnClickModal"
+    :closeOnPressEscape="closeOnPressEscape"
     :class="['auth-dialog', customClass]"
-    :before-close="handleBeforeClose">
+    :beforeClose="handleBeforeClose">
     <template #header>
       <slot name="header" />
     </template>
