@@ -2,6 +2,7 @@ package config
 
 import (
 	"log"
+	"os"
 
 	"github.com/spf13/viper"
 )
@@ -64,8 +65,20 @@ type AIModelYAMLItem struct {
 
 var AppConfig *Config
 
+// InitConfig 加载配置文件
+// 通过 APP_ENV 环境变量区分环境：
+//   - APP_ENV=prod → 加载 config.prod.yaml
+//   - 其他/未设置 → 加载 config.dev.yaml（本地开发）
 func InitConfig() {
-	viper.SetConfigFile("config.yaml")
+	configFile := "config.dev.yaml"
+	if env := os.Getenv("APP_ENV"); env == "prod" {
+		configFile = "config.prod.yaml"
+		log.Printf("[Config] 生产环境，加载 %s", configFile)
+	} else {
+		log.Printf("[Config] 开发环境，加载 %s", configFile)
+	}
+
+	viper.SetConfigFile(configFile)
 	if err := viper.ReadInConfig(); err != nil {
 		log.Fatalf("Error reading config file, %s", err)
 	}

@@ -4,8 +4,7 @@
       v-model="sidebarOpen"
       brand="任务中心"
       :navItems="navItems"
-      @nav-click="handleNavClick"
-    >
+      @nav-click="handleNavClick">
       <TasksSidebar
         :tasks="allTasks"
         v-model:expandedId="sidebarExpandedId"

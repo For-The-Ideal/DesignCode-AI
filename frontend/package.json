@@ -4,8 +4,8 @@
   "private": true,
  "scripts": {
   "dev": "set NODE_OPTIONS=--max-old-space-size=8192 && nuxt dev --dotenv .env.dev --open",
-  "build": "set NODE_OPTIONS=--max-old-space-size=8192 && nuxt build",
-  "start": "set NODE_ENV=production&& node .output/server/index.mjs",
+  "build": "set NODE_OPTIONS=--max-old-space-size=8192 && nuxt build --dotenv .env.prod",
+  "start": "set NODE_ENV=prod && node .output/server/index.mjs",
   "preview": "nuxt preview",
   "postinstall": "nuxt prepare"
 },

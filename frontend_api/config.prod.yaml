@@ -1,0 +1,95 @@
+mysql:
+  dsn: "root:cc123456.@tcp(127.0.0.1:3306)/design_code_ai?charset=utf8mb4&parseTime=True&loc=Local"
+server:
+  local: "http://111.229.28.247"
+  port: ":8888"
+  jwt_secret: "design_code_ai_secret_key"
+
+# ═══════════════════════════════════════════════
+#  AI 模型配置
+# ═══════════════════════════════════════════════
+ai:
+  logging:
+    enabled: true
+    directory: "logs"
+
+  models:
+    - provider: "qwen"
+      name: "通义千问 Qwen-VL"
+      api_key: "sk-ffca63c951c24c458d860ffad0dec1b5"
+      endpoint: "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
+      enabled: true
+      max_retries: 2
+      timeout: 60
+      priority: 5
+      capability: "read"
+
+    - provider: "deepseek"
+      name: "DeepSeek V4"
+      api_key: "sk-13ff3e7a86484f34969954fd21c219d3"
+      endpoint: "https://api.deepseek.com/chat/completions"
+      enabled: true
+      max_retries: 2
+      timeout: 180
+      priority: 10
+      capability: "write"
+
+    - provider: "chatgpt"
+      name: "ChatGPT 4o"
+      api_key: "your_openai_api_key"
+      endpoint: "https://api.openai.com/v1/chat/completions"
+      enabled: false
+      max_retries: 2
+      timeout: 60
+      priority: 20
+      capability: "both"
+
+    - provider: "codex"
+      name: "OpenAI Codex"
+      api_key: "your_openai_api_key"
+      endpoint: "https://api.openai.com/v1/completions"
+      enabled: false
+      max_retries: 2
+      timeout: 60
+      priority: 30
+      capability: "write"
+
+    - provider: "gemini"
+      name: "Gemini Pro"
+      api_key: "your_gemini_api_key"
+      endpoint: "https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent"
+      enabled: false
+      max_retries: 1
+      timeout: 60
+      priority: 25
+      capability: "both"
+
+    - provider: "claude"
+      name: "Claude 3.5 Sonnet"
+      api_key: "your_anthropic_api_key"
+      endpoint: "https://api.anthropic.com/v1/messages"
+      enabled: false
+      max_retries: 2
+      timeout: 60
+      priority: 15
+      capability: "both"
+
+    - provider: "mock"
+      name: "Local Mock"
+      api_key: ""
+      endpoint: ""
+      enabled: true
+      max_retries: 0
+      timeout: 0
+      priority: 99
+      capability: "both"
+
+
+# ═══════════════════════════════════════════════
+#  腾讯云对象存储 COS 配置
+# ═══════════════════════════════════════════════
+cos:
+  bucket: "upload-image-1301638170"
+  region: "ap-guangzhou"
+  secret_id: "AKIDplYGoIervrnhPtLchaFvRnIi2EPQDq9L"
+  secret_key: "1vY0FFzqY1EMIqOp9VgeOvDFguwraJtG"

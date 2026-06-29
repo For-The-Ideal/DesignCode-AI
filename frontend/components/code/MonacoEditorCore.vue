@@ -4,35 +4,35 @@
 
 <script setup>
 import { ref, watch, onMounted, onBeforeUnmount, computed } from 'vue'
-import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker'
-import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker'
-import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker'
-import cssWorker from 'monaco-editor/esm/vs/language/css/css.worker?worker'
-import htmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker'
+// import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker'
+// import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker'
+// import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker'
+// import cssWorker from 'monaco-editor/esm/vs/language/css/css.worker?worker'
+// import htmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker'
 
-if (process.client && !window.MonacoEnvironment) {
-  window.MonacoEnvironment = {
-    getWorker(_, label) {
-      switch (label) {
-        case 'typescript':
-        case 'javascript':
-          return new tsWorker()
-        case 'json':
-          return new jsonWorker()
-        case 'css':
-        case 'scss':
-        case 'less':
-          return new cssWorker()
-        case 'html':
-        case 'handlebars':
-        case 'razor':
-          return new htmlWorker()
-        default:
-          return new editorWorker()
-      }
-    }
-  }
-}
+// if (process.client && !window.MonacoEnvironment) {
+//   window.MonacoEnvironment = {
+//     getWorker(_, label) {
+//       switch (label) {
+//         case 'typescript':
+//         case 'javascript':
+//           return new tsWorker()
+//         case 'json':
+//           return new jsonWorker()
+//         case 'css':
+//         case 'scss':
+//         case 'less':
+//           return new cssWorker()
+//         case 'html':
+//         case 'handlebars':
+//         case 'razor':
+//           return new htmlWorker()
+//         default:
+//           return new editorWorker()
+//       }
+//     }
+//   }
+// }
 
 const props = defineProps({
   // 代码内容
@@ -125,95 +125,95 @@ let lastUserScrollTop = 0
 
 // 初始化编辑器
 const initEditor = async () => {
-  if (!process.client) return
+  // if (!process.client) return
   
-  try {
-    const monacoModule = await import('monaco-editor')
-    monaco = monacoModule.default || monacoModule
+  // try {
+  //   const monacoModule = await import('monaco-editor')
+  //   monaco = monacoModule.default || monacoModule
     
-    if (!editorContainer.value) return
+  //   if (!editorContainer.value) return
     
-    editor = monaco.editor.create(editorContainer.value, {
-      value: props.value,
-      language: getMonacoLanguage(),
-      theme: props.theme,
-      readOnly: props.readonly,
-      minimap: { enabled: false },
-      fontSize: props.fontSize,
-      fontFamily: 'Fira Code, Consolas, monospace',
-      lineNumbers: props.lineNumbers ? 'on' : 'off',
-      scrollBeyondLastLine: false,
-      automaticLayout: true,
-      tabSize: 2,
-      wordWrap: props.wordWrap ? 'on' : 'off',
-      renderWhitespace: 'boundary',
-      renderLineHighlight: 'all',
-      cursorBlinking: 'smooth',
-      cursorSmoothCaretAnimation: 'on',
-      formatOnPaste: true,
-      formatOnType: false,
-      placeholder: props.placeholder,
-      // 隐藏滚动条
-      scrollbar: {
-        vertical: 'hidden',
-        horizontal: 'hidden',
-        handleMouseWheel: true
-      },
-      // 隐藏右侧缩略图旁边的装饰
-      overviewRulerLanes: 0,
-      overviewRulerBorder: false
-    })
+  //   editor = monaco.editor.create(editorContainer.value, {
+  //     value: props.value,
+  //     language: getMonacoLanguage(),
+  //     theme: props.theme,
+  //     readOnly: props.readonly,
+  //     minimap: { enabled: false },
+  //     fontSize: props.fontSize,
+  //     fontFamily: 'Fira Code, Consolas, monospace',
+  //     lineNumbers: props.lineNumbers ? 'on' : 'off',
+  //     scrollBeyondLastLine: false,
+  //     automaticLayout: true,
+  //     tabSize: 2,
+  //     wordWrap: props.wordWrap ? 'on' : 'off',
+  //     renderWhitespace: 'boundary',
+  //     renderLineHighlight: 'all',
+  //     cursorBlinking: 'smooth',
+  //     cursorSmoothCaretAnimation: 'on',
+  //     formatOnPaste: true,
+  //     formatOnType: false,
+  //     placeholder: props.placeholder,
+  //     // 隐藏滚动条
+  //     scrollbar: {
+  //       vertical: 'hidden',
+  //       horizontal: 'hidden',
+  //       handleMouseWheel: true
+  //     },
+  //     // 隐藏右侧缩略图旁边的装饰
+  //     overviewRulerLanes: 0,
+  //     overviewRulerBorder: false
+  //   })
     
-    // 监听内容变化
-    editor.onDidChangeModelContent(() => {
-      const value = editor.getValue()
-      emit('update:value', value)
-      emit('change', value)
+  //   // 监听内容变化
+  //   editor.onDidChangeModelContent(() => {
+  //     const value = editor.getValue()
+  //     emit('update:value', value)
+  //     emit('change', value)
 
-      // 流式渲染自动滚动到底部
-      if (props.autoScroll && !userScrolled) {
-        scheduleScrollToBottom()
-      }
-    })
+  //     // 流式渲染自动滚动到底部
+  //     if (props.autoScroll && !userScrolled) {
+  //       scheduleScrollToBottom()
+  //     }
+  //   })
 
-    // 检测用户手动滚动：向上滚动时暂停自动跟随
-    editor.onDidScrollChange((e) => {
-      if (!props.autoScroll) return
-      const currentScrollTop = e.scrollTop
-      // 用户向上滚动（远离底部）→ 暂停自动跟随
-      if (currentScrollTop < lastUserScrollTop) {
-        userScrolled = true
-      }
-      // 用户滚回底部 → 恢复自动跟随
-      const model = editor.getModel()
-      if (model) {
-        const lastLine = model.getLineCount()
-        const visibleRange = editor.getVisibleRanges()
-        if (visibleRange.length > 0) {
-          const lastVisibleLine = visibleRange[visibleRange.length - 1].endLineNumber
-          if (lastVisibleLine >= lastLine - 1) {
-            userScrolled = false
-          }
-        }
-      }
-      lastUserScrollTop = currentScrollTop
-    })
+  //   // 检测用户手动滚动：向上滚动时暂停自动跟随
+  //   editor.onDidScrollChange((e) => {
+  //     if (!props.autoScroll) return
+  //     const currentScrollTop = e.scrollTop
+  //     // 用户向上滚动（远离底部）→ 暂停自动跟随
+  //     if (currentScrollTop < lastUserScrollTop) {
+  //       userScrolled = true
+  //     }
+  //     // 用户滚回底部 → 恢复自动跟随
+  //     const model = editor.getModel()
+  //     if (model) {
+  //       const lastLine = model.getLineCount()
+  //       const visibleRange = editor.getVisibleRanges()
+  //       if (visibleRange.length > 0) {
+  //         const lastVisibleLine = visibleRange[visibleRange.length - 1].endLineNumber
+  //         if (lastVisibleLine >= lastLine - 1) {
+  //           userScrolled = false
+  //         }
+  //       }
+  //     }
+  //     lastUserScrollTop = currentScrollTop
+  //   })
     
-    // 监听焦点事件
-    editor.onDidFocusEditorText(() => {
-      emit('focus')
-    })
+  //   // 监听焦点事件
+  //   editor.onDidFocusEditorText(() => {
+  //     emit('focus')
+  //   })
     
-    editor.onDidBlurEditorText(() => {
-      emit('blur')
-    })
+  //   editor.onDidBlurEditorText(() => {
+  //     emit('blur')
+  //   })
 
-    // 通知父组件编辑器已就绪
-    emit('ready')
+  //   // 通知父组件编辑器已就绪
+  //   emit('ready')
     
-  } catch (error) {
-    console.error('Monaco Editor 加载失败:', error)
-  }
+  // } catch (error) {
+  //   console.error('Monaco Editor 加载失败:', error)
+  // }
 }
 
 // ═══ 流式滚动核心 ═══

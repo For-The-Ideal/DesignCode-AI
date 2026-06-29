@@ -3,6 +3,7 @@
     <AppSidebar
       v-model="sidebarOpen"
       brand="任务中心"
+      expandedWidth="225px"
       :navItems="navItems"
       @nav-click="handleNavClick"
     >

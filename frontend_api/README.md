@@ -21,7 +21,8 @@ frontend_api/
 ├── utils/              # 辅助工具类
 │   ├── db.go           # 数据库连接与初始化
 │   └── response.go     # 统一 API 响应格式
-├── config.yaml         # 运行环境配置文件 (DSN, 端口等)
+├── config.dev.yaml     # 本地开发环境配置
+├── config.prod.yaml    # 生产环境配置
 ├── main.go             # 项目入口
 ├── go.mod              # 依赖管理文件
 ├── go.sum              # 依赖锁定文件
@@ -44,13 +45,25 @@ go mod tidy
 
 ### 4. 配置数据库
 
-修改 `config.yaml` 文件中的 `mysql.dsn` 字段，确保数据库连接字符串正确：
+修改对应环境配置文件中的 `mysql.dsn` 字段：
 
+- 本地开发 → `config.dev.yaml`
+- 生产环境 → `config.prod.yaml`
+
+```yaml
 mysql:
   dsn: "user:password@tcp(localhost:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local"
-
+```
 ### 5. 运行服务
 
+# 本地开发（加载 config.dev.yaml）
 go run main.go
 
+# 本地测试生产配置（加载 config.prod.yaml）
+APP_ENV=prod go run main.go
+
+### 6. 打包命令
+
+# 本地开发编译（Windows）
+go build -o server.exe main.go
 

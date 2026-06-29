@@ -44,7 +44,7 @@ const props = defineProps({
   brand: { type: String, default: '' },
   navItems: { type: Array, default: () => [] },
   modelValue: { type: Boolean, default: true },
-  expandedWidth: { type: String, default: '280px' },
+  expandedWidth: { type: String, default: '300px' },
 })
 
 const emit = defineEmits(['update:modelValue', 'nav-click'])
@@ -67,7 +67,7 @@ const toggleSidebar = () => {
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  overflow: auto;
   padding: 16px 12px;
   background: rgba(10, 10, 15, 0.95);
   border-right: 1px solid rgba(0, 255, 255, 0.06);

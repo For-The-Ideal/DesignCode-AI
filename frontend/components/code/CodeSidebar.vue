@@ -2,7 +2,7 @@
   <AppSidebar
     brand="代码生成"
     :navItems="navItems"
-    expanded-width="225px"
+    expandedWidth="225px"
     @nav-click="handleNavClick"
   >
     <!-- 底部区域：用量 + 升级（仅登录后显示） -->
