@@ -15,7 +15,6 @@ export const useUserStore = defineStore('user', {
       console.log('Initializing user store...')
       // 页面加载时检测 token cookie，自动恢复登录态
       const token = cookie.get()
-      console.log('Token from cookie:', token)
       if (import.meta.client && token && !this.isLogin) {
         try {
           const res = await userApi.userInfo()
@@ -37,9 +36,7 @@ export const useUserStore = defineStore('user', {
       }
       if (userInfo.token) {
         cookie.set(userInfo.token)
-        console.log('Token set:', userInfo.token)
       }
-      console.log('User info set:', userInfo)
     },
 
     async logout() {

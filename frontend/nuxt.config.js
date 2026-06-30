@@ -3,7 +3,9 @@
 export default defineNuxtConfig({
   ssr: true,
   devtools: { enabled: false },
-
+  $production: {
+    sourcemap: false, // 生产环境不生成 Source Map
+  },
   future: {
     compatibilityVersion: 4,
   },
