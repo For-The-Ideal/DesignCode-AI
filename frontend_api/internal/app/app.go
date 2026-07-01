@@ -106,7 +106,9 @@ func Run() {
 	routes.InitV1Routes(r, taskHandler, sseHandler, uploadHandler, authHandler, userHandler, adminHandler)
 
 	// 12. 创建 HTTP Server（支持优雅关闭）
-	addr := config.AppConfig.Server.Local + config.AppConfig.Server.Port
+	// Addr 是监听地址（host:port），不是对外 URL
+	// 生产环境由 nginx 反代，后端监听所有网卡即可
+	addr := config.AppConfig.Server.Port
 	srv := &http.Server{
 		Addr:    addr,
 		Handler: r,
