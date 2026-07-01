@@ -38,6 +38,14 @@ const retryDelay = 1500
 const maxRetryDelay = 30000
 const timeout = 120000
 
+// ═══ 用户级 SSE 连接状态（独立于 task 级） ═══
+let userAbortController = null
+let userReader = null
+let userActive = false
+let userRetryCount = 0
+const userMaxRetries = 5
+const userRetryDelay = 3000
+
 export function useSSE () {
 
   // ═══ 日志 ═══
@@ -230,5 +238,104 @@ export function useSSE () {
     error.value = ''
   }
 
-  return { status, error, retry, sseData, connect, disconnect, isAvailable, isAlive }
+  // ═══ 用户级 SSE 连接（长期保活，推送任务状态变更） ═══
+
+  const connectUser = async (onStatusEvent) => {
+    if (userActive) {
+      console.log('[UserSSE] 已有活跃连接，跳过')
+      return
+    }
+
+    console.log('[UserSSE] 开始连接 /api/sse/user ...')
+    userActive = true
+    userRetryCount = 0
+    userAbortController = new AbortController()
+
+    const doConnect = async () => {
+      try {
+        const response = await fetch('/api/sse/user', {
+          method: 'GET',
+          headers: { 'Accept': 'text/event-stream' },
+          signal: userAbortController.signal,
+        })
+
+        console.log('[UserSSE] 连接成功, status:', response.status)
+
+        if (!response.ok) {
+          throw new Error(`SSE 连接失败: HTTP ${response.status}`)
+        }
+
+        userRetryCount = 0
+        userReader = response.body.getReader()
+        const decoder = new TextDecoder()
+        let buffer = ''
+
+        while (true) {
+          const { done, value } = await userReader.read()
+          if (done) {
+            console.log('[UserSSE] 流关闭')
+            break
+          }
+
+          const text = decoder.decode(value, { stream: true })
+          buffer += text
+
+          const parts = buffer.split('\n\n')
+          buffer = parts.pop()
+
+          for (const part of parts) {
+            if (!part.trim()) continue
+            const lines = part.trim().split('\n')
+            let eventType = ''
+            let data = ''
+            for (const line of lines) {
+              if (line.startsWith('event: ')) eventType = line.slice(7).trim()
+              else if (line.startsWith('data: ')) data = line.slice(6).trim()
+            }
+            // 打印所有收到的事件（用于调试）
+            if (eventType === 'heartbeat') {
+              console.log('[UserSSE] ← heartbeat')
+            } else {
+              console.log(`[UserSSE] ← event:${eventType} data:${data}`)
+            }
+            if (eventType === 'task_status' && data) {
+              try { onStatusEvent(JSON.parse(data)) } catch { /* ignore */ }
+            }
+          }
+        }
+      } catch (err) {
+        if (err?.name === 'AbortError') {
+          console.log('[UserSSE] 连接已断开')
+          return
+        }
+        console.error('[UserSSE] 连接异常:', err.message)
+
+        if (userActive && userRetryCount < userMaxRetries) {
+          userRetryCount++
+          console.log(`[UserSSE] 重连 ${userRetryCount}/${userMaxRetries}...`)
+          await new Promise(r => setTimeout(r, userRetryDelay))
+          if (userActive) doConnect()
+        } else if (userRetryCount >= userMaxRetries) {
+          console.error('[UserSSE] 已达最大重连次数，放弃')
+        }
+      }
+    }
+
+    doConnect()
+  }
+
+  const disconnectUser = () => {
+    userActive = false
+    userRetryCount = userMaxRetries // 阻止重连
+    if (userReader) {
+      userReader.cancel().catch(() => {})
+      userReader = null
+    }
+    if (userAbortController) {
+      userAbortController.abort()
+      userAbortController = null
+    }
+  }
+
+  return { status, error, retry, sseData, connect, disconnect, isAvailable, isAlive, connectUser, disconnectUser }
 }

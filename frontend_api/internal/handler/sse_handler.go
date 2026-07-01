@@ -83,9 +83,12 @@ func (h *SSEHandler) StreamTask(c *gin.Context) {
 	}
 }
 
-// StreamBroker 建立裸 SSE 长连接（Broker 模式，不绑定具体任务）
+// StreamBroker 用户级 SSE 长连接
 // POST /api/v1/task/sse
+// 连接后持续推送该用户所有任务的状态变更事件（task_status）
 func (h *SSEHandler) StreamBroker(c *gin.Context) {
+	userID := fmt.Sprintf("%d", getUserID(c))
+
 	// 设置 SSE 响应头
 	c.Header("Content-Type", "text/event-stream")
 	c.Header("Cache-Control", "no-cache")
@@ -99,21 +102,35 @@ func (h *SSEHandler) StreamBroker(c *gin.Context) {
 		return
 	}
 
-	h.log.Infof("[SSE Broker] client connected")
+	// 注册用户级 SSE 订阅
+	eventCh, unsubscribe := h.sseManager.SubscribeUser(userID)
+	defer unsubscribe()
+
+	h.log.Infof("[SSE Broker] user=%s connected", userID)
 
 	// 发送 connected 事件
 	writeSSEEvent(c, flusher, "connected", "ok")
 
-	// 保持连接，定时发送心跳防止断开
+	// 心跳定时器
 	ticker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()
 
 	for {
 		select {
+		case event, ok := <-eventCh:
+			if !ok {
+				log.Printf("[SSE Broker] user %s channel closed", userID)
+				return
+			}
+			if !writeSSEEvent(c, flusher, event.Event, event.Data) {
+				return
+			}
+
 		case <-ticker.C:
 			writeSSEEvent(c, flusher, "heartbeat", "")
+
 		case <-c.Request.Context().Done():
-			log.Printf("[SSE Broker] client disconnected")
+			log.Printf("[SSE Broker] user %s disconnected", userID)
 			return
 		}
 	}

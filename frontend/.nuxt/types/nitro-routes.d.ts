@@ -9,6 +9,9 @@ declare module "nitropack/types" {
     '/api/sse/:taskId': {
       'default': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/sse/[taskId]').default>>>>
     }
+    '/api/sse/user': {
+      'default': Simplify<Serialize<Awaited<ReturnType<typeof import('../../server/api/sse/user').default>>>>
+    }
     '/__nuxt_error': {
       'default': Simplify<Serialize<Awaited<ReturnType<typeof import('../../node_modules/.pnpm/@nuxt+nitro-server@4.4.8_@b_56d04d66886c49ba97983c50f99c2c71/node_modules/@nuxt/nitro-server/dist/runtime/handlers/renderer').default>>>>
     }

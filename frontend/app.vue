@@ -8,11 +8,11 @@
 </template>
 
 <script setup>
-import { defineAsyncComponent, onMounted } from "vue";
-import AppFooter from "~/components/layout/AppFooter.vue";
-import AppHeader from "~/components/layout/AppHeader.vue";
-const ParticlesBackground = defineAsyncComponent(() => import("~/components/layout/ParticlesBackground.vue"));
+import { defineAsyncComponent } from 'vue'
+import AppFooter from '~/components/layout/AppFooter.vue'
+import AppHeader from '~/components/layout/AppHeader.vue'
 
+const ParticlesBackground = defineAsyncComponent(() => import('~/components/layout/ParticlesBackground.vue'))
 </script>
 
 <style lang="scss" scoped>

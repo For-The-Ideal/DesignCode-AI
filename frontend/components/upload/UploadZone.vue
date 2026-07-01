@@ -102,12 +102,16 @@ import { ref, computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import DescEditorModal from '~/components/upload/DescEditorModal.vue'
 import { useCodeStore } from '~/stores/code'
+import { useUserStore } from '~/stores/user'
+
+const userStore = useUserStore()
+const { isLogin } = storeToRefs(userStore)
 
 const store = useCodeStore()
 const { images, isSubmitting, isMaxReached, isConcurrencyFull, uploadHint } = storeToRefs(store)
 
 // ── 从 store 派生 ──
-const disabled = computed(() => isMaxReached.value || isSubmitting.value || isConcurrencyFull.value)
+const disabled = computed(() => isMaxReached.value || isSubmitting.value || isConcurrencyFull.value || !isLogin.value)
 
 // ── 文件选择 ──
 const fileInput = ref(null)

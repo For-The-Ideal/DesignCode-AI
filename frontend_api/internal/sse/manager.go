@@ -31,8 +31,9 @@ type SSEEvent struct {
 
 // Manager SSE 连接管理器
 type Manager struct {
-	mu       sync.RWMutex
-	channels map[string]chan SSEEvent // key: taskID
+	mu           sync.RWMutex
+	channels     map[string]chan SSEEvent // key: taskID
+	userChannels map[string]chan SSEEvent // key: userID (fmt.Sprintf("%d", userID))
 }
 
 var defaultManager *Manager
@@ -42,7 +43,8 @@ var managerOnce sync.Once
 func GetManager() *Manager {
 	managerOnce.Do(func() {
 		defaultManager = &Manager{
-			channels: make(map[string]chan SSEEvent),
+			channels:     make(map[string]chan SSEEvent),
+			userChannels: make(map[string]chan SSEEvent),
 		}
 	})
 	return defaultManager
@@ -104,4 +106,46 @@ func (m *Manager) NumSubscribers() int {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	return len(m.channels)
+}
+
+// SubscribeUser 注册用户级 SSE 监听，返回事件通道和取消函数
+func (m *Manager) SubscribeUser(userID string) (<-chan SSEEvent, func()) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	ch := make(chan SSEEvent, 64)
+	m.userChannels[userID] = ch
+	log.Printf("[SSE Manager] user subscribed: user=%s (total users: %d)", userID, len(m.userChannels))
+
+	unsubscribe := func() {
+		m.mu.Lock()
+		defer m.mu.Unlock()
+		if c, ok := m.userChannels[userID]; ok {
+			close(c)
+			delete(m.userChannels, userID)
+			log.Printf("[SSE Manager] user unsubscribed: user=%s (total users: %d)", userID, len(m.userChannels))
+		}
+	}
+
+	return ch, unsubscribe
+}
+
+// PushUser 向指定 userID 推送事件（任务状态变更通知）
+func (m *Manager) PushUser(userID string, event SSEEvent) bool {
+	m.mu.RLock()
+	ch, ok := m.userChannels[userID]
+	m.mu.RUnlock()
+
+	if !ok {
+		return false // 用户未连接 SSE，静默丢弃
+	}
+
+	select {
+	case ch <- event:
+		log.Printf("[SSE Manager] user %s pushed event: %s | data=%s", userID, event.Event, truncateStr(event.Data, 60))
+		return true
+	default:
+		log.Printf("[SSE Manager] user %s channel full, dropping event: %s", userID, event.Event)
+		return false
+	}
 }

@@ -3,10 +3,10 @@
     <h3 class="flow-title">生成流程</h3>
     <div class="flow-steps">
       <template v-for="(step, i) in steps" :key="i">
-        <!-- 箭头 -->
+        <!-- 科幻箭头 -->
         <div v-if="i > 0" class="flow-arrow">
           <span class="flow-arrow-line"></span>
-          <i class="fa-solid fa-angle-right"></i>
+          <span class="flow-arrow-head"></span>
         </div>
         <!-- 步骤卡片 -->
         <div
@@ -67,17 +67,68 @@ defineProps({
   display: flex;
   align-items: center;
   align-self: center;
-  gap: 2px;
-  padding: 0 2px;
-  color: rgba(255, 255, 255, 0.25);
+  padding: 0 4px;
 }
+
 .flow-arrow-line {
-  width: 20px;
+  width: 28px;
   height: 1px;
-  border-top: 1px dashed currentColor;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(0, 255, 255, 0.05) 20%,
+    rgba(0, 255, 255, 0.35) 50%,
+    rgba(0, 255, 255, 0.05) 80%,
+    transparent 100%
+  );
+  position: relative;
+  overflow: visible;
 }
-.flow-arrow i {
-  font-size: 10px;
+
+/* traveling data dot */
+.flow-arrow-line::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 3px;
+  height: 3px;
+  background: #00ffff;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 6px #00ffff, 0 0 14px #00ffff;
+  animation: arrowTravel 1.6s ease-in-out infinite;
+}
+
+/* glow aura */
+.flow-arrow-line::after {
+  content: '';
+  position: absolute;
+  inset: -2px 0;
+  background: linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.06), transparent);
+  filter: blur(4px);
+  animation: arrowGlow 2s ease-in-out infinite;
+}
+
+/* arrow head — CSS triangle */
+.flow-arrow-head {
+  width: 0;
+  height: 0;
+  border-left: 6px solid rgba(0, 255, 255, 0.5);
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  filter: drop-shadow(0 0 3px rgba(0, 255, 255, 0.4));
+}
+
+@keyframes arrowTravel {
+  0%   { left: 0%;  opacity: 0; }
+  15%  { opacity: 1; }
+  85%  { opacity: 1; }
+  100% { left: 100%; opacity: 0; }
+}
+
+@keyframes arrowGlow {
+  0%, 100% { opacity: 0.2; }
+  50%      { opacity: 0.7; }
 }
 
 .flow-step {

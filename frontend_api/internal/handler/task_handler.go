@@ -7,6 +7,7 @@ import (
 	"frontend_api/internal/model"
 	"frontend_api/internal/queue"
 	"frontend_api/internal/repository"
+	"frontend_api/internal/sse"
 	"frontend_api/pkg/logger"
 	"frontend_api/pkg/mysql"
 	"frontend_api/utils"
@@ -64,15 +65,17 @@ type TaskHandler struct {
 	taskRepo   *repository.TaskRepository
 	resultRepo *repository.ResultRepository
 	queue      queue.Queue
+	sseManager *sse.Manager
 	log        *logger.Logger
 }
 
 // NewTaskHandler 创建任务处理器
-func NewTaskHandler(taskRepo *repository.TaskRepository, resultRepo *repository.ResultRepository, q queue.Queue) *TaskHandler {
+func NewTaskHandler(taskRepo *repository.TaskRepository, resultRepo *repository.ResultRepository, q queue.Queue, sseManager *sse.Manager) *TaskHandler {
 	return &TaskHandler{
 		taskRepo:   taskRepo,
 		resultRepo: resultRepo,
 		queue:      q,
+		sseManager: sseManager,
 		log:        logger.NewLogger("task-handler"),
 	}
 }
@@ -159,6 +162,12 @@ func (h *TaskHandler) CreateTask(c *gin.Context) {
 	}
 
 	h.log.Infof("任务创建成功: id=%s, target=%s, images=%d, user=%d, credits_after=%d", task.ID, task.Target, imageCount, userID, user.Credits-imageCount)
+
+	// 通过 SSE 通知用户
+	h.sseManager.PushUser(fmt.Sprintf("%d", userID), sse.SSEEvent{
+		Event: "task_status",
+		Data:  fmt.Sprintf(`{"task_id":"%s","status":"pending"}`, task.ID),
+	})
 
 	utils.Success(c, gin.H{
 		"task_id": task.ID,

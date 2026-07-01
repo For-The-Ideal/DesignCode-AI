@@ -62,8 +62,8 @@ import AppSidebar from '~/components/layout/AppSidebar.vue'
 
 const userStore = useUserStore()
 const commonStore = useCommonStore()
-const { isLogin } = storeToRefs(userStore)
-const credits = computed(() => userStore.userInfo.credits ?? 0)
+const { isLogin, userInfo } = storeToRefs(userStore)
+const credits = computed(() => userInfo.value.credits ?? 0)
 const openLoginModal = () => commonStore.setLoginModalVisible(true)
 const route = useRoute()
 const router = useRouter()

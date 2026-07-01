@@ -74,7 +74,7 @@ func Run() {
 	go w.Run(context.Background())
 
 	// 9. 创建 Handlers
-	taskHandler := handler.NewTaskHandler(taskRepo, resultRepo, q)
+	taskHandler := handler.NewTaskHandler(taskRepo, resultRepo, q, sseManager)
 	sseHandler := handler.NewSSEHandler(sseManager)
 	uploadHandler := handler.NewUploadHandler()
 	authHandler := handler.NewAuthHandler()

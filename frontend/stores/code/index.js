@@ -19,13 +19,6 @@ export const useCodeStore = defineStore('code', () => {
       componentLib: '',
     },
 
-    // ── 任务 ──
-    // tasks: { [taskId]: { id, target, status, progress, currentStep, result, images, ... } }
-    tasks: {},
-
-    // ── 任务统计 ──
-    taskCounts: { pending: 0, running: 0, success: 0, failed: 0 },
-
     // ── 并发 ──
     maxConcurrent: 5,
 
@@ -35,16 +28,20 @@ export const useCodeStore = defineStore('code', () => {
 
   // ═══ Getters ═══
 
-  // 服务端实际并发数（所有会话，非仅当前页面创建的）
-  const runningCount = computed(() =>state.taskCounts.pending + state.taskCounts.running)
+  // 服务端实际并发数（从 userStore 读取，跨页面共享）
+  const runningCount = computed(() => {
+    const userStore = useUserStore()
+    const tc = userStore.taskCounts
+    return tc.pending + tc.running
+  })
 
-  // 是否并发满载 = 服务端排队 + 运行 >= 上限
+  // 是否并发满载
   const isConcurrencyFull = computed(() => runningCount.value >= state.maxConcurrent)
 
-  // 是否已达上传上限 = 图片数量 >= 最大图片数
+  // 是否已达上传上限
   const isMaxReached = computed(() => state.images.length >= state.maxImages)
 
-  // 是否所有图片已上传 = 图片数量 > 0 且 每张图片的 cosUrl 都存在
+  // 是否所有图片已上传
   const allUploaded = computed(() => state.images.length > 0 && state.images.every(img => !!img.cosUrl))
 
   const uploadHint = computed(() => {
@@ -57,6 +54,7 @@ export const useCodeStore = defineStore('code', () => {
   })
 
   // ═══ Actions ═══
+
   const ctx = { state, runningCount, isConcurrencyFull, maxConcurrent: state.maxConcurrent }
 
   const uploadModule = createUploadActions(ctx)
@@ -70,9 +68,7 @@ export const useCodeStore = defineStore('code', () => {
   // 清除所有
   const clearAll = () => {
     if (state.isSubmitting) return
-    taskModule.stopAllPolling()
     state.images = []
-    state.tasks = {}
     state.isSubmitting = false
   }
 

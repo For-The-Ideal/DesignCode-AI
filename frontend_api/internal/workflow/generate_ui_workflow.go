@@ -93,6 +93,14 @@ func (w *GenerateUIWorkflow) pushProgress(task *model.Task, step string, progres
 	})
 }
 
+// pushUserStatus 向用户级 SSE 推送任务状态变更
+func (w *GenerateUIWorkflow) pushUserStatus(task *model.Task, status model.TaskStatus) {
+	w.sseManager.PushUser(fmt.Sprintf("%d", task.UserID), sse.SSEEvent{
+		Event: "task_status",
+		Data:  fmt.Sprintf(`{"task_id":"%s","status":"%s"}`, task.ID, status),
+	})
+}
+
 // updateTask 只更新 DB 的 progress + current_step（不追加 task_steps，用于 simulate 中间态）
 func (w *GenerateUIWorkflow) updateProgressDB(taskID string, step string, progress int) {
 	_ = w.taskRepo.UpdateProgress(taskID, progress, step)
@@ -172,6 +180,7 @@ func (w *GenerateUIWorkflow) Execute(ctx context.Context, task *model.Task) erro
 	// ── 0. 更新状态为 running ──
 	_ = w.taskRepo.UpdateStatus(task.ID, model.TaskStatusRunning)
 	task.Status = model.TaskStatusRunning
+	w.pushUserStatus(task, model.TaskStatusRunning)
 
 	// ── Step 1: 准备图片（取 URL + 下载转 base64）──
 	w.pushProgress(task, StepDownloadImages, 5)
@@ -307,6 +316,7 @@ func (w *GenerateUIWorkflow) Execute(ctx context.Context, task *model.Task) erro
 	// ── Step 6: Done ───────────────────────────────
 	task.Status = model.TaskStatusSuccess
 	_ = w.taskRepo.UpdateStatus(task.ID, model.TaskStatusSuccess)
+	w.pushUserStatus(task, model.TaskStatusSuccess)
 	w.pushProgress(task, StepDone, 100)
 
 	// 推送 done 事件
@@ -350,6 +360,7 @@ func (w *GenerateUIWorkflow) handleError(task *model.Task, err error) {
 	// 更新任务内存状态并落库
 	task.Status = model.TaskStatusFailed
 	_ = w.taskRepo.Save(task)
+	w.pushUserStatus(task, model.TaskStatusFailed)
 
 	// 保存失败结果（含错误信息和积分记录）
 	result := &model.Result{
