@@ -2,6 +2,7 @@ mysql:
   dsn: "root:123456@tcp(127.0.0.1:3306)/design_code_ai?charset=utf8mb4&parseTime=True&loc=Local"
 server:
   local: "http://localhost"
+  site_url: "http://localhost:3000"
   port: ":8888"
   jwt_secret: "design_code_ai_secret_key"
 
@@ -105,3 +106,27 @@ cos:
   region: "ap-guangzhou" # 区域
   secret_id: "AKIDplYGoIervrnhPtLchaFvRnIi2EPQDq9L" # Secret ID
   secret_key: "1vY0FFzqY1EMIqOp9VgeOvDFguwraJtG" # Secret Key
+
+# ═══════════════════════════════════════════════
+#  邮件 SMTP 配置（密码重置）
+# ═══════════════════════════════════════════════
+email:
+  providers:
+    qq:
+      host: "smtp.qq.com"
+      port: "465"
+      user: "1842146958@qq.com"
+      password: "pufwlyvavjefejig"
+      from: "1842146958@qq.com"
+    163:
+      host: "smtp.163.com"
+      port: "465"
+      user: ""
+      password: ""
+      from: ""
+    gmail:
+      host: "smtp.gmail.com"
+      port: "587"
+      user: ""
+      password: ""
+      from: ""

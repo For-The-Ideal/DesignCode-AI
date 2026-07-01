@@ -1,20 +1,22 @@
 package handler
 
 import (
+	cryptorand "crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"frontend_api/internal/model"
+	"frontend_api/pkg/email"
 	"frontend_api/pkg/mysql"
 	"frontend_api/utils"
 	"math/rand"
 	"strings"
 	"time"
 
-	"gorm.io/gorm"
-
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 // ═══════════════════════════════════════════════
@@ -54,6 +56,18 @@ type CaptchaResponse struct {
 // TemplateRequest 模板请求参数
 type TemplateRequest struct {
 	Template int `form:"template" json:"template"`
+}
+
+// ForgotPasswordRequest 忘记密码请求参数
+type ForgotPasswordRequest struct {
+	Email         string `json:"email" binding:"required"`
+	EmailProvider string `json:"email_provider"` // 前端可选透传，后端优先从邮箱域名自动识别
+}
+
+// ResetPasswordRequest 重置密码请求参数
+type ResetPasswordRequest struct {
+	Token    string `json:"token" binding:"required"`
+	Password string `json:"password" binding:"required,min=6"`
 }
 
 // Captcha 获取图形验证码
@@ -191,6 +205,108 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		"credits":      user.Credits,
 		"credits_used": user.CreditsUsed,
 	}, "登录成功")
+}
+
+// ForgotPassword 忘记密码 - 生成重置令牌并发送邮件
+func (h *AuthHandler) ForgotPassword(c *gin.Context) {
+	var req ForgotPasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.BadRequest(c, "参数校验失败: "+err.Error())
+		return
+	}
+
+	req.Email = strings.ToLower(strings.TrimSpace(req.Email))
+
+	// 从邮箱域名自动识别服务商
+	provider, err := email.ValidateEmail(req.Email)
+	if err != nil {
+		utils.BadRequest(c, err.Error())
+		return
+	}
+
+	db := mysql.GetDB()
+
+	var user model.User
+	if err := db.Where("email = ?", req.Email).First(&user).Error; err != nil {
+		utils.Error(c, 404, "该邮箱未注册")
+		return
+	}
+	if user.Status == "disabled" {
+		utils.Error(c, 403, "账号已被禁用")
+		return
+	}
+
+	tokenBytes := make([]byte, 32)
+	if _, err := cryptorand.Read(tokenBytes); err != nil {
+		utils.InternalError(c, "令牌生成失败")
+		return
+	}
+	token := hex.EncodeToString(tokenBytes)
+	expiresAt := time.Now().Add(30 * time.Minute)
+
+	if err := db.Model(&user).Updates(map[string]interface{}{
+		"reset_token":            token,
+		"reset_token_expires_at": expiresAt,
+		"reset_token_used_at":    nil,
+	}).Error; err != nil {
+		utils.InternalError(c, "令牌存储失败: "+err.Error())
+		return
+	}
+
+	sender, err := email.GetSender(provider)
+	if err != nil {
+		utils.InternalError(c, "邮件服务配置错误: "+err.Error())
+		return
+	}
+	if err := sender.SendResetEmail(req.Email, token); err != nil {
+		utils.InternalError(c, "邮件发送失败: "+err.Error())
+		return
+	}
+
+	utils.Success(c, gin.H{}, "重置邮件已发送，请检查邮箱")
+}
+
+// ResetPassword 重置密码
+func (h *AuthHandler) ResetPassword(c *gin.Context) {
+	var req ResetPasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.BadRequest(c, "参数校验失败: "+err.Error())
+		return
+	}
+
+	db := mysql.GetDB()
+
+	var user model.User
+	if err := db.Where("reset_token = ?", req.Token).First(&user).Error; err != nil {
+		utils.Error(c, 400, "重置链接无效或已使用")
+		return
+	}
+
+	if user.ResetTokenUsedAt != nil {
+		utils.Error(c, 400, "重置链接已被使用")
+		return
+	}
+	if user.ResetTokenExpiresAt == nil || time.Now().After(*user.ResetTokenExpiresAt) {
+		utils.Error(c, 400, "重置链接已过期，请重新申请")
+		return
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		utils.InternalError(c, "密码处理失败")
+		return
+	}
+
+	now := time.Now()
+	if err := db.Model(&user).Updates(map[string]interface{}{
+		"password":            string(hashedPassword),
+		"reset_token_used_at": &now,
+	}).Error; err != nil {
+		utils.InternalError(c, "密码更新失败")
+		return
+	}
+
+	utils.Success(c, gin.H{}, "密码重置成功，请重新登录")
 }
 
 // Template 获取模板数据

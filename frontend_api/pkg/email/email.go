@@ -68,7 +68,6 @@ Content-Type: text/html; charset=UTF-8
 	auth := smtp.PlainAuth("", s.User, s.Password, s.Host)
 
 	if s.UseTLS {
-		// SSL 直连（465）
 		tlsConfig := &tls.Config{
 			ServerName:         s.Host,
 			InsecureSkipVerify: false,
@@ -102,7 +101,6 @@ Content-Type: text/html; charset=UTF-8
 		return wc.Close()
 	}
 
-	// STARTTLS（587）
 	err := smtp.SendMail(addr, auth, s.From, []string{to}, []byte(body))
 	if err != nil {
 		return fmt.Errorf("邮件发送失败: %w", err)

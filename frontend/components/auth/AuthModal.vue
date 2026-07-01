@@ -28,27 +28,33 @@
     <CaptchaModal v-if="isCaptchaActive" ref="captchaModalRef" @confirm="onCaptchaConfirm" @back="onCaptchaBack" />
     <Register v-if="isRegister" @success="onRegisterSuccess" />
     <div v-if="isForgotPassword" class="forgot-form">
-      <form @submit.prevent="submitForgotPassword" >
-        <div class="input-field" :class="{ focused: forgotFocused }">
-          <i class="fas fa-envelope input-icon"></i>
+      <div class="forgot-input-group" :class="{ focused: forgotFocused }">
+        <i class="fas fa-envelope input-icon"></i>
+        <div class="email-wrap">
           <input
+            ref="forgotInputRef"
             v-model="forgotEmail"
             type="email"
-            placeholder="邮箱地址"
-            maxlength="50"
+            placeholder="输入邮箱地址"
+            maxlength="254"
             @focus="forgotFocused = true"
             @blur="forgotFocused = false"
           />
-          <svg class="border-svg" :class="{ animate: forgotFocused }">
-            <rect x="0" y="0" rx="26" ry="26" width="100%" height="100%" pathLength="100" class="border-bg" />
-            <rect x="0" y="0" rx="26" ry="26" width="100%" height="100%" pathLength="100" class="moving-stroke" />
-          </svg>
         </div>
-        <button type="submit" class="submit-btn" :disabled="forgotLoading">
-          <span v-if="!forgotLoading">发送重置链接</span>
-          <span v-else class="loading-spinner"></span>
-        </button>
-      </form>
+        <span class="input-divider"></span>
+        <select v-model="forgotProvider" class="provider-select" @change="changeProvider" @blur="forgotFocused = false">
+          <option v-for="p in emailProviders" :key="p.value" :value="p.value">{{ p.label }}</option>
+        </select>
+        <svg class="border-svg" :class="{ animate: forgotFocused }">
+          <rect x="0" y="0" rx="26" ry="26" width="100%" height="100%" pathLength="100" class="border-bg" />
+          <rect x="0" y="0" rx="26" ry="26" width="100%" height="100%" pathLength="100" class="moving-stroke" />
+        </svg>
+      </div>
+      <button type="button" class="submit-btn" :disabled="forgotLoading" @click="submitForgotPassword">
+        <span v-if="!forgotLoading">发送重置链接</span>
+        <span v-else class="loading-spinner"></span>
+      </button>
+      <p v-if="forgotMsg" :class="['forgot-msg', forgotMsgType]">{{ forgotMsg }}</p>
     </div>
 
     <div v-if="!isCaptchaActive && !isForgotPassword" class="switch-mode">
@@ -71,6 +77,7 @@ import Register from './Register.vue'
 import CaptchaModal from './CaptchaModal.vue'
 import { loginApi } from '@/api/login'
 import { useUserStore } from '@/stores/user'
+import { validateEmail } from '@/utils/index'
 
 const emit = defineEmits(['loginSuccess', 'registerSuccess', 'close'])
 
@@ -85,8 +92,18 @@ const userStore = useUserStore()
 
 // 忘记密码表单
 const forgotEmail = ref('')
+const forgotInputRef = ref(null)
 const forgotFocused = ref(false)
 const forgotLoading = ref(false)
+const forgotProvider = ref('qq')
+const forgotMsg = ref('')
+const forgotMsgType = ref('')
+
+const emailProviders = [
+  { value: 'qq', domain: 'qq.com', label: 'QQ邮箱' },
+  { value: '163', domain: '163.com', label: '163邮箱' },
+  { value: 'gmail', domain: 'gmail.com', label: 'Gmail' },
+]
 
 const open = () => {
   dialogRef.value?.open()
@@ -124,6 +141,12 @@ const onCaptchaBack = () => {
   isCaptchaActive.value = false
 }
 
+const changeProvider = () => {
+  forgotEmail.value = ''
+  forgotFocused.value = true
+  forgotInputRef.value?.focus()
+}
+
 const onCaptchaConfirm = async ({ captchaId, captchaCode }) => {
   try {
     const res = await loginApi.login({
@@ -132,14 +155,14 @@ const onCaptchaConfirm = async ({ captchaId, captchaCode }) => {
       captcha_id: captchaId,
       captcha_code: captchaCode,
     })
-    if (res.code === 200) {
-      isCaptchaActive.value = false
-      emit('loginSuccess', res.data)
-      close()
-    } else {
+    if(res.code !=200){
       captchaModalRef.value?.refresh()
       captchaModalRef.value?.showError(res.message || '验证失败，请重试')
+      return
     }
+    isCaptchaActive.value = false
+    emit('loginSuccess', res.data)
+    close()
   } catch (e) {
     captchaModalRef.value?.showError('网络错误，请重试')
     captchaModalRef.value?.refresh()
@@ -152,18 +175,42 @@ const onRegisterSuccess = (data) => {
   goToLogin()
 }
 const submitForgotPassword = async () => {
-  if (!forgotEmail.value) return
-  forgotLoading.value = true
-  // TODO: 对接真实忘记密码 API
-  await new Promise(resolve => setTimeout(resolve, 800))
-  forgotLoading.value = false
-  alert('重置链接已发送，请检查邮箱')
-  goToLogin()
-  forgotEmail.value = ''
-}
+  const email = forgotEmail.value.trim()
+  if (!email) return
 
-const socialLogin = (provider) => {
-  alert(`${provider.toUpperCase()} 登录功能开发中...`)
+  const check = validateEmail(email.toLowerCase())
+  if (!check.valid) {
+    forgotMsg.value = check.message
+    forgotMsgType.value = 'error'
+    return
+  }
+
+  // 校验邮箱域名是否匹配所选服务商
+  const domain = email.split('@')[1]?.toLowerCase()
+  const matched = emailProviders.find(p => domain?.includes(p.domain))
+  if (matched && matched.value !== forgotProvider.value) {
+    forgotMsg.value = `邮箱与所选服务商不匹配，请选择${matched.label}或修改邮箱`
+    forgotMsgType.value = 'error'
+    return
+  }
+
+  forgotLoading.value = true
+  forgotMsg.value = ''
+  try {
+    const res = await loginApi.forgotPassword({ email: email.toLowerCase() })
+    if (res.code != 200) {
+      forgotMsg.value = res.message || '发送失败，请重试'
+      forgotMsgType.value = 'error'
+      return
+    }
+    forgotMsg.value = '重置链接已发送，请检查您的邮箱'
+    forgotMsgType.value = 'success'
+  } catch (e) {
+    forgotMsg.value = '网络错误，请重试'
+    forgotMsgType.value = 'error'
+  } finally {
+    forgotLoading.value = false
+  }
 }
 
 defineExpose({ open, close })
@@ -315,7 +362,8 @@ defineExpose({ open, close })
 .forgot-form {
   margin-bottom: 24px;
 }
-.forgot-form .input-field {
+/* 忘记密码 — 账号+服务商输入组 */
+.forgot-input-group {
   position: relative;
   display: flex;
   align-items: center;
@@ -326,31 +374,75 @@ defineExpose({ open, close })
   transition: all 0.3s;
   margin-bottom: 18px;
 }
-.forgot-form .input-field.focused {
+.forgot-input-group.focused {
   background: rgba(255, 255, 255, 0.08);
 }
-.forgot-form .input-field input {
+.forgot-input-group .email-wrap {
   flex: 1;
+  min-width: 0;
+}
+.forgot-input-group .email-wrap input {
+  width: 100%;
   background: transparent;
   border: none;
   outline: none;
   color: #e5e7eb;
   font-size: 15px;
-  padding: 0 8px;
+  padding: 0;
 }
-.forgot-form .input-field input::placeholder {
+.forgot-input-group .email-wrap input::placeholder {
   color: #4b5563;
 }
-.forgot-form .input-icon {
+.forgot-input-group .input-divider {
+  width: 1px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 0 10px;
+  flex-shrink: 0;
+}
+.forgot-input-group .provider-select {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #00ffff;
+  font-size: 13px;
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 4px 0;
+}
+.forgot-input-group .provider-select option {
+  background: #1a1a2e;
+  color: #e5e7eb;
+}
+.forgot-input-group .input-icon {
   color: #6b7280;
   font-size: 16px;
   width: 20px;
   text-align: center;
   flex-shrink: 0;
+  margin-right: 8px;
 }
-.forgot-form .input-field.focused .input-icon {
+.forgot-input-group.focused .input-icon {
   color: #00ffff;
 }
+
+/* 忘记密码 — 提示消息 */
+.forgot-msg {
+  text-align: center;
+  font-size: 13px;
+  margin-top: 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+.forgot-msg.error {
+  color: #ff4757;
+  background: rgba(255, 71, 87, 0.08);
+}
+.forgot-msg.success {
+  color: #00ff88;
+  background: rgba(0, 255, 136, 0.08);
+}
+
 .forgot-form .submit-btn {
   width: 100%;
   height: 50px;

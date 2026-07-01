@@ -18,11 +18,13 @@ type Config struct {
 	Server struct {
 		Port      string `mapstructure:"port"`
 		Local     string `mapstructure:"local"`
+		SiteURL   string `mapstructure:"site_url"`
 		JWTSecret string `mapstructure:"jwt_secret"`
 	} `mapstructure:"server"`
 	AI    AIConfig    `mapstructure:"ai"`
 	Queue QueueConfig `mapstructure:"queue"`
 	COS   COSConfig   `mapstructure:"cos"`
+	Email EmailConfig `mapstructure:"email"`
 }
 
 // AIConfig AI 相关配置
@@ -42,6 +44,20 @@ type COSConfig struct {
 	Region    string `mapstructure:"region"`
 	SecretID  string `mapstructure:"secret_id"`
 	SecretKey string `mapstructure:"secret_key"`
+}
+
+// EmailConfig 邮件服务配置
+type EmailConfig struct {
+	Providers map[string]SMTPConfig `mapstructure:"providers"`
+}
+
+// SMTPConfig 单个 SMTP 服务商配置
+type SMTPConfig struct {
+	Host     string `mapstructure:"host"`
+	Port     string `mapstructure:"port"`
+	User     string `mapstructure:"user"`
+	Password string `mapstructure:"password"`
+	From     string `mapstructure:"from"`
 }
 
 // AILoggingConfig AI 日志配置
