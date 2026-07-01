@@ -38,7 +38,10 @@ interface _GlobalComponents {
   PreviewTempLateComputer: typeof import("../../components/previewTempLate/computer.vue")['default']
   PreviewTempLate: typeof import("../../components/previewTempLate/index.vue")['default']
   PreviewTempLateMobile: typeof import("../../components/previewTempLate/mobile.vue")['default']
+  TasksFilter: typeof import("../../components/tasks/TasksFilter.vue")['default']
   TasksSidebar: typeof import("../../components/tasks/TasksSidebar.vue")['default']
+  TasksStatusOverview: typeof import("../../components/tasks/TasksStatusOverview.vue")['default']
+  TasksTable: typeof import("../../components/tasks/TasksTable.vue")['default']
   UploadDescEditorModal: typeof import("../../components/upload/DescEditorModal.vue")['default']
   UploadZone: typeof import("../../components/upload/UploadZone.vue")['default']
   NuxtWelcome: typeof import("../../node_modules/.pnpm/nuxt@4.4.8_@babel+plugin-sy_99ff0ff52633701d5303af6e8aaecd08/node_modules/nuxt/dist/app/components/welcome.vue")['default']
@@ -90,7 +93,10 @@ interface _GlobalComponents {
   LazyPreviewTempLateComputer: LazyComponent<typeof import("../../components/previewTempLate/computer.vue")['default']>
   LazyPreviewTempLate: LazyComponent<typeof import("../../components/previewTempLate/index.vue")['default']>
   LazyPreviewTempLateMobile: LazyComponent<typeof import("../../components/previewTempLate/mobile.vue")['default']>
+  LazyTasksFilter: LazyComponent<typeof import("../../components/tasks/TasksFilter.vue")['default']>
   LazyTasksSidebar: LazyComponent<typeof import("../../components/tasks/TasksSidebar.vue")['default']>
+  LazyTasksStatusOverview: LazyComponent<typeof import("../../components/tasks/TasksStatusOverview.vue")['default']>
+  LazyTasksTable: LazyComponent<typeof import("../../components/tasks/TasksTable.vue")['default']>
   LazyUploadDescEditorModal: LazyComponent<typeof import("../../components/upload/DescEditorModal.vue")['default']>
   LazyUploadZone: LazyComponent<typeof import("../../components/upload/UploadZone.vue")['default']>
   LazyNuxtWelcome: LazyComponent<typeof import("../../node_modules/.pnpm/nuxt@4.4.8_@babel+plugin-sy_99ff0ff52633701d5303af6e8aaecd08/node_modules/nuxt/dist/app/components/welcome.vue")['default']>

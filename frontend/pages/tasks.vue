@@ -7,28 +7,8 @@
       :navItems="navItems"
       @navClick="handleNavClick"
     >
-      <div class="sidebar-slot-content">
-        <div class="slot-section-title">
-          <i class="fas fa-chart-pie"></i>
-          <span>任务概览</span>
-        </div>
-        <div class="slot-stats">
-          <div
-            v-for="s in statusList"
-            :key="s.key"
-            class="slot-stat-row"
-          >
-            <div class="slot-stat-left">
-              <span class="slot-dot" :class="'sdot--' + s.key"></span>
-              <span class="slot-stat-label">{{ s.label }}</span>
-            </div>
-            <span class="slot-stat-num">{{ statusCounts[s.key] }}</span>
-          </div>
-        </div>
-      </div>
+      <TasksStatusOverview :statusList="statusList" />
     </AppSidebar>
-
-    
 
     <main class="task-main">
       <!-- ═══ 页面头 ═══ -->
@@ -45,166 +25,16 @@
       </div>
 
       <!-- ═══ 筛选表单 ═══ -->
-      <el-form :model="filterForm" inline class="filter-form">
-        <el-form-item label="搜索">
-          <el-input
-            v-model="filterForm.search"
-            placeholder="任务名称、框架..."
-            :prefixIcon="Search"
-            clearable
-            class="f-search"
-          />
-        </el-form-item>
-        <el-form-item label="框架">
-          <el-select
-            v-model="filterForm.framework"
-            placeholder="全部"
-            clearable
-            class="f-sel"
-            popper-class="task-popper"
-          >
-            <el-option label="Flutter" value="Flutter" />
-            <el-option label="React" value="React" />
-            <el-option label="Vue3" value="Vue3" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="平台">
-          <el-select
-            v-model="filterForm.platform"
-            placeholder="全部"
-            clearable
-            class="f-sel"
-            popper-class="task-popper"
-          >
-            <el-option label="📱 手机" value="mobile" />
-            <el-option label="🖥️ 桌面" value="desktop" />
-            <el-option label="📋 平板" value="tablet" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-select
-            v-model="filterForm.status"
-            placeholder="全部"
-            clearable
-            class="f-sel"
-            popper-class="task-popper"
-          >
-            <el-option label="✅ 已完成" value="success" />
-            <el-option label="🔄 生成中" value="running" />
-            <el-option label="⏳ 排队中" value="pending" />
-            <el-option label="❌ 失败" value="failed" />
-          </el-select>
-        </el-form-item>
-      </el-form>
+      <TasksFilter v-model="filterForm" />
 
       <!-- ═══ 任务表格 ═══ -->
-      <div class="table-wrap">
-        <el-table
-          :data="paginatedTasks"
-          row-class-name="task-row"
-          highlight-current-row
-          style="width:100%"
-        >
-          <el-table-column label="项目名称" align="left">
-            <template #default="{ row }">
-              <div class="cell-proj">
-                <div class="proj-icon">
-                  <el-image
-                    v-if="row.images?.[0]?.url"
-                    :src="row.images[0].url"
-                    fit="cover"
-                    class="icon-img"
-                  >
-                    <template #error><i class="fas fa-image"></i></template>
-                  </el-image>
-                  <i v-else class="fas fa-image"></i>
-                </div>
-                <span class="proj-name">{{ taskDisplayName(row) }}</span>
-              </div>
-            </template>
-          </el-table-column>
-
-          <el-table-column label="框架" align="center">
-            <template #default="{ row }">
-              <el-tag :type="fwTagType(row.framework)" size="small" effect="dark" round>
-                {{ row.framework }}
-              </el-tag>
-            </template>
-          </el-table-column>
-
-          <el-table-column label="平台" align="center">
-            <template #default="{ row }">
-              <span class="cell-plat">
-                <i :class="platformIcon(row.platform)"></i>
-                {{ platformLabel(row.platform) }}
-              </span>
-            </template>
-          </el-table-column>
-
-          <el-table-column label="状态" align="center">
-            <template #default="{ row }">
-              <el-tag :type="statusTagType(row.status)" size="small" effect="dark" round>
-                {{ statusLabel(row.status) }}
-              </el-tag>
-            </template>
-          </el-table-column>
-
-          <el-table-column label="进度" align="center">
-            <template #default="{ row }">
-              <div class="cell-prog">
-                <el-progress
-                  :percentage="row.progress"
-                  :status="row.status === 'success' ? 'success' : row.status === 'failed' ? 'exception' : ''"
-                  :strokeWidth="6"
-                  :showText="false"
-                  :color="progressColor(row.status)"
-                  style="flex:1"
-                />
-                <span class="prog-num">{{ row.progress }}%</span>
-              </div>
-            </template>
-          </el-table-column>
-
-          <el-table-column label="创建时间" align="center">
-            <template #default="{ row }">
-              <span class="cell-time">{{ row.createdAt }}</span>
-            </template>
-          </el-table-column>
-
-          <el-table-column label="操作" width="120" align="center" fixed="right">
-            <template #default="{ row }">
-              <div class="cell-acts" @click.stop>
-                <el-button link type="primary" size="small" @click="goToDetail(row)">
-                  <span>详情</span>
-                </el-button>
-                <el-button link type="danger" size="small" @click="handleDelete(row)">
-                  <span>删除</span>
-                </el-button>
-              </div>
-            </template>
-          </el-table-column>
-        </el-table>
-      </div>
-
-      <!-- 空状态 -->
-      <div class="empty-place" v-if="filteredTasks.length === 0">
-        <el-empty
-          :imageSize="80"
-          :description="filterForm.search ? '未找到匹配的任务' : '暂无任务，快去创建一个吧'"
-        />
-      </div>
-
-      <!-- 分页 -->
-      <div class="pager-wrap" v-if="filteredTasks.length > pageSize">
-        <el-pagination
-          v-model:currentPage="currentPage"
-          :pageSize="pageSize"
-          :total="filteredTasks.length"
-          layout="prev, pager, next"
-          background
-          small
-        />
-      </div>
+      <TasksTable
+        :tasks="filteredTasks"
+        :isLoading="loading"
+        :isEmptyFiltered="!!filterForm.search || !!filterForm.framework || !!filterForm.platform || !!filterForm.status"
+        @detail="goToDetail"
+        @delete="handleDelete"
+      />
     </main>
   </div>
 </template>
@@ -212,36 +42,29 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ElMessageBox } from 'element-plus'
-import { Search, Plus } from '@element-plus/icons-vue'
+import { ElMessageBox, ElMessage } from 'element-plus'
+import { Plus } from '@element-plus/icons-vue'
 import AppSidebar from '~/components/layout/AppSidebar.vue'
+import TasksFilter from '~/components/tasks/TasksFilter.vue'
+import TasksTable from '~/components/tasks/TasksTable.vue'
+import TasksStatusOverview from '~/components/tasks/TasksStatusOverview.vue'
 import { useMenuListStore } from '~/stores/menuList'
-
+import { taskDisplayName } from '~/utils/taskHelpers'
+import { storeToRefs } from 'pinia'
+import { useUserStore } from '~/stores/user'
 const router = useRouter()
 const sidebarOpen = ref(true)
+const userStore = useUserStore()
+const { taskCounts } = storeToRefs(userStore)
 
-// ═══ 任务状态统计 ═══
-const statusList = [
+// ═══ 状态列表（含 count 字段） ═══
+const statusList = computed(() => [
   { key: 'success', label: '已完成' },
   { key: 'running', label: '生成中' },
   { key: 'pending', label: '排队中' },
   { key: 'failed', label: '失败' },
-]
-const statusCounts = computed(() => {
-  const counts = { success: 0, running: 0, pending: 0, failed: 0 }
-  tasks.value.forEach(t => {
-    if (counts[t.status] !== undefined) counts[t.status]++
-  })
-  return counts
-})
-
-// ═══ 筛选 ═══
-const filterForm = ref({ search: '', framework: '', platform: '', status: '' })
-
-// ═══ 分页 ═══
-const currentPage = ref(1)
-const pageSize = ref(10)
-
+].map(s => ({ ...s, count: taskCounts.value[s.key] ?? 0 }))
+)
 // ═══ 导航 ═══
 const route = useRoute()
 const menuStore = useMenuListStore()
@@ -249,56 +72,14 @@ const navItems = menuStore.navItems.map(item => ({
   ...item,
   active: route.path === item.to,
 }))
-
 const handleNavClick = (item) => {
   if (item.active) return
   router.push(item.to)
 }
 
-// ═══ 工具函数 ═══
-const PLAT = { mobile: '手机', desktop: '桌面', tablet: '平板' }
-const PLAT_ICON = { mobile: 'fas fa-mobile-alt', desktop: 'fas fa-desktop', tablet: 'fas fa-tablet-alt' }
-const STATUS_MAP = { pending: '排队中', running: '生成中', success: '已完成', failed: '失败' }
-
-const platformLabel = p => PLAT[p] || p || '—'
-const platformIcon = p => PLAT_ICON[p] || 'fas fa-question-circle'
-const statusLabel  = s => STATUS_MAP[s] || s
-
-const statusTagType = s =>
-  ({ success: 'success', running: 'warning', pending: 'info', failed: 'danger' }[s] || 'info')
-
-const fwTagType = fw =>
-  ({ Flutter: 'primary', React: '', Vue3: 'success' }[fw] || 'info')
-
-const progressColor = s =>
-  ({ success: '#34d399', failed: '#f87171', running: '#facc15' }[s])
-
-const taskDisplayName = t =>
-  t.images?.[0]?.desc || `${t.platform || '未知'} · ${t.framework || '未知'}`
-
-
-// ═══ 数据 ═══
-const filteredTasks = computed(() => {
-  let r = tasks.value
-  const f = filterForm.value
-  if (f.search) {
-    const q = f.search.toLowerCase()
-    r = r.filter(t =>
-      taskDisplayName(t).toLowerCase().includes(q) ||
-      t.id.toLowerCase().includes(q) ||
-      (t.framework || '').toLowerCase().includes(q)
-    )
-  }
-  if (f.framework) r = r.filter(t => t.framework === f.framework)
-  if (f.platform)  r = r.filter(t => t.platform === f.platform)
-  if (f.status)    r = r.filter(t => t.status === f.status)
-  return r
-})
-
-const paginatedTasks = computed(() => {
-  const s = (currentPage.value - 1) * pageSize.value
-  return filteredTasks.value.slice(s, s + pageSize.value)
-})
+// ═══ 筛选 ═══
+const filterForm = ref({ search: '', framework: '', platform: '', status: '' })
+const loading = ref(false)
 
 // ═══ 操作 ═══
 const goToDetail = row => router.push(`/detail/${row.id}`)
@@ -433,10 +214,30 @@ const tasks = ref([
     ],
   },
 ])
+
+
+
+// ═══ 筛选计算 ═══
+const filteredTasks = computed(() => {
+  let r = tasks.value
+  const f = filterForm.value
+  if (f.search) {
+    const q = f.search.toLowerCase()
+    r = r.filter(t =>
+      taskDisplayName(t).toLowerCase().includes(q) ||
+      t.id.toLowerCase().includes(q) ||
+      (t.framework || '').toLowerCase().includes(q)
+    )
+  }
+  if (f.framework) r = r.filter(t => t.framework === f.framework)
+  if (f.platform)  r = r.filter(t => t.platform === f.platform)
+  if (f.status)    r = r.filter(t => t.status === f.status)
+  return r
+})
 </script>
 
 <style scoped>
-/* ═══════════════ 页面布局 ═══════════════ */
+/* ═══ 页面布局 ═══ */
 .tasks-page {
   display: flex;
   height: 100%;
@@ -458,7 +259,7 @@ const tasks = ref([
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ═══════════════ 页面头 ═══════════════ */
+/* ═══ 页面头 ═══ */
 .page-top {
   display: flex;
   justify-content: space-between;
@@ -474,260 +275,20 @@ const tasks = ref([
   margin: 0;
   letter-spacing: -0.3px;
 }
-.count-tag {
-  font-size: 11px;
-  opacity: 0.7;
-}
+.count-tag { font-size: 11px; opacity: 0.7; }
 
-/* ═══════════════ 筛选表单 ═══════════════ */
-.filter-form {
-  flex-shrink: 0;
-  margin-bottom: 14px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 12px;
-}
-.f-search { width: 220px; }
-.f-sel    { width: 130px; }
-
-/* select/input 输入框：统一 dark-slate 风格 */
-:deep(.f-sel .el-select__wrapper),
-:deep(.f-sel .el-input__wrapper),
-:deep(.f-search .el-input__wrapper) {
-  background: rgba(15, 22, 32, 0.75) !important;
-  border: 1px solid rgba(0,255,255,0.12) !important;
-  box-shadow: none !important;
-}
-:deep(.f-sel .el-input__inner) {
-  color: #cbd5e1 !important;
-}
-:deep(.f-sel .el-select__caret) {
-  color: rgba(0,255,255,0.4) !important;
-}
-
-/* ═══════════════ 表格容器 ═══════════════ */
-.table-wrap {
-  flex: 1;
-  min-height: 0;
-  border-radius: 14px;
-  border: 1px solid rgba(0, 255, 255, 0.08);
-  overflow: hidden;
-  background: rgba(10, 14, 23, 0.65);
-  backdrop-filter: blur(12px);
-}
-
-/* ═══════════════ 表格：背景强制透明 + 表头暗色 ═══════════════ */
-:deep(.el-table),
-:deep(.el-table__inner-wrapper),
-:deep(.el-table__body-wrapper),
-:deep(.el-table__header-wrapper),
-:deep(.el-table__fixed),
-:deep(.el-table__fixed-right),
-:deep(.el-table__fixed-header-wrapper),
-:deep(.el-table__fixed-body-wrapper),
-:deep(.el-table__fixed-right-patch),
-:deep(.el-table__empty-block),
-:deep(.el-table__empty-text),
-:deep(.el-table__body),
-:deep(.el-table__body tr),
-:deep(.el-table__body tr td) {
-  background: transparent !important;
-  border-bottom: none !important;
-}
-
-:deep(.el-table__header th),
-:deep(.el-table__fixed-header-wrapper th),
-:deep(.el-table.is-scrolling-none th.el-table-fixed-column--right) {
-  background: radial-gradient(
-circle at top,
-rgba(41,70,255,.08),
-transparent 35%
-),
-#090B12;
-  color: #94a3b8 !important;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.3px;
-  border-bottom: 1px solid rgba(0,255,255,0.08) !important;
-  padding: 14px 8px;
-}
-
-:deep(.task-row),
-:deep(.task-row td) {
-  background: transparent !important;
-  border-bottom: 1px solid rgba(0,255,255,0.04) !important;
-  color: #cbd5e1;
-  font-size: 13px;
-  padding: 12px 0;
-}
-
-:deep(.el-table__body tr:hover > td) {
-  background: rgba(0, 255, 255, 0.03) !important;
-}
-:deep(.el-table__body tr.current-row > td) {
-  background: rgba(0, 255, 255, 0.05) !important;
-}
-
-/* 移除表格底部白线（Element Plus 伪元素边框） */
-:deep(.el-table::before),
-:deep(.el-table::after),
-:deep(.el-table__inner-wrapper::before),
-:deep(.el-table__inner-wrapper::after) {
-  display: none !important;
-}
-
-/* ── 单元格内容 ── */
-.cell-proj { display: flex; align-items: center; gap: 10px; }
-.proj-icon {
-  width: 34px; height: 34px;
-  border-radius: 8px;
-  overflow: hidden;
-  flex-shrink: 0;
-  background: linear-gradient(135deg, rgba(0,255,255,0.08), rgba(255,0,255,0.04));
-  border: 1px solid rgba(0,255,255,0.1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.proj-icon i { font-size: 13px; color: rgba(255,255,255,0.15); }
-.icon-img { width: 100%; height: 100%; }
-.proj-name {
-  font-size: 14px;
-  font-weight: 500;
-  color: #e2e8f0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.cell-plat {
-  font-size: 12px;
-  color: #94a3b8;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  justify-content: center;
-}
-.cell-plat i { font-size: 11px; opacity: 0.5; }
-
-.cell-prog {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  justify-content: center;
-  flex-wrap: nowrap;
-}
-.prog-num {
-  font-size: 11px;
-  color: #94a3b8;
-  font-weight: 600;
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-
-.cell-time {
-  font-size: 12px;
-  color: #94a3b8;
-  font-family: 'Fira Code', monospace;
-}
-
-.cell-acts {
-  display: flex;
-  gap: 8px;
-  justify-content: center;
-  align-items: center;
-}
-
-/* ═══════════════ 空状态 ═══════════════ */
-.empty-place {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 300px;
-}
-
-/* ═══════════════ 分页 ═══════════════ */
-.pager-wrap {
-  display: flex;
-  justify-content: center;
-  margin-top: 14px;
-  flex-shrink: 0;
-}
-
-/* ═══════════════ 响应式 ═══════════════ */
+/* ═══ 响应式 ═══ */
 @media (max-width: 1100px) {
   .task-main { padding: 16px; }
-  .f-search { width: 100%; }
-  .f-sel    { width: 110px; }
 }
-
-/* ═══ AppSidebar 插槽：任务统计概览 ═══ */
-.sidebar-slot-content { padding: 0 2px; }
-.slot-section-title {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 10px;
-  font-weight: 600;
-  color: rgba(255,255,255,0.25);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 10px;
-}
-.slot-section-title i { font-size: 11px; }
-.slot-stats {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.slot-stat-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 6px 8px;
-  border-radius: 8px;
-  transition: background 0.2s;
-}
-.slot-stat-row:hover {
-  background: rgba(255,255,255,0.03);
-}
-.slot-stat-left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.slot-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-.sdot--success { background: #34d399; }
-.sdot--running { background: #facc15; }
-.sdot--pending { background: #60a5fa; }
-.sdot--failed  { background: #f87171; }
-.slot-stat-label {
-  font-size: 12px;
-  color: rgba(255,255,255,0.45);
-}
-.slot-stat-num {
-  font-size: 13px;
-  font-weight: 700;
-  color: rgba(255,255,255,0.6);
-  font-variant-numeric: tabular-nums;
-}
-
 </style>
 
-<!-- ═══════════════ 非 scoped：仅覆盖 teleported 下拉面板 ═══════════════ -->
 <style>
+/* ═══ 非 scoped：覆盖 teleported 下拉面板 ═══ */
 .task-popper {
   background: #0f1a1f !important;
   border: 1px solid rgba(0, 255, 255, 0.2) !important;
   box-shadow: 0 8px 32px rgba(0,0,0,0.7) !important;
-
-  /* 注入 CSS 变量确保 option 不白 */
   --el-select-option-hover-bg: rgba(18, 26, 36, 0.7);
   --el-select-option-hover-bg-color: rgba(18, 26, 36, 0.7);
   --el-select-option-selected-bg: rgba(15, 22, 32, 0.95);
@@ -752,9 +313,7 @@ transparent 35%
   font-weight: 700;
   background: rgba(15, 22, 32, 0.95) !important;
 }
-.task-popper .el-select-dropdown__item.selected::after {
-  display: none;
-}
+.task-popper .el-select-dropdown__item.selected::after { display: none; }
 .task-popper .el-popper__arrow::before {
   background: #0f1a1f !important;
   border-color: rgba(0, 255, 255, 0.2) !important;

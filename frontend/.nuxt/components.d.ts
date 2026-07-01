@@ -38,7 +38,10 @@ export const LayoutParticlesBackground: typeof import("../components/layout/Part
 export const PreviewTempLateComputer: typeof import("../components/previewTempLate/computer.vue")['default']
 export const PreviewTempLate: typeof import("../components/previewTempLate/index.vue")['default']
 export const PreviewTempLateMobile: typeof import("../components/previewTempLate/mobile.vue")['default']
+export const TasksFilter: typeof import("../components/tasks/TasksFilter.vue")['default']
 export const TasksSidebar: typeof import("../components/tasks/TasksSidebar.vue")['default']
+export const TasksStatusOverview: typeof import("../components/tasks/TasksStatusOverview.vue")['default']
+export const TasksTable: typeof import("../components/tasks/TasksTable.vue")['default']
 export const UploadDescEditorModal: typeof import("../components/upload/DescEditorModal.vue")['default']
 export const UploadZone: typeof import("../components/upload/UploadZone.vue")['default']
 export const NuxtWelcome: typeof import("../node_modules/.pnpm/nuxt@4.4.8_@babel+plugin-sy_99ff0ff52633701d5303af6e8aaecd08/node_modules/nuxt/dist/app/components/welcome.vue")['default']
@@ -90,7 +93,10 @@ export const LazyLayoutParticlesBackground: LazyComponent<typeof import("../comp
 export const LazyPreviewTempLateComputer: LazyComponent<typeof import("../components/previewTempLate/computer.vue")['default']>
 export const LazyPreviewTempLate: LazyComponent<typeof import("../components/previewTempLate/index.vue")['default']>
 export const LazyPreviewTempLateMobile: LazyComponent<typeof import("../components/previewTempLate/mobile.vue")['default']>
+export const LazyTasksFilter: LazyComponent<typeof import("../components/tasks/TasksFilter.vue")['default']>
 export const LazyTasksSidebar: LazyComponent<typeof import("../components/tasks/TasksSidebar.vue")['default']>
+export const LazyTasksStatusOverview: LazyComponent<typeof import("../components/tasks/TasksStatusOverview.vue")['default']>
+export const LazyTasksTable: LazyComponent<typeof import("../components/tasks/TasksTable.vue")['default']>
 export const LazyUploadDescEditorModal: LazyComponent<typeof import("../components/upload/DescEditorModal.vue")['default']>
 export const LazyUploadZone: LazyComponent<typeof import("../components/upload/UploadZone.vue")['default']>
 export const LazyNuxtWelcome: LazyComponent<typeof import("../node_modules/.pnpm/nuxt@4.4.8_@babel+plugin-sy_99ff0ff52633701d5303af6e8aaecd08/node_modules/nuxt/dist/app/components/welcome.vue")['default']>

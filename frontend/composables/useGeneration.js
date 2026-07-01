@@ -241,10 +241,6 @@ export function useGeneration () {
     isAvailable: sse.isAvailable,
     isAlive: sse.isAlive,
 
-    // ── 用户级 SSE（透传给 store）──
-    connectUserSSE: sse.connectUser,
-    disconnectUserSSE: sse.disconnectUser,
-
     // ── 生命周期 ──
     cleanup,
   }

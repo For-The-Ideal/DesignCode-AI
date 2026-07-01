@@ -119,6 +119,8 @@
 </template>
 
 <script setup>
+import { statusLabel, taskDisplayName } from '~/utils/taskHelpers'
+
 const props = defineProps({
   tasks: { type: Array, required: true },
   expandedId: { type: [String, null], default: null },
@@ -139,14 +141,6 @@ const goToDetail = (id) => {
   emit('navigate', id)
 }
 
-const STATUS_MAP = {
-  pending: '排队中',
-  running: '生成中',
-  success: '已完成',
-  failed: '失败',
-}
-const statusLabel = (s) => STATUS_MAP[s] || s
-
 // 定位当前进度：返回 'phase-past' | 'phase-current' | 'phase-future'
 const stepPhase = (task, idx) => {
   const firstPending = task.steps.findIndex(s => !s.completed)
@@ -154,11 +148,6 @@ const stepPhase = (task, idx) => {
   if (idx < currentIdx) return 'phase-past'
   if (idx === currentIdx) return 'phase-current'
   return 'phase-future'
-}
-
-// 任务显示标题：优先取第一张图片描述，否则 平台·框架
-const taskDisplayName = (task) => {
-  return task.images?.[0]?.desc || `${task.platform} · ${task.framework}`
 }
 
 // 任务标签列表：自动收集 framework、platform、options 等
