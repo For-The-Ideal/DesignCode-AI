@@ -9,10 +9,10 @@
   >
     <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
     <div class="upload-text">
-      <span class="upload-text-bold">{{ disabled ? '已达上传上限' : '拖拽图片到这里，或点击上传' }}</span>
+      <span class="upload-text-bold">{{ uploadHint.title }}</span>
     </div>
     <div class="upload-hint">
-      {{ hint }}
+      {{ uploadHint.desc }}
     </div>
   </div>
 
@@ -20,7 +20,7 @@
   <input type="file" ref="fileInput" multiple accept="image/*" style="display:none" @change="onFileChange" />
 
   <!-- 预览列表 -->
-  <div v-if="images.length" class="preview-area" :class="{ 'preview-area--locked': isGenerating }">
+  <div v-if="images.length" class="preview-area" :class="{ 'preview-area--locked': isSubmitting }">
     <div class="preview-list">
       <div
         v-for="(img, i) in images"
@@ -69,7 +69,7 @@
         </div>
         <!-- 操作按钮 -->
         <div class="item-actions">
-          <button class="action-btn" @click.stop="$emit('remove', i)">
+          <button class="action-btn" @click.stop="store.removeImage(i)">
             <i class="fa-regular fa-trash-can"></i>
           </button>
         </div>
@@ -78,7 +78,7 @@
 
     <div class="upload-actions">
       <span class="upload-count">{{ images.length }} 张已选择</span>
-      <button class="clear-btn" @click="$emit('clear')">清空全部</button>
+      <button class="clear-btn" @click="store.clearAll()">清空全部</button>
     </div>
 
     <div class="upload-tip">
@@ -98,35 +98,35 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { storeToRefs } from 'pinia'
 import DescEditorModal from '~/components/upload/DescEditorModal.vue'
+import { useCodeStore } from '~/stores/code'
 
-const props = defineProps({
-  hint: { type: String, default: '支持 PNG、JPG、JPEG，最多 3 张，单张不超过 10MB' },
-  disabled: { type: Boolean, default: false },
-  images: { type: Array, default: () => [] },
-  isGenerating: { type: Boolean, default: false },
-})
-const emit = defineEmits(['files-selected', 'remove', 'clear', 'reorder'])
+const store = useCodeStore()
+const { images, isSubmitting, isMaxReached, isConcurrencyFull, uploadHint } = storeToRefs(store)
+
+// ── 从 store 派生 ──
+const disabled = computed(() => isMaxReached.value || isSubmitting.value || isConcurrencyFull.value)
 
 // ── 文件选择 ──
 const fileInput = ref(null)
 
 const onZoneClick = () => {
-  if (props.disabled) return
+  if (disabled.value) return
   fileInput.value?.click()
 }
 
 const onFileChange = (e) => {
   const files = Array.from(e.target.files)
-  if (files.length) emit('files-selected', files)
+  if (files.length) store.addImages(files)
   if (fileInput.value) fileInput.value.value = ''
 }
 
 const onZoneDrop = (e) => {
-  if (props.disabled) return
+  if (disabled.value) return
   const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'))
-  if (files.length) emit('files-selected', files)
+  if (files.length) store.addImages(files)
 }
 
 // ── 描述编辑 ──
@@ -139,7 +139,7 @@ const onEditDesc = (idx) => {
 }
 
 const onDescSave = (descriptions) => {
-  props.images.forEach((img, idx) => {
+  images.value.forEach((img, idx) => {
     img.description = descriptions[idx] || ''
   })
   descEditorRef.value?.close()
@@ -157,10 +157,10 @@ const onDragStart = (e, idx) => { dragIdx.value = idx }
 const onDragOver = (idx) => { dragOverIdx.value = idx }
 const onDrop = (idx) => {
   if (dragIdx.value < 0 || dragIdx.value === idx) return
-  const arr = [...props.images]
+  const arr = [...images.value]
   const [item] = arr.splice(dragIdx.value, 1)
   arr.splice(idx, 0, item)
-  emit('reorder', arr)
+  images.value = arr
   dragIdx.value = -1
   dragOverIdx.value = -1
 }

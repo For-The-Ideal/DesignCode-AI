@@ -1,10 +1,7 @@
-import { reactive, ref, computed, watch, onUnmounted } from 'vue'
+import { reactive, ref, watch, onUnmounted } from 'vue'
 import { useSSE } from './useSSE'
 import { useStreamRenderer } from './useStreamRenderer'
 import { commonApi } from '~/api/common'
-import { useUserStore } from '~/stores/user'
-import { useCommonStore } from '~/stores/common'
-import { storeToRefs } from 'pinia'
 
 /**
  * useGeneration — 代码生成流程编排 composable
@@ -14,7 +11,6 @@ import { storeToRefs } from 'pinia'
  *   2. 协调 SSE 数据源 → 渲染输出
  *   3. 模板数据初始化（API）→ 流式渲染
  *   4. 向外暴露统一的 template 接口
- *   5. 全局生成状态 & 用户会员信息
  *
  * 数据流：
  *   SSE 推送  ──→ useSSE.sseData ──→ watch ──→ template.templateCode
@@ -33,22 +29,6 @@ const taskErrorMsg = ref('')
 const RESTORE_KEY = 'gen_active_task'
 
 export function useGeneration () {
-  // ═══ 用户 & 全局生成状态 ═══
-  const userStore = useUserStore()
-  const commonStore = useCommonStore()
-  const { isLogin } = storeToRefs(userStore)
-  const credits = computed(() => userStore.userInfo.credits ?? 0)
-  const creditsUsed = computed(() => userStore.userInfo.credits_used ?? 0)
-  const { loginModalVisible, isGenerating } = storeToRefs(commonStore)
-
-  function startGenerating() { commonStore.startGenerating() }
-  function finishGenerating() { commonStore.finishGenerating() }
-  function openLoginModal() { commonStore.openLoginModal() }
-  function closeLoginModal() { commonStore.closeLoginModal() }
-  async function refreshCredits() {
-    if (isLogin.value) { await userStore.initialize() }
-  }
-
   // ═══ 子系统 ═══
   const sse = useSSE()
   const renderer = useStreamRenderer()
@@ -234,18 +214,6 @@ export function useGeneration () {
   // ═══ 对外接口 ═══
 
   return {
-    // ── 全局生成状态 & 用户信息 ──
-    isLogin,
-    isGenerating,
-    credits,
-    creditsUsed,
-    loginModalVisible,
-    startGenerating,
-    finishGenerating,
-    openLoginModal,
-    closeLoginModal,
-    refreshCredits,
-
     // ── 统一数据出口 ──
     template,
 

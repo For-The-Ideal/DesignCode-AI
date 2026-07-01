@@ -12,7 +12,9 @@ import (
 //
 //	auth_route.go     — 认证相关（captcha / login / register）
 //	user_route.go     — 用户相关（info）
-//	generate_route.go — 代码生成相关（generate-ui / task / upload / SSE）
+//	task_route.go     — 任务相关（task/create / task/:id / task/status / SSE）
+//	upload_route.go   — 上传相关（upload）
+//	template_route.go — 模板相关（template/:id）
 //
 // 所有路由统一以 /api/v1/ 开头
 func InitV1Routes(r *gin.Engine,
@@ -32,8 +34,14 @@ func InitV1Routes(r *gin.Engine,
 	// 用户路由（需登录）
 	InitUserRoutes(v1, userHandler)
 
-	// 代码生成路由
-	InitGenerateRoutes(v1, taskHandler, sseHandler, uploadHandler)
+	// 任务路由
+	InitTaskRoutes(v1, taskHandler, sseHandler)
+
+	// 上传路由
+	InitUploadRoutes(v1, uploadHandler)
+
+	// 模板路由
+	InitTemplateRoutes(v1, taskHandler)
 
 	// 管理路由
 	InitAdminRoutes(v1, adminHandler)

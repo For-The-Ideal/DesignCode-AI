@@ -94,6 +94,16 @@ func (t *Task) ToTaskStatusResponse(result *Result) *TaskStatusResponse {
 	}
 }
 
+// ── 用户任务统计响应 ──────────────────────────
+
+// TaskCountResponse GET /api/v1/task/status 的状态数量统计
+type TaskCountResponse struct {
+	Pending int `json:"pending"` // 排队中
+	Running int `json:"running"` // 执行中
+	Success int `json:"success"` // 已完成
+	Failed  int `json:"failed"`  // 已失败
+}
+
 // AddStep 追加执行步骤记录
 func (t *Task) AddStep(step string, progress int, status string) {
 	t.TaskSteps = append(t.TaskSteps, TaskStep{

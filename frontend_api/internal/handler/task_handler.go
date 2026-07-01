@@ -18,7 +18,7 @@ import (
 
 // ═══════════════════════════════════════════════
 //  TaskHandler
-//  POST /api/v1/generate-ui  — 创建生成任务
+//  POST /api/v1/task/create  — 创建生成任务
 //  GET  /api/v1/task/:id     — 查询任务状态
 // ═══════════════════════════════════════════════
 
@@ -36,7 +36,7 @@ func generateTaskID() string {
 
 // ═══════════════════════════════════════════════
 //  TaskHandler
-//  POST /api/v1/generate-ui  — 创建生成任务
+//  POST /api/v1/task/create  — 创建生成任务
 //  GET  /api/v1/task/:id     — 查询任务状态
 // ═══════════════════════════════════════════════
 
@@ -77,7 +77,7 @@ func NewTaskHandler(taskRepo *repository.TaskRepository, resultRepo *repository.
 	}
 }
 
-// ── POST /api/v1/generate-ui ──────────────────
+// ── POST /api/v1/task/create ──────────────────
 
 // CreateTask 创建生成任务
 //
@@ -204,7 +204,28 @@ func (h *TaskHandler) GetTask(c *gin.Context) {
 	utils.Success(c, resp, "获取成功")
 }
 
-// 获取模版
+// ── GET /api/v1/task/status ───────────────────────
+
+// GetUserTasks 查询当前用户任务状态数量统计
+//
+//	返回：pending / running / success / failed 四种状态的数量
+func (h *TaskHandler) GetUserTaskStatus(c *gin.Context) {
+	userID := getUserID(c)
+	if userID == 0 {
+		utils.Unauthorized(c, "请先登录")
+		return
+	}
+
+	counts, err := h.taskRepo.CountByUserID(userID)
+	if err != nil {
+		utils.InternalError(c, "查询任务统计失败")
+		return
+	}
+
+	utils.Success(c, counts, "获取成功")
+}
+
+// ── 获取模版 ──
 func (h *TaskHandler) GetTemplate(c *gin.Context) {
 	idStr := c.Param("id")
 

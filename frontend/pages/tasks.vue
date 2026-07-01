@@ -5,7 +5,7 @@
       brand="任务中心"
       expandedWidth="225px"
       :navItems="navItems"
-      @nav-click="handleNavClick"
+      @navClick="handleNavClick"
     >
       <div class="sidebar-slot-content">
         <div class="slot-section-title">
@@ -211,10 +211,11 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
 import { Search, Plus } from '@element-plus/icons-vue'
 import AppSidebar from '~/components/layout/AppSidebar.vue'
+import { useMenuListStore } from '~/stores/menuList'
 
 const router = useRouter()
 const sidebarOpen = ref(true)
@@ -242,12 +243,12 @@ const currentPage = ref(1)
 const pageSize = ref(10)
 
 // ═══ 导航 ═══
-const navItems = [
-  { icon: 'fa-solid fa-code',       label: '代码生成', active: false, to: '/code' },
-  { icon: 'fa-regular fa-copy',     label: '模板市场', active: false, to: '/templates' },
-  { icon: 'fa-regular fa-folder',   label: '任务列表', active: true,  to: '/tasks' },
-  { icon: 'fa-regular fa-file',     label: '我的项目', active: false, to: '/projects' },
-]
+const route = useRoute()
+const menuStore = useMenuListStore()
+const navItems = menuStore.navItems.map(item => ({
+  ...item,
+  active: route.path === item.to,
+}))
 
 const handleNavClick = (item) => {
   if (item.active) return

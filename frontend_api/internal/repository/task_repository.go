@@ -75,3 +75,53 @@ func (r *TaskRepository) Save(task *model.Task) error {
 	}
 	return db.Save(task).Error
 }
+
+// GetByUserID 根据用户 ID 获取所有任务（按创建时间倒序）
+func (r *TaskRepository) GetByUserID(userID uint) ([]model.Task, error) {
+	db := mysql.GetDB()
+	if db == nil {
+		return nil, nil
+	}
+	var tasks []model.Task
+	err := db.Where("user_id = ?", userID).Order("created_at DESC").Find(&tasks).Error
+	if err != nil {
+		return nil, err
+	}
+	return tasks, nil
+}
+
+// CountByUserID 按状态统计用户任务数量
+func (r *TaskRepository) CountByUserID(userID uint) (*model.TaskCountResponse, error) {
+	db := mysql.GetDB()
+	if db == nil {
+		return &model.TaskCountResponse{}, nil
+	}
+
+	var counts []struct {
+		Status model.TaskStatus
+		Count  int
+	}
+	err := db.Model(&model.Task{}).
+		Select("status, count(*) as count").
+		Where("user_id = ?", userID).
+		Group("status").
+		Find(&counts).Error
+	if err != nil {
+		return nil, err
+	}
+
+	resp := &model.TaskCountResponse{}
+	for _, c := range counts {
+		switch c.Status {
+		case model.TaskStatusPending:
+			resp.Pending = c.Count
+		case model.TaskStatusRunning:
+			resp.Running = c.Count
+		case model.TaskStatusSuccess:
+			resp.Success = c.Count
+		case model.TaskStatusFailed:
+			resp.Failed = c.Count
+		}
+	}
+	return resp, nil
+}

@@ -92,8 +92,6 @@ import AuthModal from '~/components/auth/AuthModal.vue'
 import Password from '~/components/auth/Password.vue'
 import { useUserStore } from '~/stores/user'
 import { storeToRefs } from 'pinia'
-import { loginApi } from '~/api/login'
-import { useCommonStore } from '~/stores/common'
 
 const router = useRouter()
 const route = useRoute()
@@ -156,15 +154,6 @@ const onAvatarError = (e) => {
   e.target.style.display = 'none'
   avatarFailed.value = true
 }
-
-// 监听 CodeSidebar 等处发起的登录弹窗请求
-const commonStore = useCommonStore()
-watch(() => commonStore.loginModalVisible, (val) => {
-  if (val) {
-    loginModalRef.value?.open()
-    commonStore.closeLoginModal()
-  }
-})
 
 </script>
 

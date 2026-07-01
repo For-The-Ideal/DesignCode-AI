@@ -4,7 +4,7 @@
       v-model="sidebarOpen"
       brand="任务中心"
       :navItems="navItems"
-      @nav-click="handleNavClick">
+      @navClick="handleNavClick">
       <TasksSidebar
         :tasks="allTasks"
         v-model:expandedId="sidebarExpandedId"
@@ -84,6 +84,7 @@
 import { ref, watch } from 'vue'
 import { useRoute, useRouter, onBeforeRouteUpdate } from 'vue-router'
 import AppSidebar from '~/components/layout/AppSidebar.vue'
+import { useMenuListStore } from '~/stores/menuList'
 import TasksSidebar from '~/components/tasks/TasksSidebar.vue'
 import CodeEditor from '~/components/code/CodeEditor.vue'
 import PreviewTemplate from '~/components/previewTempLate/index.vue'
@@ -98,12 +99,11 @@ const sidebarExpandedId = ref(null)
 const switchTask = (id) => router.push(`/detail/${id}`)
 
 // ═══ 导航 ═══
-const navItems = [
-  { icon: 'fa-solid fa-code',       label: '代码生成', active: false, to: '/code' },
-  { icon: 'fa-regular fa-copy',     label: '模板市场', active: false, to: '/templates' },
-  { icon: 'fa-regular fa-folder',   label: '任务列表', active: true,  to: '/tasks' },
-  { icon: 'fa-regular fa-file',     label: '我的项目', active: false, to: '/projects' },
-]
+const menuStore = useMenuListStore()
+const navItems = menuStore.navItems.map(item => ({
+  ...item,
+  active: route.path === item.to,
+}))
 
 const handleNavClick = (item) => {
   if (item.active) return

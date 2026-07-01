@@ -3,8 +3,7 @@
     brand="代码生成"
     :navItems="navItems"
     expandedWidth="225px"
-    @nav-click="handleNavClick"
-  >
+    @navClick="handleNavClick">
     <!-- 底部区域：用量 + 升级（仅登录后显示） -->
     <div class="sidebar-bottom" v-if="isLogin">
       <!-- 使用情况（SVG 圆环） -->
@@ -55,18 +54,25 @@
 <script setup>
 import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useGeneration } from '~/composables/useGeneration'
+import { storeToRefs } from 'pinia'
+import { useUserStore } from '~/stores/user'
+import { useCommonStore } from '~/stores/common'
+import { useMenuListStore } from '~/stores/menuList'
 import AppSidebar from '~/components/layout/AppSidebar.vue'
 
-const { isLogin, credits, openLoginModal } = useGeneration()
+const userStore = useUserStore()
+const commonStore = useCommonStore()
+const { isLogin } = storeToRefs(userStore)
+const credits = computed(() => userStore.userInfo.credits ?? 0)
+const openLoginModal = () => commonStore.setLoginModalVisible(true)
 const route = useRoute()
 const router = useRouter()
-const navItems = [
-  { icon: 'fa-solid fa-code', label: '代码生成', active: route.path === '/code', to: '/code' },
-  { icon: 'fa-regular fa-copy', label: '模板市场', active: route.path === '/templates', to: '/templates' },
-  { icon: 'fa-regular fa-folder', label: '任务列表', active: route.path === '/tasks', to: '/tasks' },
-  { icon: 'fa-regular fa-file', label: '我的项目', active: route.path === '/projects', to: '/projects' },
-]
+
+const menuStore = useMenuListStore()
+const navItems = menuStore.navItems.map(item => ({
+  ...item,
+  active: route.path === item.to,
+}))
 
 const handleNavClick = (item) => {
   // 1. 已激活 → 不重复跳转

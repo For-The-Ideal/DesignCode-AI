@@ -20,7 +20,7 @@
         href="#"
         class="nav-item"
         :class="{ active: item.active }"
-        @click.prevent="$emit('nav-click', item)"
+        @click.prevent="$emit('navClick', item)"
       >
         <i :class="item.icon" class="nav-icon"></i>
         <span v-show="sidebarOpen" class="nav-label">{{ item.label }}</span>
@@ -47,7 +47,7 @@ const props = defineProps({
   expandedWidth: { type: String, default: '300px' },
 })
 
-const emit = defineEmits(['update:modelValue', 'nav-click'])
+const emit = defineEmits(['update:modelValue', 'navClick'])
 
 const sidebarOpen = ref(props.modelValue)
 

@@ -11,8 +11,8 @@
           v-for="fw in frameworks"
           :key="fw.value"
           class="chip"
-          :class="modelValue.framework === fw.value ? 'chip--active' : ''"
-          @click="$emit('update:modelValue', { ...modelValue, framework: fw.value })"
+          :class="store.config.framework === fw.value ? 'chip--active' : ''"
+          @click="store.config.framework = fw.value"
         >
           {{ fw.label }}
         </button>
@@ -29,8 +29,8 @@
           v-for="pl in platforms"
           :key="pl.value"
           class="chip"
-          :class="modelValue.platform === pl.value ? 'chip--active' : ''"
-          @click="$emit('update:modelValue', { ...modelValue, platform: pl.value })"
+          :class="store.config.platform === pl.value ? 'chip--active' : ''"
+          @click="store.config.platform = pl.value"
         >
           <i :class="pl.icon" class="chip-icon"></i>
           {{ pl.label }}
@@ -48,11 +48,11 @@
           v-for="opt in options"
           :key="opt.value"
           class="option-item"
-          :class="modelValue.options.includes(opt.value) ? 'option-item--active' : ''"
+          :class="store.config.options.includes(opt.value) ? 'option-item--active' : ''"
           @click="toggleOption(opt.value)"
         >
           <i
-            :class="modelValue.options.includes(opt.value) ? 'fa-regular fa-square-check' : 'fa-regular fa-square'"
+            :class="store.config.options.includes(opt.value) ? 'fa-regular fa-square-check' : 'fa-regular fa-square'"
             class="option-check"
           ></i>
           {{ opt.label }}
@@ -61,7 +61,7 @@
     </div>
 
     <!-- 组件库选择（勾选"使用组件库"后出现） -->
-    <div v-if="modelValue.options.includes('component')" class="config-group">
+    <div v-if="store.config.options.includes('component')" class="config-group">
       <div class="config-label-row">
         <span class="config-label lib-sub-label">选择组件库</span>
       </div>
@@ -70,8 +70,8 @@
           v-for="lib in currentLibs"
           :key="lib.value"
           class="chip"
-          :class="(modelValue.componentLib || defaultLib) === lib.value ? 'chip--active' : ''"
-          @click="$emit('update:modelValue', { ...modelValue, componentLib: lib.value })"
+          :class="(store.config.componentLib || defaultLib) === lib.value ? 'chip--active' : ''"
+          @click="store.config.componentLib = lib.value"
         >
           {{ lib.label }}
         </button>
@@ -88,7 +88,7 @@
           v-for="adv in advanced"
           :key="adv.value"
           class="chip"
-          :class="modelValue.advanced.includes(adv.value) ? 'chip--active' : ''"
+          :class="store.config.advanced.includes(adv.value) ? 'chip--active' : ''"
           @click="toggleAdvanced(adv.value)"
         >
           {{ adv.label }}
@@ -107,24 +107,18 @@
 
 <script setup>
 import { computed } from 'vue'
-import { useGeneration } from '~/composables/useGeneration'
+import { storeToRefs } from 'pinia'
+import { useCodeStore } from '~/stores/code'
+import { useUserStore } from '~/stores/user'
+import { useCommonStore } from '~/stores/common'
 
-const { isLogin, taskStatus, openLoginModal } = useGeneration()
+const store = useCodeStore()
+const { images, allUploaded, isSubmitting, isConcurrencyFull } = storeToRefs(store)
+const userStore = useUserStore()
+const commonStore = useCommonStore()
 
-const props = defineProps({
-  modelValue: {
-    type: Object,
-    default: () => ({
-      framework: 'Flutter',
-      platform: 'mobile',
-      options: ['responsive'],
-      advanced: [],
-      componentLib: 'Material Design',
-    }),
-  },
-  canGenerate: { type: Boolean, default: false },
-})
-const emit = defineEmits(['update:modelValue', 'generate'])
+// ── 从 store 派生 ──
+const canGenerate = computed(() => images.value.length > 0 && allUploaded.value && !isConcurrencyFull.value)
 
 const frameworks = [
   { label: 'Flutter', value: 'Flutter' },
@@ -146,24 +140,24 @@ const advanced = [
 ]
 
 const toggleOption = (val) => {
-  const opts = [...props.modelValue.options]
+  const opts = [...store.config.options]
   const idx = opts.indexOf(val)
   idx === -1 ? opts.push(val) : opts.splice(idx, 1)
-  emit('update:modelValue', { ...props.modelValue, options: opts })
+  store.config.options = opts
 }
 
-const onGenerate = () => {
-  if (!isLogin.value) {
-    openLoginModal()
+const onGenerate = async () => {
+  if (!userStore.isLogin) {
+    commonStore.setLoginModalVisible(true)
     return
   }
-  emit('generate')
+  await store.createTask()
 }
 const toggleAdvanced = (val) => {
-  const adv = [...props.modelValue.advanced]
+  const adv = [...store.config.advanced]
   const idx = adv.indexOf(val)
   idx === -1 ? adv.push(val) : adv.splice(idx, 1)
-  emit('update:modelValue', { ...props.modelValue, advanced: adv })
+  store.config.advanced = adv
 }
 
 // 各框架对应的组件库选项（前端写死，与后端 seed 同步）
@@ -195,23 +189,20 @@ const componentLibs = {
 }
 
 const currentLibs = computed(() => {
-  return componentLibs[props.modelValue.framework] || componentLibs.Vue
+  return componentLibs[config.value.framework] || componentLibs.Vue
 })
 
 const defaultLib = computed(() => currentLibs.value[0]?.value)
 
 const btnState = computed(() => {
-  if (!isLogin.value) {
+  if (!userStore.isLogin) {
     return { text: '请先登录', icon: 'fa-solid fa-wand-magic-sparkles', disabled: true }
   }
-  if (!props.canGenerate) {
+  if (!canGenerate.value) {
     return { text: '开始生成', icon: 'fa-solid fa-wand-magic-sparkles', disabled: true }
   }
-  if (taskStatus.value === 'pending' || taskStatus.value === 'running') {
+  if (isSubmitting.value) {
     return { text: '生成中...', icon: 'fa-solid fa-spinner fa-spin', disabled: true }
-  }
-  if (taskStatus.value === 'success') {
-    return { text: '生成完成', icon: 'fa-solid fa-check-circle', disabled: true }
   }
   return { text: '开始生成', icon: 'fa-solid fa-wand-magic-sparkles', disabled: false }
 })

@@ -42,8 +42,5 @@ export const useUserStore = defineStore('user', {
 
   getters: {
     getUserInfo: (state) => state.userInfo,
-    getRunTaskCount: (state) => {
-      return 0
-    }
   },
 })

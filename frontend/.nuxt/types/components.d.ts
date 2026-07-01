@@ -19,6 +19,7 @@ interface _GlobalComponents {
   AuthLogin: typeof import("../../components/auth/Login.vue")['default']
   AuthPassword: typeof import("../../components/auth/Password.vue")['default']
   AuthRegister: typeof import("../../components/auth/Register.vue")['default']
+  AuthResetPassword: typeof import("../../components/auth/ResetPassword.vue")['default']
   CodeEditor: typeof import("../../components/code/CodeEditor.vue")['default']
   CodeSidebar: typeof import("../../components/code/CodeSidebar.vue")['default']
   CodeConfigPanel: typeof import("../../components/code/ConfigPanel.vue")['default']
@@ -70,6 +71,7 @@ interface _GlobalComponents {
   LazyAuthLogin: LazyComponent<typeof import("../../components/auth/Login.vue")['default']>
   LazyAuthPassword: LazyComponent<typeof import("../../components/auth/Password.vue")['default']>
   LazyAuthRegister: LazyComponent<typeof import("../../components/auth/Register.vue")['default']>
+  LazyAuthResetPassword: LazyComponent<typeof import("../../components/auth/ResetPassword.vue")['default']>
   LazyCodeEditor: LazyComponent<typeof import("../../components/code/CodeEditor.vue")['default']>
   LazyCodeSidebar: LazyComponent<typeof import("../../components/code/CodeSidebar.vue")['default']>
   LazyCodeConfigPanel: LazyComponent<typeof import("../../components/code/ConfigPanel.vue")['default']>

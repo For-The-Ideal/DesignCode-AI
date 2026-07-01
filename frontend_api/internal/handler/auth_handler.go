@@ -329,7 +329,7 @@ func (h *AuthHandler) Template(c *gin.Context) {
 	// 直接引用 mockdata（保持兼容）
 	_ = templateID
 
-	utils.Error(c, 404, "模板获取功能已迁移，请使用 POST /api/v1/generate-ui")
+	utils.Error(c, 404, "模板获取功能已迁移，请使用 POST /api/v1/task/create")
 }
 
 // Helper: 从请求中提取 user_id（由 AuthMiddleware 注入）

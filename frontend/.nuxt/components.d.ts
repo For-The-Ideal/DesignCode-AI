@@ -19,6 +19,7 @@ export const AuthCaptchaModal: typeof import("../components/auth/CaptchaModal.vu
 export const AuthLogin: typeof import("../components/auth/Login.vue")['default']
 export const AuthPassword: typeof import("../components/auth/Password.vue")['default']
 export const AuthRegister: typeof import("../components/auth/Register.vue")['default']
+export const AuthResetPassword: typeof import("../components/auth/ResetPassword.vue")['default']
 export const CodeEditor: typeof import("../components/code/CodeEditor.vue")['default']
 export const CodeSidebar: typeof import("../components/code/CodeSidebar.vue")['default']
 export const CodeConfigPanel: typeof import("../components/code/ConfigPanel.vue")['default']
@@ -70,6 +71,7 @@ export const LazyAuthCaptchaModal: LazyComponent<typeof import("../components/au
 export const LazyAuthLogin: LazyComponent<typeof import("../components/auth/Login.vue")['default']>
 export const LazyAuthPassword: LazyComponent<typeof import("../components/auth/Password.vue")['default']>
 export const LazyAuthRegister: LazyComponent<typeof import("../components/auth/Register.vue")['default']>
+export const LazyAuthResetPassword: LazyComponent<typeof import("../components/auth/ResetPassword.vue")['default']>
 export const LazyCodeEditor: LazyComponent<typeof import("../components/code/CodeEditor.vue")['default']>
 export const LazyCodeSidebar: LazyComponent<typeof import("../components/code/CodeSidebar.vue")['default']>
 export const LazyCodeConfigPanel: LazyComponent<typeof import("../components/code/ConfigPanel.vue")['default']>
