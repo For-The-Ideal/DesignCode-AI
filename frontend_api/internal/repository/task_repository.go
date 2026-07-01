@@ -134,3 +134,19 @@ func (r *TaskRepository) CountByUserID(userID uint) (*model.TaskCountResponse, e
 	}
 	return resp, nil
 }
+
+// ResetRunningTasks 将残留的 running 状态任务标记为 failed（服务重启恢复）
+// 返回受影响的任务数量
+func (r *TaskRepository) ResetRunningTasks() (int64, error) {
+	db := mysql.GetDB()
+	if db == nil {
+		return 0, nil
+	}
+	result := db.Model(&model.Task{}).
+		Where("status = ?", model.TaskStatusRunning).
+		Updates(map[string]interface{}{
+			"status":       model.TaskStatusFailed,
+			"current_step": "服务重启，任务中断",
+		})
+	return result.RowsAffected, result.Error
+}

@@ -30,6 +30,13 @@
               <span class="stat-label">已完成</span>
             </div>
           </div>
+          <div class="stat-card stat-failed">
+            <i class="stat-icon fa-solid fa-circle-xmark  "></i>
+            <div class="stat-body">
+              <span class="stat-num" :key="taskCounts.failed">{{ taskCounts.failed }}</span>
+              <span class="stat-label">已失败</span>
+            </div>
+          </div>
         </div>
       </div>
 

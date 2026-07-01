@@ -18,9 +18,16 @@ import (
 	"frontend_api/pkg/mysql"
 	"frontend_api/routes"
 	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
+
+const shutdownTimeout = 30 * time.Second
 
 // Run 启动服务器（新架构）
 func Run() {
@@ -51,6 +58,13 @@ func Run() {
 	taskRepo := repository.NewTaskRepository()
 	resultRepo := repository.NewResultRepository()
 
+	// 4.1 恢复残留的 running 状态任务（服务重启后清理）
+	if n, err := taskRepo.ResetRunningTasks(); err != nil {
+		appLog.Errorf("[App] 恢复残留任务失败: %v", err)
+	} else if n > 0 {
+		appLog.Infof("[App] 已恢复 %d 个残留 running 任务为 failed（服务重启）", n)
+	}
+
 	// 5. 创建内存队列
 	q := queue.NewInMemoryQueue()
 
@@ -69,9 +83,11 @@ func Run() {
 	}
 	codeToHtmlSkill := code_to_html.NewSkill(writeAI)
 
-	// 8. 创建 Worker 并启动
+	// 8. 创建 Worker 并启动（带可取消 context）
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	w := worker.NewGenerateWorker(q, taskRepo, visionSkill, codeToHtmlSkill, resultRepo, sseManager)
-	go w.Run(context.Background())
+	go w.Run(ctx)
 
 	// 9. 创建 Handlers
 	taskHandler := handler.NewTaskHandler(taskRepo, resultRepo, q, sseManager)
@@ -86,11 +102,46 @@ func Run() {
 	r.SetTrustedProxies(nil)
 	r.Use(middleware.CORSMiddleware())
 
-	// 11. 初始化路由（新架构 + 保持旧接口兼容）
+	// 11. 初始化路由
 	routes.InitV1Routes(r, taskHandler, sseHandler, uploadHandler, authHandler, userHandler, adminHandler)
 
-	// 12. 启动服务器
-	appLog.Infof("Server starting on %s", config.AppConfig.Server.Local+config.AppConfig.Server.Port)
-	log.Printf("Server starting on %s", config.AppConfig.Server.Local+config.AppConfig.Server.Port)
-	r.Run(config.AppConfig.Server.Port)
+	// 12. 创建 HTTP Server（支持优雅关闭）
+	addr := config.AppConfig.Server.Local + config.AppConfig.Server.Port
+	srv := &http.Server{
+		Addr:    addr,
+		Handler: r,
+	}
+
+	// 13. 信号监听（优雅关闭）
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	// 启动 HTTP 服务（非阻塞）
+	go func() {
+		appLog.Infof("Server starting on %s", addr)
+		log.Printf("Server starting on %s", addr)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Server 启动失败: %v", err)
+		}
+	}()
+
+	// 等待退出信号
+	sig := <-quit
+	appLog.Infof("收到信号 %v，开始优雅关闭...", sig)
+	log.Printf("收到信号 %v，开始优雅关闭...", sig)
+
+	// Step 1: 停止 Worker（不取新任务）
+	cancel()
+	q.Close() // 唤醒可能阻塞在 Dequeue 的 Worker
+
+	// Step 2: 关闭 HTTP Server（不再接受新请求，等待已有请求完成）
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), shutdownTimeout)
+	defer shutdownCancel()
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		appLog.Errorf("Server 强制关闭: %v", err)
+	} else {
+		appLog.Info("Server 已安全关闭")
+	}
+
+	log.Println("服务已退出")
 }
