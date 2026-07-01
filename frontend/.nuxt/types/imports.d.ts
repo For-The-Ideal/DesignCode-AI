@@ -130,6 +130,7 @@ declare global {
   const useLazyFetch: typeof import('../../node_modules/.pnpm/nuxt@4.4.8_@babel+plugin-sy_99ff0ff52633701d5303af6e8aaecd08/node_modules/nuxt/dist/app/composables/fetch').useLazyFetch
   const useLink: typeof import('../../node_modules/.pnpm/vue-router@5.1.0_@vue+compi_9572a0c39f83349df9c24ce9b412ac58/node_modules/vue-router').useLink
   const useLoadingIndicator: typeof import('../../node_modules/.pnpm/nuxt@4.4.8_@babel+plugin-sy_99ff0ff52633701d5303af6e8aaecd08/node_modules/nuxt/dist/app/composables/loading-indicator').useLoadingIndicator
+  const useMenuListStore: typeof import('../../stores/menuList').useMenuListStore
   const useModel: typeof import('vue').useModel
   const useNuxtApp: typeof import('../../node_modules/.pnpm/nuxt@4.4.8_@babel+plugin-sy_99ff0ff52633701d5303af6e8aaecd08/node_modules/nuxt/dist/app/nuxt').useNuxtApp
   const useNuxtData: typeof import('../../node_modules/.pnpm/nuxt@4.4.8_@babel+plugin-sy_99ff0ff52633701d5303af6e8aaecd08/node_modules/nuxt/dist/app/composables/asyncData').useNuxtData
@@ -354,6 +355,7 @@ declare module 'vue' {
     readonly useLazyFetch: UnwrapRef<typeof import('../../node_modules/.pnpm/nuxt@4.4.8_@babel+plugin-sy_99ff0ff52633701d5303af6e8aaecd08/node_modules/nuxt/dist/app/composables/fetch')['useLazyFetch']>
     readonly useLink: UnwrapRef<typeof import('../../node_modules/.pnpm/vue-router@5.1.0_@vue+compi_9572a0c39f83349df9c24ce9b412ac58/node_modules/vue-router')['useLink']>
     readonly useLoadingIndicator: UnwrapRef<typeof import('../../node_modules/.pnpm/nuxt@4.4.8_@babel+plugin-sy_99ff0ff52633701d5303af6e8aaecd08/node_modules/nuxt/dist/app/composables/loading-indicator')['useLoadingIndicator']>
+    readonly useMenuListStore: UnwrapRef<typeof import('../../stores/menuList')['useMenuListStore']>
     readonly useModel: UnwrapRef<typeof import('vue')['useModel']>
     readonly useNuxtApp: UnwrapRef<typeof import('../../node_modules/.pnpm/nuxt@4.4.8_@babel+plugin-sy_99ff0ff52633701d5303af6e8aaecd08/node_modules/nuxt/dist/app/nuxt')['useNuxtApp']>
     readonly useNuxtData: UnwrapRef<typeof import('../../node_modules/.pnpm/nuxt@4.4.8_@babel+plugin-sy_99ff0ff52633701d5303af6e8aaecd08/node_modules/nuxt/dist/app/composables/asyncData')['useNuxtData']>
