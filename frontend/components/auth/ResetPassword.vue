@@ -144,13 +144,14 @@ const handleSubmit = async () => {
       token: props.token,
       password: form.password,
     })
-    if (res.code === 200) {
+    if(res.code != 200){
+      ElMessage.error(res.message || '重置失败')
+      serverError.value = res.message || '重置失败'
+      return
+    }
       ElMessage.success('密码重置成功')
       close()
       emit('success')
-    } else {
-      serverError.value = res.message || '重置失败'
-    }
   } catch (e) {
     serverError.value = '网络错误，请重试'
   } finally {

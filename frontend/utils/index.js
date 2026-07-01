@@ -133,6 +133,21 @@ export const handleDownload = (text, language) => {
 }
 
 
+/**
+ * 验证邮箱格式
+ * @param {string} email 邮箱地址
+ * @returns {{ valid: boolean, message?: string }} 验证结果
+ */
+export const validateEmail = (email) => {
+  if (!email) return { valid: false, message: '请输入邮箱地址' }
+  if (email.length > 254) return { valid: false, message: '邮箱地址过长' }
+  
+  // RFC 5322 简化版邮箱正则
+  const reg = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$/
+  if (!reg.test(email)) return { valid: false, message: '邮箱格式不正确' }
+  return { valid: true }
+}
+
 // 读取文件为 base64 data URL
 export function fileToBase64(file) {
   return new Promise((resolve, reject) => {
