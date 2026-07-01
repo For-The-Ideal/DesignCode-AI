@@ -1,7 +1,7 @@
 import { reactive, ref, watch, onUnmounted } from 'vue'
 import { useSSE } from './useSSE'
 import { useStreamRenderer } from './useStreamRenderer'
-import { commonApi } from '~/api/common'
+import { taskApi } from '~/api/sse'
 
 /**
  * useGeneration — 代码生成流程编排 composable
@@ -138,7 +138,7 @@ export function useGeneration () {
       activeTaskId.value = taskId
       activeTaskFramework.value = framework || ''
 
-      const res = await commonApi.getTaskById(taskId)
+      const res = await taskApi.getTaskById(taskId)
       if (!res || !res.data) {
         localStorage.removeItem(RESTORE_KEY)
         return null

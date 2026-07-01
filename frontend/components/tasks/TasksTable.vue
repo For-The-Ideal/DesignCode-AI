@@ -74,7 +74,7 @@
       <!-- ═══ 创建时间 ═══ -->
       <el-table-column label="创建时间" align="center">
         <template #default="{ row }">
-          <span class="cell-time">{{ row.createdAt }}</span>
+          <span class="cell-time">{{ row.created_at }}</span>
         </template>
       </el-table-column>
 
@@ -110,7 +110,7 @@
       :total="tasks.length"
       layout="prev, pager, next"
       background
-      small
+      size="small"
     />
   </div>
 </template>
@@ -120,7 +120,7 @@ import { ref, computed } from 'vue'
 import {
   platformLabel, platformIcon, statusLabel,
   statusTagType, fwTagType, progressColor, taskDisplayName,
-} from '~/utils/taskHelpers'
+} from '~/helpers/index'
 
 const props = defineProps({
   tasks: { type: Array, default: () => [] },

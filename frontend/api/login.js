@@ -7,7 +7,7 @@ export const loginApi = {
       method: "get",
       server,
     };
-    let result = await httpRequest.get(options);
+    let result = await httpRequest.post(options);
     return result;
   },
   async login(params = {}, server = true) {

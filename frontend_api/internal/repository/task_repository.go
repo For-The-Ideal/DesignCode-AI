@@ -76,6 +76,15 @@ func (r *TaskRepository) Save(task *model.Task) error {
 	return db.Save(task).Error
 }
 
+// Delete 删除任务
+func (r *TaskRepository) Delete(id string) error {
+	db := mysql.GetDB()
+	if db == nil {
+		return nil
+	}
+	return db.Where("id = ?", id).Delete(&model.Task{}).Error
+}
+
 // GetByUserID 根据用户 ID 获取所有任务（按创建时间倒序）
 func (r *TaskRepository) GetByUserID(userID uint) ([]model.Task, error) {
 	db := mysql.GetDB()

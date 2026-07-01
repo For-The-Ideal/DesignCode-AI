@@ -12,7 +12,8 @@ import (
 //
 //	auth_route.go     — 认证相关（captcha / login / register）
 //	user_route.go     — 用户相关（info）
-//	task_route.go     — 任务相关（task/create / task/:id / task/status / SSE）
+//	sse_route.go      — SSE 事件流（/sse/:id/events / sse/user）（代码/进度流式推送 / 任务状态变更推送）
+//	task_route.go     — 任务相关（create / :id / status / list）
 //	upload_route.go   — 上传相关（upload）
 //	template_route.go — 模板相关（template/:id）
 //
@@ -34,8 +35,11 @@ func InitV1Routes(r *gin.Engine,
 	// 用户路由（需登录）
 	InitUserRoutes(v1, userHandler)
 
+	// SSE 事件流路由
+	InitSSERoutes(v1, sseHandler)
+
 	// 任务路由
-	InitTaskRoutes(v1, taskHandler, sseHandler)
+	InitTaskRoutes(v1, taskHandler)
 
 	// 上传路由
 	InitUploadRoutes(v1, uploadHandler)

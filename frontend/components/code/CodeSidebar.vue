@@ -1,7 +1,7 @@
 <template>
   <AppSidebar
     brand="代码生成"
-    :navItems="navItems"
+    :navItems="menuStore.navItemsWithActive"
     expandedWidth="225px"
     @navClick="handleNavClick">
     <!-- 底部区域：用量 + 升级（仅登录后显示） -->
@@ -53,7 +53,7 @@
 
 <script setup>
 import { computed } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useUserStore } from '~/stores/user'
 import { useCommonStore } from '~/stores/common'
@@ -65,14 +65,8 @@ const commonStore = useCommonStore()
 const { isLogin, userInfo } = storeToRefs(userStore)
 const credits = computed(() => userInfo.value.credits ?? 0)
 const openLoginModal = () => commonStore.setLoginModalVisible(true)
-const route = useRoute()
 const router = useRouter()
-
 const menuStore = useMenuListStore()
-const navItems = menuStore.navItems.map(item => ({
-  ...item,
-  active: route.path === item.to,
-}))
 
 const handleNavClick = (item) => {
   // 1. 已激活 → 不重复跳转

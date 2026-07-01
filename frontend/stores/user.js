@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { userApi } from '~/api/user'
-import { commonApi } from '~/api/common'
+import { taskApi } from '~/api/task'
 import cookie from '~/utils/cookie'
 import { useSSE } from '~/composables/useSSE'
 
@@ -32,7 +32,7 @@ export const useUserStore = defineStore('user', {
     // ── 任务计数 ──
     async fetchUserTasks() {
       try {
-        const res = await commonApi.getUserTasks()
+        const res = await taskApi.getTaskStatus()
         if (res.code !== 200 || !res.data) return
 
         this.taskCounts = {

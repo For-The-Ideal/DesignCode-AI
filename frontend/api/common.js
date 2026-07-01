@@ -9,29 +9,7 @@ export const commonApi = {
       params:{},
       server,
     };
-    let result = await httpRequest.get(options);
-    return result;
-  },
-
-  // 查询单个任务状态与结果
-  async getTaskById(taskId, server = true) {
-    let options = {
-      url: `/api/v1/task/${taskId}`,
-      method: "get",
-      server,
-    };
-    let result = await httpRequest.get(options);
-    return result;
-  },
-
-  // 查询当前用户任务状态统计
-  async getUserTasks(server = true) {
-    let options = {
-      url: `/api/v1/task/status`,
-      method: "get",
-      server,
-    };
-    let result = await httpRequest.get(options);
+    let result = await httpRequest.post(options);
     return result;
   },
 
@@ -50,14 +28,4 @@ export const commonApi = {
     return result;
   },
 
-  async generateUi(params = {}, server = true) {
-    let options = {
-      url: `/api/v1/task/create`,
-      method: "post",
-      params,
-      server,
-    };
-    let result = await httpRequest.post(options);
-    return result;
-  },
 };

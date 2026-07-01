@@ -1,6 +1,6 @@
 /**
  * 用户级 SSE 代理端点
- * 前端请求 /api/sse/user → 代理到 Go 后端 /api/v1/task/sse
+ * 前端请求 /api/sse/user → 代理到 Go 后端 /api/v1/sse/user
  * 流式透传，用于接收用户所有任务的状态变更
  */
 import { createError } from 'h3'
@@ -8,7 +8,7 @@ import { serverLog } from '../../utils/logger.js'
 
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig()
-  const goUrl = `${config.public.apiBase}/api/v1/task/sse`
+  const goUrl = `${config.public.apiBase}/api/v1/sse/user`
   const startTime = Date.now()
 
   serverLog('REQ', { method: 'GET', url: '/api/sse/user', isBrowser: false })

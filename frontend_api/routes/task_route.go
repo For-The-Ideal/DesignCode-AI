@@ -11,14 +11,12 @@ import (
 //
 // 请求路径：
 //
-//	POST  /api/v1/task/create         → 创建 UI 生成任务
-//	GET   /api/v1/task/:id            → 查询单个任务状态
-//	GET   /api/v1/task/status         → 查询当前用户任务状态统计
-//	GET   /api/v1/task/:id/events     → SSE 事件流（按任务订阅）
-//	POST  /api/v1/task/sse            → SSE Broker 连接
+//	POST  /api/v1/task/create  → 创建 UI 生成任务
+//	GET   /api/v1/task/:id     → 查询单个任务状态
+//	GET   /api/v1/task/status  → 查询当前用户任务状态统计
+//	POST  /api/v1/task/list    → 查询当前用户任务列表
 func InitTaskRoutes(v1 *gin.RouterGroup,
 	taskHandler *handler.TaskHandler,
-	sseHandler *handler.SSEHandler,
 ) {
 	task := v1.Group("/task")
 	task.Use(middleware.AuthMiddleware())
@@ -32,10 +30,10 @@ func InitTaskRoutes(v1 *gin.RouterGroup,
 		// GET /api/v1/task/status → 查询当前用户任务状态统计
 		task.GET("/status", taskHandler.GetUserTaskStatus)
 
-		// GET /api/v1/task/:id/events → SSE 事件流
-		task.GET("/:id/events", sseHandler.StreamTask)
+		// DELETE /api/v1/task/:id → 删除任务
+		task.DELETE("/:id", taskHandler.DeleteTask)
 
-		// POST /api/v1/task/sse → SSE Broker 连接
-		task.POST("/sse", sseHandler.StreamBroker)
+		// POST /api/v1/task/list → 获取任务列表
+		task.POST("/list", taskHandler.GetTaskList)
 	}
 }

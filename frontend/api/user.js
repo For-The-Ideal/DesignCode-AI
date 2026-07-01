@@ -8,7 +8,7 @@ export const userApi = {
       params,
       server,
     };
-    let result = await httpRequest.get(options);
+    let result = await httpRequest.post(options);
     return result;
   },
   

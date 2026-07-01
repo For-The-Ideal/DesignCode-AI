@@ -39,7 +39,6 @@ export { useStreamRenderer } from '../composables/useStreamRenderer';
 export { default as cookie } from '../utils/cookie';
 export { showElectronNotification, setEncrypt, handleCopy, handleFormat, handleDownload, validateEmail, fileToBase64 } from '../utils/index';
 export { default as request } from '../utils/request';
-export { PLAT, PLAT_ICON, STATUS_MAP, platformLabel, platformIcon, statusLabel, statusTagType, fwTagType, progressColor, taskDisplayName } from '../utils/taskHelpers';
 export { useCommonStore } from '../stores/common';
 export { useMenuListStore } from '../stores/menuList';
 export { useUserStore } from '../stores/user';

@@ -234,6 +234,63 @@ func (h *TaskHandler) GetUserTaskStatus(c *gin.Context) {
 	utils.Success(c, counts, "获取成功")
 }
 
+// ── GET /api/v1/tasks ───────────────────────
+
+// GetTaskList 查询当前用户的任务列表
+//
+//	返回：任务列表（按创建时间倒序），精简字段
+func (h *TaskHandler) GetTaskList(c *gin.Context) {
+	userID := getUserID(c)
+	if userID == 0 {
+		utils.Unauthorized(c, "请先登录")
+		return
+	}
+
+	tasks, err := h.taskRepo.GetByUserID(userID)
+	if err != nil {
+		utils.InternalError(c, "查询任务列表失败")
+		return
+	}
+
+	list := make([]model.TaskListItem, 0, len(tasks))
+	for i := range tasks {
+		list = append(list, tasks[i].ToTaskListItem())
+	}
+
+	utils.Success(c, list, "获取成功")
+}
+
+// ── DELETE /api/v1/task/:id ─────────────────
+
+// DeleteTask 删除指定任务
+func (h *TaskHandler) DeleteTask(c *gin.Context) {
+	id := c.Param("id")
+	userID := getUserID(c)
+	if userID == 0 {
+		utils.Unauthorized(c, "请先登录")
+		return
+	}
+
+	task, err := h.taskRepo.GetByID(id)
+	if err != nil || task == nil {
+		utils.Error(c, 404, "任务不存在")
+		return
+	}
+
+	if task.UserID != userID {
+		utils.Error(c, 403, "无权删除该任务")
+		return
+	}
+
+	if err := h.taskRepo.Delete(id); err != nil {
+		utils.InternalError(c, "删除任务失败")
+		return
+	}
+
+	h.log.Infof("任务已删除: id=%s, user=%d", id, userID)
+	utils.Success(c, nil, "任务已删除")
+}
+
 // ── 获取模版 ──
 func (h *TaskHandler) GetTemplate(c *gin.Context) {
 	idStr := c.Param("id")

@@ -104,6 +104,34 @@ type TaskCountResponse struct {
 	Failed  int `json:"failed"`  // 已失败
 }
 
+// ── 任务列表响应 ──────────────────────────
+
+// TaskListItem GET /api/v1/tasks 的列表项（精简字段）
+type TaskListItem struct {
+	ID        string      `json:"id"`
+	Target    string      `json:"framework"`      // 前端字段名兼容：framework
+	Platform  string      `json:"platform"`
+	Status    TaskStatus  `json:"status"`
+	Progress  int         `json:"progress"`
+	Images    []ImageItem `json:"images"`
+	Options   []string    `json:"options"`
+	CreatedAt string      `json:"created_at"`
+}
+
+// ToTaskListItem 将 Task 转为列表项
+func (t *Task) ToTaskListItem() TaskListItem {
+	return TaskListItem{
+		ID:        t.ID,
+		Target:    t.Target,
+		Platform:  t.Platform,
+		Status:    t.Status,
+		Progress:  t.Progress,
+		Images:    t.Images,
+		Options:   t.Options,
+		CreatedAt: t.CreatedAt.Format("2006-01-02 15:04"),
+	}
+}
+
 // AddStep 追加执行步骤记录
 func (t *Task) AddStep(step string, progress int, status string) {
 	t.TaskSteps = append(t.TaskSteps, TaskStep{

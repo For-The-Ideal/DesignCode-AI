@@ -1,6 +1,6 @@
 /**
  * SSE 代理端点
- * 前端请求 /api/sse/:taskId → 代理到 Go 后端 /api/v1/task/:taskId/events
+ * 前端请求 /api/sse/:taskId → 代理到 Go 后端 /api/v1/sse/:taskId/events
  * 流式透传，不经过加密解密
  */
 import { createError } from 'h3'
@@ -13,7 +13,7 @@ export default defineEventHandler(async (event) => {
   }
   const requestUrl = useRuntimeConfig()
   console.log(requestUrl,'requestUrl--requestUrl')
-  const goUrl = `${requestUrl.public.apiBase}/api/v1/task/${taskId}/events`
+  const goUrl = `${requestUrl.public.apiBase}/api/v1/sse/${taskId}/events`
   const startTime = Date.now()
   console.log(goUrl,'g')
   serverLog('REQ', { method: 'GET', url: `/api/sse/${taskId}`, params: { taskId }, isBrowser: false })

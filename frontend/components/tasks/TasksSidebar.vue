@@ -119,7 +119,7 @@
 </template>
 
 <script setup>
-import { statusLabel, taskDisplayName } from '~/utils/taskHelpers'
+import { statusLabel, taskDisplayName } from '~/helpers/index'
 
 const props = defineProps({
   tasks: { type: Array, required: true },

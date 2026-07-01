@@ -1,5 +1,5 @@
-import { commonApi } from '~/api/common'
 import { ElMessage } from 'element-plus'
+import { taskApi } from '~/api/task'
 
 export const createTaskActions = (ctx) => {
   const { state, runningCount, maxConcurrent,} = ctx
@@ -38,7 +38,7 @@ export const createTaskActions = (ctx) => {
     state.isSubmitting = true
 
     try {
-      const result = await commonApi.generateUi(payload)
+      const result = await taskApi.taskCreate(payload)
       if (!result || result.code !== 200 || !result.data?.task_id) {
         ElMessage.error(result?.message || 'AI 启动失败，请稍后重试')
         state.isSubmitting = false

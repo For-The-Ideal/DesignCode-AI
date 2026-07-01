@@ -1,5 +1,5 @@
 import { ref, reactive } from 'vue'
-import { aiApi } from '~/api/ai'
+import { sseApi } from '~/api/sse'
 import { ElMessage } from 'element-plus'
 
 /**
@@ -143,7 +143,7 @@ export function useSSE () {
     }, timeout)
 
     try {
-      const response = await aiApi.connect(taskId, abortController.signal)
+      const response = await sseApi.connect(taskId, abortController.signal)
       clearTimeout(timeoutId)
 
       if (!response.ok) {

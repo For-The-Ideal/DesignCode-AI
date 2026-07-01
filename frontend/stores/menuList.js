@@ -1,4 +1,5 @@
 import { defineStore } from "pinia";
+import { useRouter } from 'vue-router'
 
 export const useMenuListStore = defineStore("menuList", {
   state: () => ({
@@ -13,6 +14,14 @@ export const useMenuListStore = defineStore("menuList", {
   actions: {},
 
   getters: {
-    getNavItems: (state) => state.navItems,
+    /** 含 active 字段的导航列表，当前路由匹配时 active=true */
+    navItemsWithActive() {
+      const router = useRouter()
+      const currentPath = router.currentRoute.value.path
+      return this.navItems.map(item => ({
+        ...item,
+        active: currentPath === item.to,
+      }))
+    },
   },
 });
