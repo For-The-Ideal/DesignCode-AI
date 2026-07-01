@@ -44,39 +44,6 @@
       <div class="glow-section">
         <FlowSteps :activeStep="activeStep" />
       </div>
-
-      <!-- 生成结果 -->
-      <!-- <Transition name="result-expand">
-        <section v-if="showResults" class="result-section glow-section">
-          <div class="result-inner">
-            <div class="result-editor">
-              <div class="result-header">
-                <span><i class="fas fa-code"></i> {{ langLabel }} 代码</span>
-                <div class="result-actions" v-if="!isGenerating">
-                  <button class="act-btn" @click="handleCopyCode"><i class="fas fa-copy"></i> 复制</button>
-                  <button class="act-btn ghost" @click="handleDownloadCode"><i class="fas fa-download"></i> 下载</button>
-                </div>
-              </div>
-              <GeneratingOverlay
-                v-model="template.templateCode"
-                :language="codeLanguage"
-                :autoScroll="sseStatus === 'streaming'"
-                height="100%"
-                :progress="taskProgress"
-                :currentStep="taskCurrentStep"
-                :visible="isGenerating"
-              />
-            </div>
-            <div class="result-preview">
-              <div class="result-header">
-                <span><i class="fas fa-mobile-alt"></i> 实时预览</span>
-                <span class="device-badge" v-if="deviceLabel">{{ deviceLabel }}</span>
-              </div>
-              <FlutterTemplate :html="template.previewCode" :showBottomNav="false" />
-            </div>
-          </div>
-        </section>
-      </Transition> -->
     </main>
   </div>
 </template>
@@ -87,8 +54,6 @@ import CodeSidebar from '~/components/code/CodeSidebar.vue'
 import UploadZone from '~/components/upload/UploadZone.vue'
 import ConfigPanel from '~/components/code/ConfigPanel.vue'
 import FlowSteps from '~/components/code/FlowSteps.vue'
-import GeneratingOverlay from '~/components/code/GeneratingOverlay.vue'
-import FlutterTemplate from '~/components/common/FlutterTemplate.vue'
 import { commonApi } from '~/api/common'
 import { useGeneration } from '~/composables/useGeneration'
 import { fileToBase64, handleCopy, handleDownload } from '~/utils/index.js'

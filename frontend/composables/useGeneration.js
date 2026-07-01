@@ -36,7 +36,9 @@ export function useGeneration () {
   // ═══ 用户 & 全局生成状态 ═══
   const userStore = useUserStore()
   const commonStore = useCommonStore()
-  const { isLogin, credits, creditsUsed } = storeToRefs(userStore)
+  const { isLogin } = storeToRefs(userStore)
+  const credits = computed(() => userStore.userInfo.credits ?? 0)
+  const creditsUsed = computed(() => userStore.userInfo.credits_used ?? 0)
   const { loginModalVisible, isGenerating } = storeToRefs(commonStore)
 
   function startGenerating() { commonStore.startGenerating() }

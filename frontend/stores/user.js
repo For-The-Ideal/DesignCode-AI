@@ -5,8 +5,6 @@ import cookie from '~/utils/cookie'
 export const useUserStore = defineStore('user', {
   state: () => ({
     userInfo: {},
-    credits: 100,
-    creditsUsed: 0,
     isLogin: false,
   }),
 
@@ -30,10 +28,6 @@ export const useUserStore = defineStore('user', {
     async setUserInfo(userInfo) {
       this.userInfo = userInfo
       this.isLogin = true
-      if (userInfo.credits !== undefined) {
-        this.credits = userInfo.credits
-        this.creditsUsed = userInfo.credits_used || 0
-      }
       if (userInfo.token) {
         cookie.set(userInfo.token)
       }
@@ -42,13 +36,14 @@ export const useUserStore = defineStore('user', {
     async logout() {
       cookie.remove()
       this.userInfo = {}
-      this.credits = 0
-      this.creditsUsed = 0
       this.isLogin = false
     },
   },
 
   getters: {
     getUserInfo: (state) => state.userInfo,
+    getRunTaskCount: (state) => {
+      return 0
+    }
   },
 })
