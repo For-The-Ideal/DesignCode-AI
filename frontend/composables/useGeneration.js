@@ -1,7 +1,7 @@
 import { reactive, ref, watch, onUnmounted } from 'vue'
 import { useSSE } from './useSSE'
 import { useStreamRenderer } from './useStreamRenderer'
-import { taskApi } from '~/api/sse'
+import { taskApi } from '~/api/task'
 
 /**
  * useGeneration — 代码生成流程编排 composable

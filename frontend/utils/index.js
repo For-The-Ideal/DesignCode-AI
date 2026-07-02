@@ -157,3 +157,115 @@ export function fileToBase64(file) {
     reader.readAsDataURL(file)
   })
 }
+
+
+
+// ------------------------------------------ 节流 和 防抖 ----------------------------------------
+/**
+ * 节流。适用于速率限制
+ * 对 resize 和 scroll 等事件处理。
+ *
+ * @param {number} delay -                   延迟零或更大，单位毫秒。一般在100或250左右。
+ * @param {Function} callback -              回调，每个 delay 后执行 callback。
+ * @param {object} [options] -               配置选项。
+ * @param {boolean} [options.noTrailing] -   不尾随执行 callback，可选，默认 false。
+ *                                           noTrailing 为 true，最后一次 delay 内，不执行 callback。
+ *                                           noTrailing 为 false，最后一次 delay 内，执行 callback。
+ *                                           （在 delay 内未调用 throttled-function 后，内部计数器将重置）。
+ * @param {boolean} [options.noLeading] -    首次不执行 callback，可选，默认为 false。
+ *                                           noLeading 为 false，在开始时，首次执行 callback。
+ *                                           noLeading 为 true，在开始时，不执行 callback。
+ *                                           注意: noLeading = true 和 noTrailing = true，则 callback 永不执行。
+ * @param {boolean} [options.debounceMode] - debounceMode 为 true，最后一次 delay 后执行 clear，不执行 callback。
+ *                                           debounceMode 为 false，最后一次 delay 后执行 callback。
+ *
+ * @returns {Function}   返回 throttle 函数本身。
+ */
+export function throttle(
+  delay, callback, options
+) {
+  const {
+    noTrailing = false,
+    noLeading = false,
+    debounceMode = undefined
+  } = options || {};
+
+  let timeoutID;
+  let cancelled = false;
+  let lastExec = 0;
+
+  function clearExistingTimeout() {
+    if (timeoutID) {
+      clearTimeout(timeoutID);
+    }
+  }
+
+  function cancel(options) {
+    const { upcomingOnly = false } = options || {};
+    clearExistingTimeout();
+    cancelled = !upcomingOnly;
+  }
+
+  function wrapper(...arguments_) {
+    let self = this;
+    let elapsed = Date.now() - lastExec;
+
+    if (cancelled) {
+      return;
+    }
+
+    function exec() {
+      lastExec = Date.now();
+      callback.apply(self, arguments_);
+    }
+
+    function clear() {
+      timeoutID = undefined;
+    }
+
+    if (!noLeading && debounceMode && !timeoutID) {
+      exec();
+    }
+
+    clearExistingTimeout();
+
+    if (debounceMode === undefined && elapsed > delay) {
+      if (noLeading) {
+        lastExec = Date.now();
+        if (!noTrailing) {
+          timeoutID = setTimeout(debounceMode ? clear : exec, delay);
+        }
+      } else {
+        exec();
+      }
+    } else if (noTrailing !== true) {
+      timeoutID = setTimeout(
+        debounceMode ? clear : exec,
+        debounceMode === undefined ? delay - elapsed : delay
+      );
+    }
+  }
+  wrapper.cancel = cancel;
+  return wrapper;
+}
+
+/**
+ * 防抖
+ * 保证 callback 在 delay 内只执行一次，在逻辑开头调用，或者结束时调用。
+ *
+ * @param {number} delay -               延迟零或更大，单位毫秒。一般在100或250左右。
+ * @param {Function} callback -          回调，在每个 delay 后执行 callback。
+ * @param {object} [options] -           配置选项。
+ * @param {boolean} [options.atBegin] -  首次执行 callback，可选，默认 false。
+ *                                       atBegin 为 false，在开始时，不执行 callback。
+ *                                       atBegin 为 true，在开始时，首次执行 callback。
+ *                                       （在 delay 内未调用 throttled-function，内部计数器将重置）。
+ *
+ * @returns {Function}   返回 debounced 函数本身。
+ */
+export function debounce(
+  delay, callback, options
+) {
+  const { atBegin = false } = options || {};
+  return throttle(delay, callback, { debounceMode: atBegin !== false });
+}

@@ -15,9 +15,6 @@
       <div class="page-top">
         <div class="top-left">
           <h2 class="page-title">任务列表</h2>
-          <el-tag type="info" size="small" round class="count-tag">
-            {{ filteredTasks.length }} 个任务
-          </el-tag>
         </div>
         <el-button type="primary" :icon="Plus" round @click="handleCreate">
           新建任务
@@ -112,9 +109,7 @@ const fetchTasks = async () => {
   }
 }
 
-onMounted(() => {
-  fetchTasks()
-})
+
 
 
 
@@ -135,6 +130,8 @@ const filteredTasks = computed(() => {
   if (f.status)    r = r.filter(t => t.status === f.status)
   return r
 })
+
+fetchTasks()
 </script>
 
 <style scoped>

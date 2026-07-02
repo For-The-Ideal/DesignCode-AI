@@ -8,20 +8,22 @@ export const useUserStore = defineStore('user', {
   state: () => ({
     userInfo: {},
     isLogin: false,
-
     // ── 任务统计 ──
     taskCounts: { pending: 0, running: 0, success: 0, failed: 0 },
   }),
 
   actions: {
     async initialize() {
+      if (!import.meta.client) return;
       console.log('Initializing user store...')
       const token = cookie.get()
+      if(!token) return;
       if (import.meta.client && token && !this.isLogin) {
         try {
           const res = await userApi.userInfo()
           if (res.code === 200) {
-            this.setUserInfo(res.data)
+            await this.setUserInfo(res.data)
+            await this.fetchUserTasks()
           }
         } catch (e) {
           // token 过期或无效，静默忽略
@@ -63,12 +65,12 @@ export const useUserStore = defineStore('user', {
     async setUserInfo(userInfo) {
       this.userInfo = userInfo
       this.isLogin = true
-      if (userInfo.token) {
+      const isNewLogin = !!userInfo.token
+      if (isNewLogin) {
         cookie.set(userInfo.token)
+        // 等待 cookie 生效后再建 SSE，避免 Nuxt 代理层转发时丢失认证
+        await new Promise(r => setTimeout(r, 300))
       }
-
-      // 登录后拉取任务计数 + 建立用户级 SSE 连接
-      await this.fetchUserTasks()
       this.startUserSSE()
     },
 

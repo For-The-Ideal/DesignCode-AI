@@ -94,9 +94,9 @@ export default defineNuxtConfig({
       },
     },
     server: {
-      warmup: {
-        clientFiles: ["./pages/**/*.vue", "./layouts/**/*.vue"],
-      },
+      // warmup: {
+      //   clientFiles: ["./pages/**/*.vue", "./layouts/**/*.vue"],
+      // },
     },
     logLevel: "warn",
   },

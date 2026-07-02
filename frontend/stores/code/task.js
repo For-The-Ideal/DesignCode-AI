@@ -1,8 +1,9 @@
 import { ElMessage } from 'element-plus'
 import { taskApi } from '~/api/task'
+import { useUserStore } from '~/stores/user'
 
 export const createTaskActions = (ctx) => {
-  const { state, runningCount, maxConcurrent,} = ctx
+  const { state, runningCount, maxConcurrent, } = ctx
 
   const targetMap = { Flutter: 'flutter', React: 'react', Vue: 'vue3' }
 
@@ -44,6 +45,15 @@ export const createTaskActions = (ctx) => {
         state.isSubmitting = false
         return null
       }
+
+      const userStore = useUserStore()
+      const {userInfo} = storeToRefs(userStore)
+      console.log('[code store] 创建任务成功:', userInfo.value)
+      await userStore.setUserInfo({
+        ...userInfo.value,
+        credits: userInfo.value.credits - payload.images.length,
+        credits_used: userInfo.value.credits_used + payload.images.length,
+      })
 
       ElMessage.success('任务已创建，请在任务列表中查看进度')
       state.isSubmitting = false

@@ -4,6 +4,8 @@ import (
 	"frontend_api/internal/model"
 	"frontend_api/pkg/mysql"
 	"log"
+
+	"gorm.io/gorm"
 )
 
 // ═══════════════════════════════════════════════
@@ -136,12 +138,31 @@ func (r *TaskRepository) CountByUserID(userID uint) (*model.TaskCountResponse, e
 }
 
 // ResetRunningTasks 将残留的 running 状态任务标记为 failed（服务重启恢复）
-// 返回受影响的任务数量
+// 同时退还预扣积分（创建任务时已扣）
 func (r *TaskRepository) ResetRunningTasks() (int64, error) {
 	db := mysql.GetDB()
 	if db == nil {
 		return 0, nil
 	}
+
+	// 查找所有 running 任务
+	var tasks []model.Task
+	if err := db.Where("status = ?", model.TaskStatusRunning).Find(&tasks).Error; err != nil {
+		return 0, err
+	}
+
+	// 退还预扣积分
+	for _, task := range tasks {
+		if task.RequiredPoints > 0 {
+			db.Model(&model.User{}).Where("id = ?", task.UserID).
+				Updates(map[string]interface{}{
+					"credits":      gorm.Expr("credits + ?", task.RequiredPoints),
+					"credits_used": gorm.Expr("credits_used - ?", task.RequiredPoints),
+				})
+		}
+	}
+
+	// 批量更新状态
 	result := db.Model(&model.Task{}).
 		Where("status = ?", model.TaskStatusRunning).
 		Updates(map[string]interface{}{

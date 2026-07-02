@@ -15,6 +15,7 @@ declare global {
   const createUseAsyncData: typeof import('../../node_modules/.pnpm/nuxt@4.4.8_@babel+plugin-sy_99ff0ff52633701d5303af6e8aaecd08/node_modules/nuxt/dist/app/composables/asyncData').createUseAsyncData
   const createUseFetch: typeof import('../../node_modules/.pnpm/nuxt@4.4.8_@babel+plugin-sy_99ff0ff52633701d5303af6e8aaecd08/node_modules/nuxt/dist/app/composables/fetch').createUseFetch
   const customRef: typeof import('vue').customRef
+  const debounce: typeof import('../../utils/index').debounce
   const defineAppConfig: typeof import('../../node_modules/.pnpm/nuxt@4.4.8_@babel+plugin-sy_99ff0ff52633701d5303af6e8aaecd08/node_modules/nuxt/dist/app/nuxt').defineAppConfig
   const defineAsyncComponent: typeof import('vue').defineAsyncComponent
   const defineComponent: typeof import('vue').defineComponent
@@ -99,6 +100,7 @@ declare global {
   const showElectronNotification: typeof import('../../utils/index').showElectronNotification
   const showError: typeof import('../../node_modules/.pnpm/nuxt@4.4.8_@babel+plugin-sy_99ff0ff52633701d5303af6e8aaecd08/node_modules/nuxt/dist/app/composables/error').showError
   const storeToRefs: typeof import('../../node_modules/.pnpm/@pinia+nuxt@0.11.3_magicast@0.5.3_pinia@3.0.4_vue@3.5.38_/node_modules/@pinia/nuxt/dist/runtime/composables').storeToRefs
+  const throttle: typeof import('../../utils/index').throttle
   const toRaw: typeof import('vue').toRaw
   const toRef: typeof import('vue').toRef
   const toRefs: typeof import('vue').toRefs
@@ -241,6 +243,7 @@ declare module 'vue' {
     readonly createUseAsyncData: UnwrapRef<typeof import('../../node_modules/.pnpm/nuxt@4.4.8_@babel+plugin-sy_99ff0ff52633701d5303af6e8aaecd08/node_modules/nuxt/dist/app/composables/asyncData')['createUseAsyncData']>
     readonly createUseFetch: UnwrapRef<typeof import('../../node_modules/.pnpm/nuxt@4.4.8_@babel+plugin-sy_99ff0ff52633701d5303af6e8aaecd08/node_modules/nuxt/dist/app/composables/fetch')['createUseFetch']>
     readonly customRef: UnwrapRef<typeof import('vue')['customRef']>
+    readonly debounce: UnwrapRef<typeof import('../../utils/index')['debounce']>
     readonly defineAppConfig: UnwrapRef<typeof import('../../node_modules/.pnpm/nuxt@4.4.8_@babel+plugin-sy_99ff0ff52633701d5303af6e8aaecd08/node_modules/nuxt/dist/app/nuxt')['defineAppConfig']>
     readonly defineAsyncComponent: UnwrapRef<typeof import('vue')['defineAsyncComponent']>
     readonly defineComponent: UnwrapRef<typeof import('vue')['defineComponent']>
@@ -325,6 +328,7 @@ declare module 'vue' {
     readonly showElectronNotification: UnwrapRef<typeof import('../../utils/index')['showElectronNotification']>
     readonly showError: UnwrapRef<typeof import('../../node_modules/.pnpm/nuxt@4.4.8_@babel+plugin-sy_99ff0ff52633701d5303af6e8aaecd08/node_modules/nuxt/dist/app/composables/error')['showError']>
     readonly storeToRefs: UnwrapRef<typeof import('../../node_modules/.pnpm/@pinia+nuxt@0.11.3_magicast@0.5.3_pinia@3.0.4_vue@3.5.38_/node_modules/@pinia/nuxt/dist/runtime/composables')['storeToRefs']>
+    readonly throttle: UnwrapRef<typeof import('../../utils/index')['throttle']>
     readonly toRaw: UnwrapRef<typeof import('vue')['toRaw']>
     readonly toRef: UnwrapRef<typeof import('vue')['toRef']>
     readonly toRefs: UnwrapRef<typeof import('vue')['toRefs']>

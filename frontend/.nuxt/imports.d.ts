@@ -37,7 +37,7 @@ export { useGeneration } from '../composables/useGeneration';
 export { useSSE } from '../composables/useSSE';
 export { useStreamRenderer } from '../composables/useStreamRenderer';
 export { default as cookie } from '../utils/cookie';
-export { showElectronNotification, setEncrypt, handleCopy, handleFormat, handleDownload, validateEmail, fileToBase64 } from '../utils/index';
+export { showElectronNotification, setEncrypt, handleCopy, handleFormat, handleDownload, validateEmail, fileToBase64, throttle, debounce } from '../utils/index';
 export { default as request } from '../utils/request';
 export { useCommonStore } from '../stores/common';
 export { useMenuListStore } from '../stores/menuList';

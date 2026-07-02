@@ -37,12 +37,15 @@ func Run() {
 	// 2. 初始化数据库
 	mysql.InitDB(config.AppConfig.MySQL.DSN)
 
-	// 自动迁移表结构（Task、Result、User）
+	// 自动迁移表结构（Task、Result、User、MembershipPlan、PaymentOrder 等）
 	if mysql.GetDB() != nil {
 		if err := mysql.GetDB().AutoMigrate(
 			&model.Task{},
 			&model.Result{},
 			&model.User{},
+			&model.MembershipPlan{},
+			&model.CreditsPackage{},
+			&model.PaymentOrder{},
 		); err != nil {
 			log.Fatalf("[AutoMigrate] 自动建表失败: %v", err)
 		}
@@ -96,6 +99,7 @@ func Run() {
 	authHandler := handler.NewAuthHandler()
 	userHandler := handler.NewUserHandler()
 	adminHandler := handler.NewAdminHandler()
+	membershipHandler := handler.NewMembershipHandler()
 
 	// 10. 设置 Gin
 	r := gin.Default()
@@ -103,7 +107,7 @@ func Run() {
 	r.Use(middleware.CORSMiddleware())
 
 	// 11. 初始化路由
-	routes.InitV1Routes(r, taskHandler, sseHandler, uploadHandler, authHandler, userHandler, adminHandler)
+	routes.InitV1Routes(r, taskHandler, sseHandler, uploadHandler, authHandler, userHandler, adminHandler, membershipHandler)
 
 	// 12. 创建 HTTP Server（支持优雅关闭）
 	// Addr 是监听地址（host:port），不是对外 URL

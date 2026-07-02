@@ -9,32 +9,15 @@
           <p class="header-sub">上传设计稿，AI 自动识别并生成高质量代码</p>
         </div>
         <div class="header-stats">
-          <div class="stat-card stat-pending">
-            <i class="stat-icon fa-solid fa-clock"></i>
+          <div
+            v-for="card in statCards"
+            :key="card.key"
+            :class="['stat-card', `stat-${card.key}`]"
+          >
+            <span class="stat-icon" v-html="card.svg"></span>
             <div class="stat-body">
-              <span class="stat-num" :key="taskCounts.pending">{{ taskCounts.pending }}</span>
-              <span class="stat-label">排队中</span>
-            </div>
-          </div>
-          <div class="stat-card stat-running">
-            <i class="stat-icon fa-solid fa-spinner fa-spin"></i>
-            <div class="stat-body">
-              <span class="stat-num" :key="taskCounts.running">{{ taskCounts.running }}</span>
-              <span class="stat-label">运行中</span>
-            </div>
-          </div>
-          <div class="stat-card stat-success">
-            <i class="stat-icon fa-solid fa-circle-check"></i>
-            <div class="stat-body">
-              <span class="stat-num" :key="taskCounts.success">{{ taskCounts.success }}</span>
-              <span class="stat-label">已完成</span>
-            </div>
-          </div>
-          <div class="stat-card stat-failed">
-            <i class="stat-icon fa-solid fa-circle-xmark  "></i>
-            <div class="stat-body">
-              <span class="stat-num" :key="taskCounts.failed">{{ taskCounts.failed }}</span>
-              <span class="stat-label">已失败</span>
+              <span class="stat-num" :key="card.count">{{ card.count }}</span>
+              <span class="stat-label">{{ card.label }}</span>
             </div>
           </div>
         </div>
@@ -68,7 +51,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import CodeSidebar from '~/components/code/CodeSidebar.vue'
 import UploadZone from '~/components/upload/UploadZone.vue'
@@ -80,6 +63,18 @@ import { useUserStore } from '~/stores/user'
 const store = useCodeStore()
 const userStore = useUserStore()
 const { taskCounts } = storeToRefs(userStore)
+
+// ═══ 统计卡片 ═══
+const statCards = computed(() => [
+  { key: 'pending', label: '排队中', count: taskCounts.value.pending,
+    svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2L20 7v10l-8 5-8-5V7z"/><path d="M8 12h4v4" stroke-linecap="round"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="16" cy="8" r="1" fill="currentColor" stroke="none" opacity=".4"/><circle cx="16" cy="16" r="1" fill="currentColor" stroke="none" opacity=".4"/></svg>' },
+  { key: 'running', label: '运行中', count: taskCounts.value.running,
+    svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2L20 7v10l-8 5-8-5V7z"/><circle class="run-ring" cx="12" cy="12" r="4.5" stroke-dasharray="10 18" stroke-linecap="round"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg>' },
+  { key: 'success', label: '已完成', count: taskCounts.value.success,
+    svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2L20 7v10l-8 5-8-5V7z"/><path d="M8 12l2.5 2.5L16 9" stroke-linecap="round" stroke-linejoin="round"/></svg>' },
+  { key: 'failed', label: '已失败', count: taskCounts.value.failed,
+    svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2L20 7v10l-8 5-8-5V7z"/><path d="M9 9l6 6M15 9l-6 6" stroke-linecap="round"/></svg>' },
+])
 
 // ═══ 步骤循环高亮 ═══
 const cycleStep = ref(0)
@@ -157,82 +152,155 @@ onUnmounted(() => {
   gap: 12px;
   flex-shrink: 0;
 }
+
+/* ═══ HUD 数据面板 ═══ */
 .stat-card {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 16px 24px;
-  border-radius: 14px;
-  border: 1px solid;
-  background: rgba(5, 8, 18, 0.85);
-  backdrop-filter: blur(8px);
+  gap: 14px;
+  padding: 14px 20px;
+  min-width: 150px;
+  background: rgba(8, 10, 20, 0.9);
+  backdrop-filter: blur(12px);
   position: relative;
   overflow: hidden;
+  clip-path: polygon(
+    8px 0, calc(100% - 8px) 0,
+    100% 8px, 100% calc(100% - 8px),
+    calc(100% - 8px) 100%, 8px 100%,
+    0 calc(100% - 8px), 0 8px
+  );
 }
-/* 顶部发光线 */
+/* 外框发光 */
 .stat-card::before {
   content: '';
   position: absolute;
-  top: 0; left: 16px; right: 16px;
-  height: 1px;
-  opacity: 0.6;
+  inset: 1px;
+  clip-path: polygon(
+    8px 0, calc(100% - 8px) 0,
+    100% 8px, 100% calc(100% - 8px),
+    calc(100% - 8px) 100%, 8px 100%,
+    0 calc(100% - 8px), 0 8px
+  );
+  z-index: -1;
 }
-.stat-pending::before { background: linear-gradient(90deg, transparent, #f59e0b, transparent); }
-.stat-running::before { background: linear-gradient(90deg, transparent, #00ffff, transparent); }
-.stat-success::before { background: linear-gradient(90deg, transparent, #22c55e, transparent); }
+.stat-pending::before { background: linear-gradient(135deg, rgba(245,158,11,0.06), rgba(245,158,11,0.01)); }
+.stat-running::before { background: linear-gradient(135deg, rgba(0,255,255,0.08), rgba(0,255,255,0.01)); }
+.stat-success::before { background: linear-gradient(135deg, rgba(34,197,94,0.06), rgba(34,197,94,0.01)); }
+.stat-failed::before { background: linear-gradient(135deg, rgba(239,68,68,0.06), rgba(239,68,68,0.01)); }
+
+/* 顶部扫描线 */
+.stat-card::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 20px; right: 20px;
+  height: 1px;
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+.stat-card:hover::after { opacity: 1; }
+.stat-pending::after { background: linear-gradient(90deg, transparent, #f59e0b, transparent); box-shadow: 0 0 6px rgba(245,158,11,0.5); }
+.stat-running::after { background: linear-gradient(90deg, transparent, #00ffff, transparent); box-shadow: 0 0 6px rgba(0,255,255,0.5); }
+.stat-success::after { background: linear-gradient(90deg, transparent, #22c55e, transparent); box-shadow: 0 0 6px rgba(34,197,94,0.5); }
+.stat-failed::after { background: linear-gradient(90deg, transparent, #ef4444, transparent); box-shadow: 0 0 6px rgba(239,68,68,0.5); }
 
 .stat-icon {
-  font-size: 24px;
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.04);
   flex-shrink: 0;
+  position: relative;
 }
+.stat-icon svg {
+  width: 100%;
+  height: 100%;
+}
+/* v-html 子元素需非 scoped 样式才能命中，见下方 <style> 块 */
+.stat-icon::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 4px;
+  opacity: 0.15;
+}
+
 .stat-body {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  align-items: flex-end;
 }
 .stat-num {
-  font-family: 'Courier New', 'Consolas', 'Source Code Pro', monospace;
-  font-size: 32px;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 28px;
   font-weight: 700;
   line-height: 1;
-  animation: tickIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  font-variant-numeric: tabular-nums;
+  position: relative;
 }
 .stat-label {
-  font-size: 13px;
-  font-weight: 500;
-  letter-spacing: 1px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
 }
 
+/* ═══ 排队中 ─── */
+.stat-pending {
+  border: 1px solid rgba(245,158,11,0.2);
+  box-shadow: 0 0 20px rgba(245,158,11,0.06), inset 0 0 20px rgba(245,158,11,0.03);
+}
+.stat-pending .stat-icon { color: #f59e0b; text-shadow: 0 0 12px rgba(245,158,11,0.5); }
+.stat-pending .stat-icon::after { border: 1px dashed rgba(245,158,11,0.2); }
+.stat-pending .stat-num { color: #fbbf24; text-shadow: 0 0 12px rgba(251,191,36,0.5); }
+.stat-pending .stat-label { color: rgba(245,158,11,0.7); }
+
+/* ═══ 运行中 ─── */
+.stat-running {
+  border: 1px solid rgba(0,255,255,0.2);
+  box-shadow: 0 0 24px rgba(0,255,255,0.08), inset 0 0 20px rgba(0,255,255,0.04);
+}
+.stat-running .stat-icon { color: #00ffff; text-shadow: 0 0 14px rgba(0,255,255,0.6); animation: iconPulse 2s ease-in-out infinite; }
+.stat-running .stat-icon::after { border: 1px dashed rgba(0,255,255,0.25); animation: dashSpin 4s linear infinite; }
+.stat-running .stat-num { color: #22d3ee; text-shadow: 0 0 14px rgba(34,211,238,0.6); }
+.stat-running .stat-label { color: rgba(0,255,255,0.7); }
+
+/* ═══ 已完成 ─── */
+.stat-success {
+  border: 1px solid rgba(34,197,94,0.2);
+  box-shadow: 0 0 20px rgba(34,197,94,0.06), inset 0 0 20px rgba(34,197,94,0.03);
+}
+.stat-success .stat-icon { color: #22c55e; text-shadow: 0 0 12px rgba(34,197,94,0.5); }
+.stat-success .stat-icon::after { border: 1px dashed rgba(34,197,94,0.2); }
+.stat-success .stat-num { color: #4ade80; text-shadow: 0 0 12px rgba(74,222,128,0.5); }
+.stat-success .stat-label { color: rgba(34,197,94,0.7); }
+
+/* ═══ 已失败 ─── */
+.stat-failed {
+  border: 1px solid rgba(239,68,68,0.2);
+  box-shadow: 0 0 20px rgba(239,68,68,0.06), inset 0 0 20px rgba(239,68,68,0.03);
+}
+.stat-failed .stat-icon { color: #ef4444; text-shadow: 0 0 12px rgba(239,68,68,0.5); }
+.stat-failed .stat-icon::after { border: 1px dashed rgba(239,68,68,0.2); }
+.stat-failed .stat-num { color: #f87171; text-shadow: 0 0 12px rgba(248,113,113,0.5); }
+.stat-failed .stat-label { color: rgba(239,68,68,0.7); }
+
+/* ═══ 动效 ═══ */
 @keyframes tickIn {
-  0%   { transform: scale(0.5); opacity: 0; }
-  60%  { transform: scale(1.2); }
-  100% { transform: scale(1); opacity: 1; }
+  0%   { transform: scale(0.6) translateY(6px); opacity: 0; filter: blur(4px); }
+  60%  { transform: scale(1.08); opacity: 1; filter: blur(0); }
+  100% { transform: scale(1); opacity: 1; filter: blur(0); }
 }
-
-/* ── 排队中 ── */
-.stat-pending { border-color: rgba(245,158,11,0.18); }
-.stat-pending .stat-icon { color: #f59e0b; box-shadow: 0 0 14px rgba(245,158,11,0.25); }
-.stat-pending .stat-num { color: #fbbf24; text-shadow: 0 0 10px rgba(251,191,36,0.4); }
-.stat-pending .stat-label { color: rgba(245,158,11,0.6); }
-
-/* ── 运行中 ── */
-.stat-running { border-color: rgba(0,255,255,0.18); }
-.stat-running .stat-icon { color: #00ffff; box-shadow: 0 0 14px rgba(0,255,255,0.25); }
-.stat-running .stat-num { color: #22d3ee; text-shadow: 0 0 10px rgba(34,211,238,0.4); }
-.stat-running .stat-label { color: rgba(0,255,255,0.6); }
-
-/* ── 已完成 ── */
-.stat-success { border-color: rgba(34,197,94,0.18); }
-.stat-success .stat-icon { color: #22c55e; box-shadow: 0 0 14px rgba(34,197,94,0.25); }
-.stat-success .stat-num { color: #4ade80; text-shadow: 0 0 10px rgba(74,222,128,0.4); }
-.stat-success .stat-label { color: rgba(34,197,94,0.6); }
+@keyframes iconPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.7; transform: scale(1.1); }
+}
+@keyframes dashSpin {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
 
 .upload-section-inner { display: flex; gap: 24px; }
 .upload-left { flex: 1.5; display: flex; flex-direction: column; gap: 12px; }
@@ -274,5 +342,16 @@ onUnmounted(() => {
 
 @media (max-width: 1100px) {
   .upload-section-inner { flex-direction: column; }
+}
+</style>
+
+<style>
+/* v-html 渲染的 SVG 图标，需非 scoped 样式 */
+.stat-running .stat-icon .run-ring {
+  animation: ringSpin 2s linear infinite;
+  transform-origin: 12px 12px;
+}
+@keyframes ringSpin {
+  to { transform: rotate(360deg); }
 }
 </style>

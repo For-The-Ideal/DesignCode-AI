@@ -33,7 +33,7 @@
           </div>
           <div class="usage-info">
             <span class="usage-remaining">
-              剩余 <span class="usage-remaining-num">{{ credits }}</span> 次
+              剩余 <span class="usage-remaining-num">{{ userInfo.credits }}</span> 次
             </span>
             <p class="usage-total">共 {{ usageTotal }} 次</p>
           </div>
@@ -45,25 +45,27 @@
         <div class="upgrade-glow"></div>
         <div class="upgrade-title">💎 升级会员</div>
         <div class="upgrade-desc">解锁更多高级功能</div>
-        <button class="upgrade-btn">立即升级</button>
+      <button class="upgrade-btn" @click="openMembershipModal">立即升级</button>
       </div>
     </div>
   </AppSidebar>
+
+  <MembershipModal ref="membershipModalRef" @success="onMembershipSuccess" @close="onMembershipClose" />
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useUserStore } from '~/stores/user'
 import { useCommonStore } from '~/stores/common'
 import { useMenuListStore } from '~/stores/menuList'
 import AppSidebar from '~/components/layout/AppSidebar.vue'
+import MembershipModal from '~/components/dialog/MembershipModal.vue'
 
 const userStore = useUserStore()
 const commonStore = useCommonStore()
 const { isLogin, userInfo } = storeToRefs(userStore)
-const credits = computed(() => userInfo.value.credits ?? 0)
 const openLoginModal = () => commonStore.setLoginModalVisible(true)
 const router = useRouter()
 const menuStore = useMenuListStore()
@@ -80,12 +82,16 @@ const handleNavClick = (item) => {
 }
 
 
-const usageTotal = 100
+const usageTotal = computed(()=>{
+  const {credits_used,credits} = userInfo.value
+  return Number(credits) + Number(credits_used)
+})
 
 const usagePercent = computed(() => {
-  if (usageTotal <= 0) return 0
-  const used = Math.max(0, usageTotal - credits.value)
-  return Math.round((used / usageTotal) * 100)
+  if (usageTotal.value <= 0) return 0
+  const { credits } = userInfo.value
+  const used = Math.max(0, usageTotal.value - credits)
+  return Math.round((used / usageTotal.value) * 100)
 })
 
 const ringStyle = computed(() => {
@@ -97,6 +103,19 @@ const ringStyle = computed(() => {
     strokeDashoffset: `${offset}`,
   }
 })
+
+const membershipModalRef = ref(null)
+const openMembershipModal = () => {
+  if (!isLogin.value) {
+    openLoginModal()
+    return
+  }
+  membershipModalRef.value?.open()
+}
+const onMembershipSuccess = () => {
+  userStore.initialize()
+}
+const onMembershipClose = () => {}
 
 </script>
 

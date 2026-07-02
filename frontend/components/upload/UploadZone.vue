@@ -59,11 +59,11 @@
           </div>
         </div>
         <!-- 描述输入 -->
-        <div class="item-desc">
+        <div class="item-desc"  @click.stop="onEditDesc(i)">
           <i class="fa-regular fa-file-lines desc-icon"></i>
           <span v-if="img.description" class="desc-text">{{ img.description }}</span>
           <span v-else class="desc-placeholder">添加图片描述</span>
-          <button class="desc-edit-btn" @click.stop="onEditDesc(i)">
+          <button class="desc-edit-btn">
             <i class="fa-regular fa-pen-to-square"></i>
           </button>
         </div>
@@ -103,20 +103,27 @@ import { storeToRefs } from 'pinia'
 import DescEditorModal from '~/components/upload/DescEditorModal.vue'
 import { useCodeStore } from '~/stores/code'
 import { useUserStore } from '~/stores/user'
+import { useCommonStore } from '~/stores/common'
 
 const userStore = useUserStore()
+const commonStore = useCommonStore()
 const { isLogin } = storeToRefs(userStore)
+const openLoginModal = () => commonStore.setLoginModalVisible(true)
 
 const store = useCodeStore()
 const { images, isSubmitting, isMaxReached, isConcurrencyFull, uploadHint } = storeToRefs(store)
 
 // ── 从 store 派生 ──
-const disabled = computed(() => isMaxReached.value || isSubmitting.value || isConcurrencyFull.value || !isLogin.value)
+const disabled = computed(() => {
+  return isMaxReached.value || isSubmitting.value || isConcurrencyFull.value
+})
 
 // ── 文件选择 ──
 const fileInput = ref(null)
 
 const onZoneClick = () => {
+  console.log('onZoneClick')
+  if (!isLogin.value) return openLoginModal()
   if (disabled.value) return
   fileInput.value?.click()
 }
@@ -128,6 +135,8 @@ const onFileChange = (e) => {
 }
 
 const onZoneDrop = (e) => {
+  console.log('onZoneDrop')
+  if (!isLogin.value) return openLoginModal()
   if (disabled.value) return
   const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'))
   if (files.length) store.addImages(files)
@@ -157,7 +166,11 @@ const onDescClose = () => {
 const dragIdx = ref(-1)
 const dragOverIdx = ref(-1)
 
-const onDragStart = (e, idx) => { dragIdx.value = idx }
+const onDragStart = (e, idx) => {
+  e.dataTransfer.effectAllowed = 'move'
+  e.dataTransfer.setData('text/plain', String(idx))
+  dragIdx.value = idx
+}
 const onDragOver = (idx) => { dragOverIdx.value = idx }
 const onDrop = (idx) => {
   if (dragIdx.value < 0 || dragIdx.value === idx) return
@@ -396,7 +409,6 @@ const onDragEnd = () => {
   flex: 1;
   font-size: 12px;
   color: rgba(255, 255, 255, 0.2);
-  font-style: italic;
 }
 
 .desc-edit-btn {

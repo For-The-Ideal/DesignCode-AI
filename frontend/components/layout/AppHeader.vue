@@ -91,17 +91,24 @@ import { computed, ref, watch } from "vue"
 import AuthModal from '~/components/auth/AuthModal.vue'
 import Password from '~/components/auth/Password.vue'
 import { useUserStore } from '~/stores/user'
+import { useCommonStore } from '~/stores/common'
 import { storeToRefs } from 'pinia'
 
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
+const commonStore = useCommonStore()
 const loginModalRef = ref()
 const passwordModalRef = ref()
 const passwordBackToLogin = ref(false)
 const showDropdown = ref(false)
 const avatarFailed = ref(false)
 const { isLogin, userInfo } = storeToRefs(userStore)
+
+// 监听外部（如 UploadZone）触发的登录弹窗请求
+watch(() => commonStore.loginModalVisible, (val) => {
+  if (val) loginModalRef.value?.open()
+})
 const navList = ref([
   {
     name:"首页",
@@ -119,11 +126,14 @@ const navList = ref([
 
 const handleLoginSuccess = async (user) => {
   await userStore.setUserInfo(user)
+  await userStore.fetchUserTasks()
 }
 
 const handleRegisterSuccess = () => {}
 
-const handleModalClose = () => {}
+const handleModalClose = () => {
+  commonStore.setLoginModalVisible(false)
+}
 
 const handleLogout = async () => {
   showDropdown.value = false

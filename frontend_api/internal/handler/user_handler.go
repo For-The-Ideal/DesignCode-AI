@@ -58,14 +58,17 @@ type UpdateUserInfoRequest struct {
 	Avatar   string `json:"avatar"`
 }
 
-// GetUserInfo 获取当前登录用户信息
+// GetUserInfo 获取当前登录用户信息（含会员状态 & 积分）
 func (h *UserHandler) GetUserInfo(c *gin.Context) {
 	userID, _ := c.Get("user_id")
+	db := mysql.GetDB()
+
 	var user model.User
-	if err := mysql.GetDB().First(&user, userID).Error; err != nil {
+	if err := db.First(&user, userID).Error; err != nil {
 		utils.Error(c, http.StatusNotFound, "用户不存在")
 		return
 	}
+
 	tokenString, _ := c.Get("token_string")
 	utils.Success(c, gin.H{
 		"id":           user.ID,
@@ -74,6 +77,7 @@ func (h *UserHandler) GetUserInfo(c *gin.Context) {
 		"avatar":       user.Avatar,
 		"credits":      user.Credits,
 		"credits_used": user.CreditsUsed,
+		"level":        user.Level,
 		"token":        tokenString,
 	}, "获取用户信息成功")
 }

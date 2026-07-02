@@ -7,6 +7,7 @@
     :showClose="showClose"
     :closeOnClickModal="closeOnClickModal"
     :closeOnPressEscape="closeOnPressEscape"
+    :append-to-body="true"
     :class="['auth-dialog', customClass]"
     :beforeClose="handleBeforeClose">
     <template #header>

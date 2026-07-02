@@ -300,17 +300,7 @@ func (w *GenerateUIWorkflow) Execute(ctx context.Context, task *model.Task) erro
 		w.log.Errorf("[Workflow] 保存结果失败: %v", err)
 	}
 
-	// ── 扣减积分（任务成功后扣减，失败不扣）──
-	if db := mysql.GetDB(); db != nil {
-		if err := db.Model(&model.User{}).Where("id = ?", task.UserID).
-			UpdateColumn("credits", gorm.Expr("credits - ?", task.RequiredPoints)).Error; err != nil {
-			w.log.Errorf("[Workflow] 扣减积分失败: %v", err)
-		}
-		if err := db.Model(&model.User{}).Where("id = ?", task.UserID).
-			UpdateColumn("credits_used", gorm.Expr("credits_used + ?", task.RequiredPoints)).Error; err != nil {
-			w.log.Errorf("[Workflow] 更新已用积分失败: %v", err)
-		}
-	}
+	// 积分已在创建任务时预扣，此处无需重复扣减
 	w.simulateProgress(ctx, task.ID, StepSaveResult, 85, 95, 200)
 
 	// ── Step 6: Done ───────────────────────────────
@@ -353,9 +343,20 @@ func urlToBase64(url string) (string, error) {
 	return fmt.Sprintf("data:%s;base64,%s", contentType, encoded), nil
 }
 
-// handleError 处理工作流错误：更新任务状态、保存失败结果、推送 SSE
+// handleError 处理工作流错误：退还预扣积分、更新任务状态、保存失败结果、推送 SSE
 func (w *GenerateUIWorkflow) handleError(task *model.Task, err error) {
 	w.log.Errorf("[Workflow] 任务失败: %s, error=%v", task.ID, err)
+
+	// 退还预扣积分（创建任务时已扣）
+	if task.RequiredPoints > 0 {
+		if db := mysql.GetDB(); db != nil {
+			db.Model(&model.User{}).Where("id = ?", task.UserID).
+				Updates(map[string]interface{}{
+					"credits":      gorm.Expr("credits + ?", task.RequiredPoints),
+					"credits_used": gorm.Expr("credits_used - ?", task.RequiredPoints),
+				})
+		}
+	}
 
 	// 更新任务内存状态并落库
 	task.Status = model.TaskStatusFailed

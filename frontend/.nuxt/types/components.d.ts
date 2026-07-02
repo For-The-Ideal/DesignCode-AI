@@ -28,6 +28,7 @@ interface _GlobalComponents {
   CodeMonacoEditorCore: typeof import("../../components/code/MonacoEditorCore.vue")['default']
   CommonFlutterTemplate: typeof import("../../components/common/FlutterTemplate.vue")['default']
   DialogModel: typeof import("../../components/dialog/DialogModel.vue")['default']
+  DialogMembershipModal: typeof import("../../components/dialog/MembershipModal.vue")['default']
   LandingDiagnosticBubbles: typeof import("../../components/landing/DiagnosticBubbles.vue")['default']
   LandingHeroSection: typeof import("../../components/landing/HeroSection.vue")['default']
   LandingSSEGenerator: typeof import("../../components/landing/SSEGenerator.vue")['default']
@@ -83,6 +84,7 @@ interface _GlobalComponents {
   LazyCodeMonacoEditorCore: LazyComponent<typeof import("../../components/code/MonacoEditorCore.vue")['default']>
   LazyCommonFlutterTemplate: LazyComponent<typeof import("../../components/common/FlutterTemplate.vue")['default']>
   LazyDialogModel: LazyComponent<typeof import("../../components/dialog/DialogModel.vue")['default']>
+  LazyDialogMembershipModal: LazyComponent<typeof import("../../components/dialog/MembershipModal.vue")['default']>
   LazyLandingDiagnosticBubbles: LazyComponent<typeof import("../../components/landing/DiagnosticBubbles.vue")['default']>
   LazyLandingHeroSection: LazyComponent<typeof import("../../components/landing/HeroSection.vue")['default']>
   LazyLandingSSEGenerator: LazyComponent<typeof import("../../components/landing/SSEGenerator.vue")['default']>

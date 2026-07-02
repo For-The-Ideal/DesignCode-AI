@@ -111,7 +111,7 @@ import { storeToRefs } from 'pinia'
 import { useCodeStore } from '~/stores/code'
 import { useUserStore } from '~/stores/user'
 import { useCommonStore } from '~/stores/common'
-
+import { debounce } from '~/utils/index'
 const store = useCodeStore()
 const { images, allUploaded, isSubmitting, isConcurrencyFull } = storeToRefs(store)
 const userStore = useUserStore()
@@ -146,13 +146,14 @@ const toggleOption = (val) => {
   store.config.options = opts
 }
 
-const onGenerate = async () => {
+const onGenerate = debounce(250, async () => {
   if (!userStore.isLogin) {
     commonStore.setLoginModalVisible(true)
     return
   }
   await store.createTask()
-}
+})
+
 const toggleAdvanced = (val) => {
   const adv = [...store.config.advanced]
   const idx = adv.indexOf(val)

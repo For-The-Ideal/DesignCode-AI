@@ -41,7 +41,8 @@ defineProps({
   letter-spacing: 0.5px;
   margin-bottom: 10px;
 }
-.section-title i { font-size: 11px; }
+.section-title i { font-size: 11px;color: rgba(255,255,255,0.75); }
+.section-title span { font-size: 12px;color: rgba(255,255,255,0.75); }
 .stats {
   display: flex;
   flex-direction: column;

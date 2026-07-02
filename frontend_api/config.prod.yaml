@@ -20,7 +20,7 @@ ai:
       api_key: "sk-ffca63c951c24c458d860ffad0dec1b5"
       endpoint: "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
       enabled: true
-      max_retries: 2
+      max_retries: 3
       timeout: 60
       priority: 5
       capability: "read"
@@ -30,7 +30,7 @@ ai:
       api_key: "sk-13ff3e7a86484f34969954fd21c219d3"
       endpoint: "https://api.deepseek.com/chat/completions"
       enabled: true
-      max_retries: 2
+      max_retries: 3
       timeout: 180
       priority: 10
       capability: "write"
@@ -40,7 +40,7 @@ ai:
       api_key: "your_openai_api_key"
       endpoint: "https://api.openai.com/v1/chat/completions"
       enabled: false
-      max_retries: 2
+      max_retries: 3
       timeout: 60
       priority: 20
       capability: "both"
@@ -60,7 +60,7 @@ ai:
       api_key: "your_gemini_api_key"
       endpoint: "https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent"
       enabled: false
-      max_retries: 1
+      max_retries: 3
       timeout: 60
       priority: 25
       capability: "both"
@@ -70,21 +70,10 @@ ai:
       api_key: "your_anthropic_api_key"
       endpoint: "https://api.anthropic.com/v1/messages"
       enabled: false
-      max_retries: 2
+      max_retries: 3
       timeout: 60
       priority: 15
       capability: "both"
-
-    - provider: "mock"
-      name: "Local Mock"
-      api_key: ""
-      endpoint: ""
-      enabled: true
-      max_retries: 0
-      timeout: 0
-      priority: 99
-      capability: "both"
-
 
 # ═══════════════════════════════════════════════
 #  腾讯云对象存储 COS 配置

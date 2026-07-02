@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 // ═══════════════════════════════════════════════
@@ -115,7 +116,7 @@ func (h *TaskHandler) CreateTask(c *gin.Context) {
 		return
 	}
 
-	// 检查积分并扣减
+	// 检查积分
 	db := mysql.GetDB()
 	var user model.User
 	if err := db.First(&user, userID).Error; err != nil {
@@ -147,11 +148,19 @@ func (h *TaskHandler) CreateTask(c *gin.Context) {
 		UpdatedAt:      time.Now(),
 	}
 
-	// 只创建任务（积分在任务成功完成后才扣减）
 	if err := db.Create(task).Error; err != nil {
 		h.log.Errorf("保存任务失败: %v", err)
 		utils.InternalError(c, "创建任务失败")
 		return
+	}
+
+	// 预扣积分（失败时由 workflow.handleError / ResetRunningTasks 退还）
+	if imageCount > 0 {
+		db.Model(&model.User{}).Where("id = ?", userID).
+			Updates(map[string]interface{}{
+				"credits":      gorm.Expr("credits - ?", imageCount),
+				"credits_used": gorm.Expr("credits_used + ?", imageCount),
+			})
 	}
 
 	// 入队

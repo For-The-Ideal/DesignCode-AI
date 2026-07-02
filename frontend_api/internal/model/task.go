@@ -109,7 +109,7 @@ type TaskCountResponse struct {
 // TaskListItem GET /api/v1/tasks 的列表项（精简字段）
 type TaskListItem struct {
 	ID        string      `json:"id"`
-	Target    string      `json:"framework"`      // 前端字段名兼容：framework
+	Target    string      `json:"framework"` // 前端字段名兼容：framework
 	Platform  string      `json:"platform"`
 	Status    TaskStatus  `json:"status"`
 	Progress  int         `json:"progress"`

@@ -1,8 +1,8 @@
 import { defineNuxtPlugin } from '#app'
+import { useUserStore } from '~/stores/user'
 
-export default defineNuxtPlugin((nuxtApp) => {
-    if (!nuxtApp.$pinia) {
-        console.error('Pinia not installed!')
-        return
-    }
+export default defineNuxtPlugin(async () => {
+  const userStore = useUserStore()
+  await userStore.initialize()
+  console.log('User store initialized')
 })

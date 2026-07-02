@@ -216,9 +216,6 @@ func SelectClient(capability string) (Client, error) {
 			continue
 		}
 		if m.Capability == capability || m.Capability == "both" {
-			if m.APIKey == "" || m.Endpoint == "" {
-				continue
-			}
 			switch m.Provider {
 			case "deepseek":
 				return NewDeepSeek(m.APIKey, m.Endpoint), nil
