@@ -14,7 +14,8 @@ export const commonApi = {
   },
 
   // 上传图片到 COS（base64）
-  async uploadImage(base64Data, filename) {
+  // extraOptions 可透传 signal —— 配合 utils/cancel.js 的取消作用域使用
+  async uploadImage(base64Data, filename, extraOptions = {}) {
     let options = {
       url: `/api/v1/upload`,
       method: "post",
@@ -23,6 +24,7 @@ export const commonApi = {
         filename: filename || 'image.png',
       },
       server: false,
+      ...extraOptions,
     };
     let result = await httpRequest.post(options);
     return result;

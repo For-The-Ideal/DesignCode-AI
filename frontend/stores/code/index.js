@@ -68,6 +68,8 @@ export const useCodeStore = defineStore('code', () => {
   // 清除所有
   const clearAll = () => {
     if (state.isSubmitting) return
+    // 取消所有在途上传，避免清空后仍有请求在后台跑
+    uploadModule.cancelAllUploads()
     state.images = []
     state.isSubmitting = false
   }

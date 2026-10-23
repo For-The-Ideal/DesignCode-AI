@@ -47,6 +47,20 @@ class HttpRequest {
     const controller = new AbortController();
     this.pendingRequests.set(requestKey, controller);
 
+    // 外部 signal（如取消作用域）联动内部 controller，任一方 abort 均生效
+    let removeExternalAbortListener = null;
+    if (options.signal) {
+      if (options.signal.aborted) {
+        controller.abort();
+      } else {
+        const onExternalAbort = () => controller.abort();
+        options.signal.addEventListener('abort', onExternalAbort, { once: true });
+        // 请求正常结束时手动移除，避免监听器残留在外部 signal 上
+        removeExternalAbortListener = () =>
+          options.signal.removeEventListener('abort', onExternalAbort);
+      }
+    }
+
     return new Promise(async (resolve) => {
       try {
         const req = useRequestHeaders();
@@ -79,6 +93,7 @@ class HttpRequest {
 
         // 请求成功，清除记录
         this.pendingRequests.delete(requestKey);
+        removeExternalAbortListener?.();
 
         if (res.code !== 200) {
           console.error(`请求失败 [${url}]`, {
@@ -94,9 +109,15 @@ class HttpRequest {
       } catch (err) {
         // 清除记录
         this.pendingRequests.delete(requestKey);
+        removeExternalAbortListener?.();
         
-        // 忽略手动取消的错误
-        if (err.name === 'AbortError') {
+        // 取消导致的异常：ofetch 会把中断包装成 FetchError，真正的 AbortError 在 cause 里
+        // 以内部 controller 的状态为准最可靠（外部 signal / 重复请求取消都会 abort 它）
+        const isAborted =
+          controller.signal.aborted ||
+          err?.name === 'AbortError' ||
+          err?.cause?.name === 'AbortError';
+        if (isAborted) {
           console.log(`请求已取消: ${url}`);
           resolve(null);
           return;
