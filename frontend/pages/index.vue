@@ -9,7 +9,7 @@
       <!-- <SSEGenerator ref="secondScreenRef" /> -->
 
       <!-- 第三屏 -->
-      <!-- <DiagnosticBubbles ref="thirdScreenRef" /> -->
+      <DiagnosticBubbles ref="thirdScreenRef" />
     </div>
   </div>
 </template>

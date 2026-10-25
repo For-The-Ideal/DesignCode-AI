@@ -27,7 +27,7 @@
       </a>
     </nav>
 
-    <div v-show="sidebarOpen" class="sidebar-slot">
+    <div v-show="sidebarOpen">
         <!-- 分割线 -->
         <div class="sidebar-divider"></div>
         <!-- 内容插槽 -->
@@ -67,7 +67,8 @@ const toggleSidebar = () => {
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  overflow: auto;
+  /* 只保留最外层一道滚动，内部不再单独约束 */
+  overflow-y: auto;
   padding: 16px 12px;
   background: rgba(10, 10, 15, 0.95);
   border-right: 1px solid rgba(0, 255, 255, 0.06);
@@ -165,14 +166,5 @@ const toggleSidebar = () => {
   background: rgba(0, 255, 255, 0.08);
   margin: 12px 0;
   flex-shrink: 0;
-}
-
-/* 插槽容器：填满剩余空间，支持滚动 */
-.sidebar-slot {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  overflow-y: auto;
 }
 </style>

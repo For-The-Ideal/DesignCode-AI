@@ -164,9 +164,6 @@ const statusLabel = (s) => configStore.statusLabel(s)
 <style scoped>
 /* ═══ 任务列表 ═══ */
 .task-list-wrapper {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 8px;
