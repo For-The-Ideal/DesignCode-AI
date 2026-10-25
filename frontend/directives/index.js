@@ -5,6 +5,7 @@ import animate from './animate.js'
 import intersect from './intersect.js'
 import longpress from './longpress.js'
 import borderGradient from './borderGradient.js'
+import sortable from './sortable.js'
 
 /**
  * Vue指令注册入口
@@ -19,5 +20,6 @@ export default {
   'animate': animate,
   'intersect': intersect,
   'longpress': longpress,
-  'border-gradient': borderGradient
+  'border-gradient': borderGradient,
+  'sortable': sortable
 }

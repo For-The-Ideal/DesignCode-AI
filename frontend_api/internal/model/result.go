@@ -10,11 +10,12 @@ import "time"
 type Result struct {
 	ID               uint      `json:"id" gorm:"primaryKey"`
 	TaskID           string    `json:"task_id" gorm:"size:255;index"`
-	UserID           uint      `json:"user_id"`   // 用户 ID
-	DSL              string    `json:"dsl"`       // 视觉分析中间 DSL (JSON)
-	Code             string    `json:"code"`      // 最终生成的代码
-	Preview          string    `json:"preview"`   // 预览 HTML
-	CodeType         string    `json:"code_type"` // flutter | vue3 | react
+	UserID           uint      `json:"user_id"`                    // 用户 ID
+	DSL              string    `json:"dsl"`                        // 视觉分析中间 DSL (JSON)
+	Code             string    `json:"code"`                       // 最终生成的代码
+	Preview          string    `json:"preview"`                    // 预览 HTML（vue3/react 内联渲染；flutter 可作降级兜底）
+	IframeURL        string    `json:"iframe_url" gorm:"size:500"` // 构建后的可嵌入预览地址（flutter 真机预览走 iframe src，与 Preview 二选一）
+	CodeType         string    `json:"code_type"`                  // flutter | vue3 | react
 	Score            int       `json:"score"`
 	GenerationStatus string    `json:"generation_status" gorm:"size:20;default:success"` // success | failed
 	PointsDeducted   int       `json:"points_deducted"`                                  // 本次扣除的积分数

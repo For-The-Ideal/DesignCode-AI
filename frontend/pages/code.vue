@@ -303,7 +303,7 @@ onUnmounted(() => {
 }
 
 .upload-section-inner { display: flex; gap: 24px; }
-.upload-left { flex: 1.5; display: flex; flex-direction: column; gap: 12px; }
+.upload-left { flex: 1; display: flex; flex-direction: column; gap: 12px; }
 .upload-left .glow-section,
 .upload-right .glow-section { flex: 1; display: flex; flex-direction: column; padding: 20px; }
 

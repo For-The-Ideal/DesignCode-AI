@@ -10,6 +10,8 @@ export const useUserStore = defineStore('user', {
     isLogin: false,
     // ── 任务统计 ──
     taskCounts: { pending: 0, running: 0, success: 0, failed: 0 },
+    // ── 实时进度（SSE task_progress 推送）：{ [task_id]: { progress, status, current_step } }
+    taskProgress: {},
   }),
 
   actions: {
@@ -31,30 +33,53 @@ export const useUserStore = defineStore('user', {
       }
     },
 
-    // ── 任务计数 ──
+    // ── 任务计数（登录后拉一次做初始值；之后由 SSE 推送 counts 保持最新，见 applyTaskCounts）──
     async fetchUserTasks() {
-      try {
         const res = await taskApi.getTaskStatus()
-        if (res.code !== 200 || !res.data) return
-
-        this.taskCounts = {
-          pending: res.data.pending || 0,
-          running: res.data.running || 0,
-          success: res.data.success || 0,
-          failed: res.data.failed || 0,
+        if (res && res.code === 200 && res.data) {
+          this.taskCounts = {
+            pending: res.data.pending || 0,
+            running: res.data.running || 0,
+            success: res.data.success || 0,
+            failed: res.data.failed || 0,
+          }
         }
-      } catch {
-        // 静默
+    },
+
+    // 直接应用 SSE 推送的权威计数（事件驱动，替代每事件回拉 /task/status）
+    applyTaskCounts(counts) {
+      if (!counts) return
+      this.taskCounts = {
+        pending: counts.pending || 0,
+        running: counts.running || 0,
+        success: counts.success || 0,
+        failed: counts.failed || 0,
+      }
+    },
+
+    // 将 SSE 推来的局部字段合并到指定任务的实时进度（触发响应式更新）
+    patchTaskRow(taskId, fields) {
+      if (!taskId) return
+      this.taskProgress = {
+        ...this.taskProgress,
+        [taskId]: { ...(this.taskProgress[taskId] || {}), ...fields },
       }
     },
 
     // ── 用户级 SSE ──
     startUserSSE() {
       const { connectUser } = useSSE()
-      connectUser(({ task_id, status }) => {
-        console.log('[UserSSE] 收到状态变更:', task_id, status)
-        this.fetchUserTasks()
-      })
+      connectUser(
+        // task_status：携带权威 counts → 直接更新计数；同时同步该行状态
+        ({ task_id, status, counts }) => {
+          this.applyTaskCounts(counts)
+          if (task_id) this.patchTaskRow(task_id, { status })
+        },
+        // task_progress：中间阶段进度 → 更新对应行
+        ({ task_id, status, progress, current_step }) => {
+          this.patchTaskRow(task_id, { progress, status, current_step })
+        }
+      )
     },
 
     stopUserSSE() {
@@ -82,6 +107,7 @@ export const useUserStore = defineStore('user', {
       this.userInfo = {}
       this.isLogin = false
       this.taskCounts = { pending: 0, running: 0, success: 0, failed: 0 }
+      this.taskProgress = {}
     },
   },
 

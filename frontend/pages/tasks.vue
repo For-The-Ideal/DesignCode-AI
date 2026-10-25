@@ -24,8 +24,8 @@
       <!-- ═══ 筛选表单 ═══ -->
       <TasksFilter v-model="filterForm" />
 
-      <!-- ═══ 任务表格 ═══ -->
-      <TasksTable
+      <!-- ═══ 任务卡片网格 ═══ -->
+      <TasksGrid
         :tasks="filteredTasks"
         :isEmptyFiltered="!!filterForm.search || !!filterForm.framework || !!filterForm.platform || !!filterForm.status"
         @detail="goToDetail"
@@ -36,31 +36,32 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import AppSidebar from '~/components/layout/AppSidebar.vue'
 import TasksFilter from '~/components/tasks/TasksFilter.vue'
-import TasksTable from '~/components/tasks/TasksTable.vue'
+import TasksGrid from '~/components/tasks/TasksGrid.vue'
 import TasksStatusOverview from '~/components/tasks/TasksStatusOverview.vue'
 import { useMenuListStore } from '~/stores/menuList'
-import { taskDisplayName } from '~/helpers/index'
+import { useConfigStore } from '~/stores/config'
 import { storeToRefs } from 'pinia'
 import { useUserStore } from '~/stores/user'
 import { taskApi } from '~/api/task'
 const router = useRouter()
 const sidebarOpen = ref(true)
 const userStore = useUserStore()
-const { taskCounts } = storeToRefs(userStore)
+const { taskCounts, taskProgress } = storeToRefs(userStore)
+const configStore = useConfigStore()
+onMounted(() => configStore.load())
 
-// ═══ 状态列表（含 count 字段） ═══
-const statusList = computed(() => [
-  { key: 'success', label: '已完成' },
-  { key: 'running', label: '生成中' },
-  { key: 'pending', label: '排队中' },
-  { key: 'failed', label: '失败' },
-].map(s => ({ ...s, count: taskCounts.value[s.key] ?? 0 }))
+// ═══ 状态列表 ═══
+// 状态枚举键为固定领域常量（与后端 Status* / 概览 dot--{key} 对齐），行不依赖字典；
+// label 仍唯一来自配置字典（未加载/后端未重启则回退键值），count 来自 taskCounts
+const STATUS_ORDER = ['success', 'running', 'pending', 'failed']
+const statusList = computed(() =>
+  STATUS_ORDER.map(k => ({ key: k, label: configStore.statusLabel(k), count: taskCounts.value[k] ?? 0 }))
 )
 // ═══ 导航 ═══
 const menuStore = useMenuListStore()
@@ -79,7 +80,7 @@ const handleCreate = () => router.push('/code')
 
 const handleDelete = (row) => {
   ElMessageBox.confirm(
-    `确定删除任务"${taskDisplayName(row)}"吗？此操作不可恢复。`,
+    `确定删除任务"${configStore.taskName(row)}"吗？此操作不可恢复。`,
     '删除确认',
     { confirmButtonText: '确定删除', cancelButtonText: '取消', type: 'warning' }
   ).then(async () => {
@@ -110,9 +111,6 @@ const fetchTasks = async () => {
 }
 
 
-
-
-
 // ═══ 筛选计算 ═══
 const filteredTasks = computed(() => {
   let r = tasks.value
@@ -120,7 +118,7 @@ const filteredTasks = computed(() => {
   if (f.search) {
     const q = f.search.toLowerCase()
     r = r.filter(t =>
-      taskDisplayName(t).toLowerCase().includes(q) ||
+      configStore.taskName(t).toLowerCase().includes(q) ||
       t.id.toLowerCase().includes(q) ||
       (t.framework || '').toLowerCase().includes(q)
     )
@@ -132,6 +130,18 @@ const filteredTasks = computed(() => {
 })
 
 fetchTasks()
+
+// ═══ 实时进度：将用户级 SSE 推来的 taskProgress 写回对应行，进度条自行推进（无轮询）═══
+watch(taskProgress, (map) => {
+  if (!map) return
+  for (const t of tasks.value) {
+    const live = map[t.id]
+    if (!live) continue
+    if (typeof live.progress === 'number') t.progress = live.progress
+    if (live.status) t.status = live.status
+    if (live.current_step) t.current_step = live.current_step
+  }
+}, { immediate: true })
 </script>
 
 <style scoped>
@@ -186,6 +196,7 @@ fetchTasks()
 .task-popper {
   background: #0f1a1f !important;
   border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 12px !important;
   box-shadow: 0 8px 32px rgba(0,0,0,0.7) !important;
   --el-select-option-hover-bg: rgba(18, 26, 36, 0.7);
   --el-select-option-hover-bg-color: rgba(18, 26, 36, 0.7);
@@ -207,11 +218,15 @@ fetchTasks()
   color: #e2e8f0 !important;
 }
 .task-popper .el-select-dropdown__item.selected {
-  color: #e2e8f0 !important;
+  color: #22d3ee !important;
   font-weight: 700;
-  background: rgba(15, 22, 32, 0.95) !important;
+  background: rgba(34, 211, 238, 0.10) !important;
 }
 .task-popper .el-select-dropdown__item.selected::after { display: none; }
+.task-popper .opt-dot {
+  display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  margin-right: 8px; vertical-align: middle;
+}
 .task-popper .el-popper__arrow::before {
   background: #0f1a1f !important;
   border-color: rgba(0, 255, 255, 0.2) !important;

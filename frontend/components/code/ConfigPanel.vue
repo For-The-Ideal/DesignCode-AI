@@ -106,11 +106,12 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, watch, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useCodeStore } from '~/stores/code'
 import { useUserStore } from '~/stores/user'
 import { useCommonStore } from '~/stores/common'
+import { useConfigStore } from '~/stores/config'
 import { debounce } from '~/utils/index'
 const store = useCodeStore()
 const { images, allUploaded, isSubmitting, isConcurrencyFull } = storeToRefs(store)
@@ -120,24 +121,10 @@ const commonStore = useCommonStore()
 // ── 从 store 派生 ──
 const canGenerate = computed(() => images.value.length > 0 && allUploaded.value && !isConcurrencyFull.value)
 
-const frameworks = [
-  { label: 'Flutter', value: 'Flutter' },
-  { label: 'React', value: 'React' },
-  { label: 'Vue', value: 'Vue' },
-]
-const platforms = [
-  { label: '手机端', value: 'mobile', icon: 'fa-solid fa-mobile-screen-button' },
-  { label: '桌面端', value: 'desktop', icon: 'fa-solid fa-desktop' },
-]
-const options = [
-  { label: '生成响应式布局', value: 'responsive' },
-  { label: '添加注释', value: 'comment' },
-  { label: '使用组件库', value: 'component' },
-]
-const advanced = [
-  { label: '优化性能', value: 'perf' },
-  { label: '生成文档', value: 'docs' },
-]
+// ── 配置字典：共享 store，跨页面只拉一次 ──
+const configStore = useConfigStore()
+const { frameworks, platforms, options, advanced } = storeToRefs(configStore)
+onMounted(() => configStore.load())
 
 const toggleOption = (val) => {
   const opts = [...store.config.options]
@@ -161,39 +148,19 @@ const toggleAdvanced = (val) => {
   store.config.advanced = adv
 }
 
-// 各框架对应的组件库选项（前端写死，与后端 seed 同步）
-const componentLibs = {
-  Flutter: [
-    { label: 'Material Design', value: 'Material Design' },
-    { label: 'Cupertino', value: 'Cupertino' },
-    { label: 'Flutter Element', value: 'Flutter Element' },
-    { label: 'GetWidget', value: 'GetWidget' },
-  ],
-  React: [
-    { label: 'Ant Design', value: 'Ant Design' },
-    { label: 'Material UI (MUI)', value: 'Material UI (MUI)' },
-    { label: 'Arco Design React', value: 'Arco Design React' },
-    { label: 'Semi Design', value: 'Semi Design' },
-    { label: 'React Vant', value: 'React Vant' },
-    { label: 'Chakra UI', value: 'Chakra UI' },
-    { label: 'Next UI', value: 'Next UI' },
-  ],
-  Vue: [
-    { label: 'Element Plus', value: 'Element Plus' },
-    { label: 'Ant Design Vue 4.x', value: 'Ant Design Vue 4.x' },
-    { label: 'Naive UI', value: 'Naive UI' },
-    { label: 'Vant 4', value: 'Vant 4' },
-    { label: 'PrimeVue', value: 'PrimeVue' },
-    { label: 'Arco Design Vue', value: 'Arco Design Vue' },
-    { label: 'Quasar', value: 'Quasar' },
-  ],
-}
-
-const currentLibs = computed(() => {
-  return componentLibs[config.value.framework] || componentLibs.Vue
-})
+// 当前框架 + 目标平台下适用的组件库（隐藏不适用库）
+const currentLibs = computed(() =>
+  configStore.libsFor(store.config.framework, store.config.platform)
+)
 
 const defaultLib = computed(() => currentLibs.value[0]?.value)
+
+// 平台/框架切换后，若已选库不再适用则清空
+watch(currentLibs, (libs) => {
+  if (store.config.componentLib && !libs.some(l => l.value === store.config.componentLib)) {
+    store.config.componentLib = ''
+  }
+})
 
 const btnState = computed(() => {
   if (!userStore.isLogin) {

@@ -6,13 +6,14 @@
       :navItems="navItems"
       @navClick="handleNavClick">
       <TasksSidebar
-        :tasks="allTasks"
+        :tasks="taskList"
         v-model:expandedId="sidebarExpandedId"
         :sidebarOpen="true"
         :showTitle="false"
         :showDetail="false"
         :collapsible="false"
         @navigate="switchTask"
+        @blocked="handleBlocked"
       />
     </AppSidebar>
     
@@ -26,8 +27,8 @@
         </button>
       </div>
 
-      <!-- ═══ 未找到 ═══ -->
-      <div v-if="!task" class="not-found">
+      <!-- ═══ 未找到（仅非加载中且确实无数据时） ═══ -->
+      <div v-if="!task && !loading" class="not-found">
         <div class="nf-icon"><i class="fas fa-ghost"></i></div>
         <h2>任务不存在</h2>
         <p>未找到 ID 为 "{{ route.params.id }}" 的任务</p>
@@ -38,13 +39,27 @@
 
       <template v-if="task">
         <!-- ═══ 内容区：预览 + 代码并排 ═══ -->
-        <div class="content-row">
+        <div class="content-row" :class="{ 'is-switching': loading }">
+          <!-- 切换任务时的加载遮罩：覆盖旧内容，避免整页闪烁 -->
+          <div v-if="loading" class="switch-loading">
+            <div class="switch-spinner"></div>
+            <span>正在加载任务…</span>
+          </div>
           <div class="content-left">
             <div class="pv-card">
              
               <div class="pv-body">
+                <!-- Flutter：有构建预览 URL 时走 iframe 真机预览 -->
+                <iframe
+                  v-if="task.framework === 'Flutter' && taskDetail?.iframeUrl"
+                  :src="taskDetail.iframeUrl"
+                  class="pv-iframe"
+                  frameborder="0"
+                  allow="autoplay; fullscreen"
+                ></iframe>
+                <!-- 其它平台（vue/react）及 flutter 未构建时的兜底：HTML 内联预览 -->
                 <PreviewTemplate
-                  v-if="taskDetail?.previewHtml"
+                  v-else-if="taskDetail?.previewHtml"
                   :html="taskDetail.previewHtml"
                   :showBottomNav="task.platform === 'mobile'"
                 />
@@ -81,15 +96,18 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
-import { useRoute, useRouter, onBeforeRouteUpdate } from 'vue-router'
+import { ref, watch, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import AppSidebar from '~/components/layout/AppSidebar.vue'
 import { useMenuListStore } from '~/stores/menuList'
 import TasksSidebar from '~/components/tasks/TasksSidebar.vue'
 import CodeEditor from '~/components/code/CodeEditor.vue'
 import PreviewTemplate from '~/components/previewTempLate/index.vue'
+import { taskApi } from '~/api/task'
+import { ElMessage } from 'element-plus'
 
-definePageMeta({ key: route => route.fullPath })
+// 复用同一页面实例（按参数切换而非重建），避免换任务时整页 remount 闪烁
+definePageMeta({ key: false })
 
 const route = useRoute()
 const router = useRouter()
@@ -97,6 +115,12 @@ const sidebarOpen = ref(true)
 const sidebarExpandedId = ref(null)
 
 const switchTask = (id) => router.push(`/detail/${id}`)
+
+// 排队中/失败：不可进入，仅提示
+const handleBlocked = (task) => {
+  if (task.status === 'failed') ElMessage.warning('任务生成失败，无法查看详情')
+  else if (task.status === 'pending') ElMessage.info('任务正在排队中，暂不可查看详情')
+}
 
 // ═══ 导航 ═══
 const menuStore = useMenuListStore()
@@ -113,37 +137,50 @@ const handleNavClick = (item) => {
 const goBack = () => router.push('/tasks')
 
 // ═══ 工具函数 ═══
-const platformLabel = (p) => ({ mobile: '手机', desktop: '桌面', tablet: '平板' }[p] || p)
-const platformIcon = (p) => ({
-  mobile: 'fas fa-mobile-alt', desktop: 'fas fa-desktop', tablet: 'fas fa-tablet-alt',
-}[p] || 'fas fa-question-circle')
-const statusLabel = (s) => ({ success: '已完成', running: '运行中', pending: '等待中', failed: '失败' }[s] || s)
-const statusIcon = (s) => ({
-  success: 'fas fa-check-circle', running: 'fas fa-spinner fa-pulse', pending: 'fas fa-clock', failed: 'fas fa-exclamation-circle',
-}[s] || 'fas fa-question-circle')
-
+// target(后端小写) → 展示用框架名（CodeEditor / codeLang 依赖此大小写）
+const FW_LABEL = { flutter: 'Flutter', vue3: 'Vue3', react: 'React' }
 const codeLang = (fw) => ({ Flutter: 'dart', React: 'typescript', Vue3: 'html', Vue: 'html' }[fw] || 'dart')
 
-// ═══ 任务查找（watch + onBeforeRouteUpdate 双保险）
-const task = ref(null)
-const taskDetail = ref(null)
+// ═══ 数据（真实接口，非 Mock） ═══
+const task = ref(null)         // 当前任务概要（驱动预览/代码渲染）
+const taskDetail = ref(null)   // 生成结果（code + previewHtml + iframeUrl）
+const taskList = ref([])       // 侧栏任务列表
+const loading = ref(false)
 
-function loadTask(id) {
-  if (!id) { task.value = null; taskDetail.value = null; return }
-  const found = allTasks.find(t => t.id === id) || null
-  task.value = found
-  taskDetail.value = found ? (detailMap[found.id] || null) : null
+// 拉取任务列表（侧栏）
+async function fetchTaskList() {
+  const res = await taskApi.getTaskList()
+  if (res?.code === 200 && Array.isArray(res.data)) taskList.value = res.data
 }
 
-// 1) watch 路由参数变化
-watch(() => route.params.id, (id) => {
-  loadTask(id)
-})
+// 拉取单个任务详情：GET /api/v1/task/:id → TaskStatusResponse
+async function loadTask(id) {
+  if (!id) { task.value = null; taskDetail.value = null; return }
+  loading.value = true
+  try {
+    const res = await taskApi.getTaskById(id)
+    const d = res?.code === 200 ? res.data : null
+    if (!d) { task.value = null; taskDetail.value = null; return }
+    task.value = {
+      id: d.task_id,
+      framework: FW_LABEL[d.target] || d.target,
+      platform: d.platform,
+      status: d.status,
+      progress: d.progress,
+      images: d.images || [],
+    }
+    const r = d.result
+    taskDetail.value = r ? { code: r.code, previewHtml: r.preview, iframeUrl: r.iframe_url } : null
+  } catch {
+    task.value = null
+    taskDetail.value = null
+  } finally {
+    loading.value = false
+  }
+}
 
-// 2) onBeforeRouteUpdate 兜底（组件复用时）
-onBeforeRouteUpdate((to) => {
-  loadTask(to.params.id)
-})
+// 1) watch 路由参数变化：同步侧栏展开项 + 加载新任务（实例复用后统一走此处，不再另设 onBeforeRouteUpdate 以免重复请求）
+watch(() => route.params.id, (id) => { sidebarExpandedId.value = id; loadTask(id) })
 
 const copyCode = () => {
   if (!taskDetail.value?.code) return
@@ -163,90 +200,12 @@ const downloadCode = () => {
   URL.revokeObjectURL(url)
 }
 
-// ═══ Mock 任务数据 ═══
-const allTasks = [
-  { id: 'T-20240601-001', images: [{ desc: '电商首页' }], framework: 'Flutter', platform: 'mobile', status: 'success', progress: 100, duration: '2分38秒', createdAt: '2024-06-01 15:36',
-    options: ['响应式', '组件化'],
-    steps: [
-      { title: '上传设计稿', time: '15:36:20', completed: true, icon: 'fas fa-upload' },
-      { title: 'AI 视觉分析', time: '15:36:28', completed: true, icon: 'fas fa-brain' },
-      { title: '生成设计结构', time: '15:36:47', completed: true, icon: 'fas fa-layer-group' },
-      { title: '生成代码', time: '15:37:13', completed: true, icon: 'fas fa-code' },
-      { title: '渲染预览', time: '15:38:58', completed: true, icon: 'fas fa-eye' },
-      { title: '任务完成', time: '15:39:02', completed: true, icon: 'fas fa-flag-checkered' },
-    ],
-  },
-  // { id: 'T-20240601-002', images: [{ desc: '登录注册页' }], framework: 'React', platform: 'desktop', status: 'running', progress: 68, duration: '—', createdAt: '2024-06-01 15:40',
-  //   options: ['表单验证', 'OAuth'],
-  //   steps: [
-  //     { title: '上传设计稿', time: '15:40:10', completed: true, icon: 'fas fa-upload' },
-  //     { title: 'AI 视觉分析', time: '15:40:18', completed: true, icon: 'fas fa-brain' },
-  //     { title: '生成设计结构', time: '15:40:42', completed: true, icon: 'fas fa-layer-group' },
-  //     { title: '生成代码', time: '15:41:05', completed: true, icon: 'fas fa-code' },
-  //     { title: '渲染预览', time: '15:42:30', completed: false, icon: 'fas fa-eye' },
-  //     { title: '任务完成', time: '—', completed: false, icon: 'fas fa-flag-checkered' },
-  //   ],
-  // },
-  // { id: 'T-20240601-003', images: [{ desc: '商品详情' }], framework: 'Vue3', platform: 'mobile', status: 'failed', progress: 45, duration: '1分20秒', createdAt: '2024-06-01 15:38',
-  //   options: ['商品卡片', '轮播图'],
-  //   steps: [
-  //     { title: '上传设计稿', time: '15:38:05', completed: true, icon: 'fas fa-upload' },
-  //     { title: 'AI 视觉分析', time: '15:38:12', completed: true, icon: 'fas fa-brain' },
-  //     { title: '生成设计结构', time: '15:38:30', completed: true, icon: 'fas fa-layer-group' },
-  //     { title: '生成代码', time: '15:38:55', completed: false, icon: 'fas fa-code' },
-  //     { title: '渲染预览', time: '—', completed: false, icon: 'fas fa-eye' },
-  //     { title: '任务完成', time: '—', completed: false, icon: 'fas fa-flag-checkered' },
-  //   ],
-  // },
-  // { id: 'T-20240602-004', images: [{ desc: '个人中心' }], framework: 'Flutter', platform: 'mobile', status: 'success', progress: 100, duration: '3分12秒', createdAt: '2024-06-02 09:15',
-  //   options: ['用户信息', '设置'],
-  //   steps: [
-  //     { title: '上传设计稿', time: '09:15:20', completed: true, icon: 'fas fa-upload' },
-  //     { title: 'AI 视觉分析', time: '09:15:28', completed: true, icon: 'fas fa-brain' },
-  //     { title: '生成设计结构', time: '09:15:50', completed: true, icon: 'fas fa-layer-group' },
-  //     { title: '生成代码', time: '09:16:15', completed: true, icon: 'fas fa-code' },
-  //     { title: '渲染预览', time: '09:17:48', completed: true, icon: 'fas fa-eye' },
-  //     { title: '任务完成', time: '09:18:32', completed: true, icon: 'fas fa-flag-checkered' },
-  //   ],
-  // },
-  // { id: 'T-20240602-005', images: [{ desc: '数据仪表盘' }], framework: 'React', platform: 'desktop', status: 'success', progress: 100, duration: '4分05秒', createdAt: '2024-06-02 10:22',
-  //   options: ['图表', '数据表格'],
-  //   steps: [
-  //     { title: '上传设计稿', time: '10:22:10', completed: true, icon: 'fas fa-upload' },
-  //     { title: 'AI 视觉分析', time: '10:22:18', completed: true, icon: 'fas fa-brain' },
-  //     { title: '生成设计结构', time: '10:22:45', completed: true, icon: 'fas fa-layer-group' },
-  //     { title: '生成代码', time: '10:23:20', completed: true, icon: 'fas fa-code' },
-  //     { title: '渲染预览', time: '10:25:10', completed: true, icon: 'fas fa-eye' },
-  //     { title: '任务完成', time: '10:26:27', completed: true, icon: 'fas fa-flag-checkered' },
-  //   ],
-  // },
-  // { id: 'T-20240602-006', images: [{ desc: '设置页面' }], framework: 'Vue3', platform: 'tablet', status: 'pending', progress: 0, duration: '—', createdAt: '2024-06-02 11:08', options: [], steps: [] },
-  // { id: 'T-20240603-007', images: [{ desc: '聊天界面' }], framework: 'Flutter', platform: 'mobile', status: 'running', progress: 32, duration: '—', createdAt: '2024-06-03 14:30', options: [], steps: [] },
-  // { id: 'T-20240603-008', images: [{ desc: '订单列表' }], framework: 'React', platform: 'mobile', status: 'success', progress: 100, duration: '2分55秒', createdAt: '2024-06-03 15:10', options: [], steps: [] },
-]
-
-const detailMap = {
-  'T-20240601-001': {
-    code: `import 'package:flutter/material.dart';\n\nvoid main() { runApp(const ECommerceApp()); }\nclass ECommerceApp extends StatelessWidget {\n  const ECommerceApp({super.key});\n  @override\n  Widget build(BuildContext context) {\n    return MaterialApp(\n      title: 'ShopNow',\n      theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF6C63FF)), useMaterial3: true),\n      home: const HomePage(),\n    );\n  }\n}\nclass HomePage extends StatefulWidget {\n  const HomePage({super.key});\n  @override\n  State<HomePage> createState() => _HomePageState();\n}\nclass _HomePageState extends State<HomePage> {\n  int _selectedIndex = 0;\n  final List<String> _banners = ['夏日大促 · 全场5折', '新品首发 · 限时特惠', '会员专享 · 积分翻倍'];\n  final List<Map<String, dynamic>> _categories = [\n    {'icon': Icons.checkroom, 'label': '服装'},\n    {'icon': Icons.watch, 'label': '配饰'},\n    {'icon': Icons.devices, 'label': '数码'},\n    {'icon': Icons.chair, 'label': '家居'},\n    {'icon': Icons.sports_soccer, 'label': '运动'},\n    {'icon': Icons.auto_awesome, 'label': '美妆'},\n  ];\n  @override\n  Widget build(BuildContext context) {\n    return Scaffold(\n      appBar: AppBar(title: const Text('ShopNow'), actions: [\n        IconButton(icon: const Icon(Icons.search), onPressed: () {}),\n        IconButton(icon: const Icon(Icons.shopping_cart), onPressed: () {}),\n      ]),\n      body: SingleChildScrollView(\n        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [\n          Container(height: 160, margin: const EdgeInsets.all(16),\n            decoration: BoxDecoration(borderRadius: BorderRadius.circular(16),\n              gradient: const LinearGradient(colors: [Color(0xFF6C63FF), Color(0xFFE91E63)])),\n            child: PageView.builder(\n              itemCount: _banners.length,\n              itemBuilder: (_, i) => Center(child: Text(_banners[i], style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold))),\n            ),\n          ),\n          Padding(\n            padding: const EdgeInsets.symmetric(horizontal: 16),\n            child: GridView.count(crossAxisCount: 3, shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),\n              mainAxisSpacing: 12, crossAxisSpacing: 12, childAspectRatio: 2.2,\n              children: _categories.map((c) => Container(\n                decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(12)),\n                child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [\n                  Icon(c['icon'] as IconData, color: const Color(0xFF6C63FF)),\n                  const SizedBox(height: 4),\n                  Text(c['label'] as String, style: const TextStyle(fontSize: 13)),\n                ]),\n              )).toList(),\n            ),\n          ),\n        ]),\n      ),\n      bottomNavigationBar: NavigationBar(selectedIndex: _selectedIndex,\n        onDestinationSelected: (i) => setState(() => _selectedIndex = i),\n        destinations: const [\n          NavigationDestination(icon: Icon(Icons.home), label: '首页'),\n          NavigationDestination(icon: Icon(Icons.category), label: '分类'),\n          NavigationDestination(icon: Icon(Icons.favorite), label: '收藏'),\n          NavigationDestination(icon: Icon(Icons.person), label: '我的'),\n        ],\n      ),\n    );\n  }\n}`,
-    previewHtml: `<div style="font-family: -apple-system, sans-serif; background: #f5f5f7; min-height: 100%;">\n  <div style="background: linear-gradient(135deg, #6C63FF, #E91E63); color: #fff; text-align: center; padding: 32px 20px; margin: 12px; border-radius: 16px;">\n    <h2 style="margin:0; font-size:18px;">夏日大促 · 全场5折</h2>\n    <p style="margin:8px 0 0; opacity:0.8;">限时抢购，不容错过</p>\n  </div>\n  <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px; padding:0 12px;">\n    ${['服装','配饰','数码','家居','运动','美妆'].map(c => '<div style="background:#fff; border-radius:12px; padding:16px 8px; text-align:center; box-shadow:0 1px 3px rgba(0,0,0,0.06);"><span style="font-size:24px;">' + (c==='服装'?'👗':c==='配饰'?'💍':c==='数码'?'📱':c==='家居'?'🛋️':c==='运动'?'⚽':'💄') + '</span><p style="margin:6px 0 0; font-size:13px; color:#333;">' + c + '</p></div>').join('')}\n  </div>\n</div>`,
-  },
-  'T-20240602-004': {
-    code: `import 'package:flutter/material.dart';\nclass ProfilePage extends StatelessWidget {\n  const ProfilePage({super.key});\n  @override\n  Widget build(BuildContext context) {\n    return Scaffold(\n      backgroundColor: const Color(0xFFF5F5F7),\n      appBar: AppBar(title: const Text('个人中心'), centerTitle: true, backgroundColor: Colors.white),\n      body: SingleChildScrollView(\n        child: Column(children: [\n          Container(padding: const EdgeInsets.symmetric(vertical: 32), color: Colors.white,\n            child: Column(children: [\n              CircleAvatar(radius: 40, backgroundColor: const Color(0xFF6C63FF).withOpacity(0.1),\n                child: const Icon(Icons.person, size: 40, color: Color(0xFF6C63FF))),\n              const SizedBox(height: 12),\n              const Text('用户昵称', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),\n              const SizedBox(height: 4),\n              Text('ID: 20240602', style: TextStyle(fontSize: 13, color: Colors.grey[500])),\n            ]),\n          ),\n          const SizedBox(height: 12),\n          Container(color: Colors.white, child: Column(children: [\n            _menuItem(Icons.receipt_long, '我的订单'),\n            _menuItem(Icons.favorite_border, '我的收藏'),\n            _menuItem(Icons.location_on_outlined, '收货地址'),\n            _menuItem(Icons.payment, '支付设置'),\n          ])),\n          const SizedBox(height: 12),\n          Container(color: Colors.white, child: Column(children: [\n            _menuItem(Icons.settings_outlined, '设置'),\n            _menuItem(Icons.help_outline, '帮助与反馈'),\n          ])),\n        ]),\n      ),\n    );\n  }\n  Widget _menuItem(IconData icon, String title) {\n    return ListTile(leading: Icon(icon, color: Colors.grey[700]), title: Text(title, style: const TextStyle(fontSize: 15)), trailing: Icon(Icons.chevron_right, color: Colors.grey[400]), onTap: () {});\n  }\n}`,
-    previewHtml: `<div style="font-family: -apple-system, sans-serif; background: #f5f5f7; min-height: 100%;"><div style="background:#fff; padding:28px 20px; text-align:center;"><div style="width:64px; height:64px; border-radius:32px; background:rgba(108,99,255,0.1); margin:0 auto; display:flex; align-items:center; justify-content:center;"><span style="font-size:28px;">👤</span></div><h3 style="margin:10px 0 4px; font-size:17px;">用户昵称</h3><p style="margin:0; color:#999; font-size:12px;">ID: 20240602</p></div></div>`,
-  },
-  'T-20240602-005': {
-    code: `import React, { useState } from 'react';\nconst data = [{ name: '周一', uv: 4000, pv: 2400 },{ name: '周二', uv: 3000, pv: 1398 },{ name: '周三', uv: 5000, pv: 3800 },{ name: '周四', uv: 2780, pv: 3908 },{ name: '周五', uv: 4890, pv: 4800 },{ name: '周六', uv: 2390, pv: 3800 },{ name: '周日', uv: 3490, pv: 4300 }];\nexport default function Dashboard() {\n  return (\n    <div>\n      <h1>Dashboard</h1>\n      <div style={{display:'flex', gap:12, marginBottom:16}}>\n        <div style={{flex:1, background:'#fff', borderRadius:12, padding:16}}><p style={{margin:0, fontSize:20, fontWeight:700, color:'#6C63FF'}}>¥128,430</p><p style={{margin:'4px 0 0', fontSize:12, color:'#999'}}>总营收</p></div>\n        <div style={{flex:1, background:'#fff', borderRadius:12, padding:16}}><p style={{margin:0, fontSize:20, fontWeight:700, color:'#00C9A7'}}>2,847</p><p style={{margin:'4px 0 0', fontSize:12, color:'#999'}}>总订单</p></div>\n        <div style={{flex:1, background:'#fff', borderRadius:12, padding:16}}><p style={{margin:0, fontSize:20, fontWeight:700, color:'#FF6B6B'}}>98.2%</p><p style={{margin:'4px 0 0', fontSize:12, color:'#999'}}>满意度</p></div>\n      </div>\n    </div>\n  );\n}`,
-    previewHtml: `<div style="font-family: -apple-system, sans-serif; background: #f0f2f5; min-height: 100%; padding: 16px;"><h2 style="margin:0 0 16px; font-size:20px;">📊 数据仪表盘</h2><div style="display:flex; gap:12px; margin-bottom:16px;"><div style="flex:1; background:#fff; border-radius:12px; padding:16px; box-shadow:0 1px 3px rgba(0,0,0,0.06);"><p style="margin:0; font-size:20px; font-weight:700; color:#6C63FF;">¥128,430</p><p style="margin:4px 0 0; font-size:12px; color:#999;">总营收</p></div><div style="flex:1; background:#fff; border-radius:12px; padding:16px; box-shadow:0 1px 3px rgba(0,0,0,0.06);"><p style="margin:0; font-size:20px; font-weight:700; color:#00C9A7;">2,847</p><p style="margin:4px 0 0; font-size:12px; color:#999;">总订单</p></div><div style="flex:1; background:#fff; border-radius:12px; padding:16px; box-shadow:0 1px 3px rgba(0,0,0,0.06);"><p style="margin:0; font-size:20px; font-weight:700; color:#FF6B6B;">98.2%</p><p style="margin:4px 0 0; font-size:12px; color:#999;">满意度</p></div></div></div>`,
-  },
-  'T-20240603-008': {
-    code: `import React, { useState } from 'react';\nconst orders = [\n  { id: 'ORD001', product: '无线蓝牙耳机', price: '¥299', status: '已发货', date: '2024-06-03' },\n  { id: 'ORD002', product: '机械键盘 K8', price: '¥599', status: '配送中', date: '2024-06-02' },\n  { id: 'ORD003', product: '4K显示器 27寸', price: '¥2,499', status: '已完成', date: '2024-06-01' },\n  { id: 'ORD004', product: 'Type-C 扩展坞', price: '¥199', status: '待付款', date: '2024-06-03' },\n];\nexport default function OrderList() {\n  const [filter, setFilter] = useState('all');\n  const filteredOrders = filter === 'all' ? orders : orders.filter(o => o.status === filter);\n  return (\n    <div>\n      <h1>我的订单</h1>\n      ${''/* short display */}\n      <div>{filteredOrders.map(o => <div key={o.id} style={{padding:12, borderBottom:'1px solid #eee'}}><p>{o.product}</p><p>{o.price} / {o.status}</p></div>)}</div>\n    </div>\n  );\n}`,
-    previewHtml: `<div style="font-family: -apple-system, sans-serif; background: #f5f5f7; min-height: 100%; padding: 16px;"><h2 style="margin:0 0 16px;">📋 订单列表</h2>${['无线蓝牙耳机','机械键盘 K8','4K显示器 27寸','Type-C 扩展坞'].map((p,i) => `<div style="background:#fff; border-radius:12px; padding:12px 16px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;"><span>${p}</span><span style="color:#999;">¥${['299','599','2,499','199'][i]}</span></div>`).join('')}</div>`,
-  },
-}
-
-// 手动加载初始数据（替代 watch immediate，避免 TDZ）
-sidebarExpandedId.value = route.params.id
-loadTask(route.params.id)
+// 初始加载：侧栏列表 + 当前详情
+onMounted(() => {
+  sidebarExpandedId.value = route.params.id
+  fetchTaskList()
+  loadTask(route.params.id)
+})
 </script>
 
 <style scoped>
@@ -415,12 +374,30 @@ loadTask(route.params.id)
 
 /* ═══ 内容区：预览 + 代码并排 ═══ */
 .content-row {
+  position: relative;
   display: flex;
   gap: 18px;
   flex: 1;
   min-height: 0;
   margin-bottom: 18px;
 }
+/* 切换加载遮罩：旧内容压暗 + 居中转圈 */
+.content-row.is-switching .content-left,
+.content-row.is-switching .content-right { opacity: 0.25; filter: blur(1px); }
+.content-row .content-left,
+.content-row .content-right { transition: opacity .2s, filter .2s; }
+.switch-loading {
+  position: absolute; inset: 0; z-index: 5;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+  color: rgba(255,255,255,0.55); font-size: 13px;
+}
+.switch-spinner {
+  width: 34px; height: 34px; border-radius: 50%;
+  border: 3px solid rgba(0, 255, 255, 0.18);
+  border-top-color: #00ffff;
+  animation: switch-spin .8s linear infinite;
+}
+@keyframes switch-spin { to { transform: rotate(360deg); } }
 .content-left {
   flex: 1;
   min-width: 0;
@@ -493,6 +470,15 @@ loadTask(route.params.id)
 }
 .pv-empty i { font-size: 28px; }
 .pv-empty span { font-size: 12px; color: rgba(255,255,255,0.15); }
+
+/* Flutter iframe 真机预览：撑满预览容器 */
+.pv-iframe {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #0a0a0f;
+}
 
 .code-header {
   display: flex;

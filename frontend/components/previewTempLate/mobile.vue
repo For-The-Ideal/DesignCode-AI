@@ -1,6 +1,11 @@
 <template>
-  <div class="flutter-mock">
-    <div class="flutter-screen">
+  <div class="flutter-mock" :class="{ 'flutter-mock--bare': bare }">
+    <div
+      class="flutter-screen"
+      :class="{ 'flutter-screen--bare': bare }"
+      :style="bare ? { height: screenHeight } : null"
+    >
+      <template v-if="!bare">
       <!-- 固定：刘海区 -->
       <div class="flutter-notch-area">
         <span class="notch-time">{{ currentTime }}</span>
@@ -43,6 +48,10 @@
           <span>{{ tab.label }}</span>
         </div>
       </div>
+      </template>
+
+      <!-- 裸机模式：机身只作外壳，屏幕内容由使用方通过默认插槽传入 -->
+      <slot v-else />
     </div>
     <!-- 固定：Home 指示条 -->
     <div class="flutter-home-bar"></div>
@@ -60,6 +69,10 @@ const currentTime = computed(() => {
 const props = defineProps({
   html: { type: String, default: '' },
   showBottomNav: { type: Boolean, default: true },
+  // 裸机模式：只渲染机身外壳，屏幕内容交给默认插槽（如上传的设计稿图片）
+  bare: { type: Boolean, default: false },
+  // 裸机模式下屏幕高度（宽度由插槽内容/图片比例推导）
+  screenHeight: { type: String, default: '660px' },
   bottomNav: {
     type: Array,
     default: () => [
@@ -178,8 +191,29 @@ const props = defineProps({
   background: rgba(255,255,255,0.2);
 }
 
+/* ── 裸机模式：仅外壳，屏幕尺寸由插槽内容(如设计稿图片)推导 ── */
+.flutter-mock--bare {
+  width: auto;
+  max-width: none;
+  display: inline-flex;
+  flex-direction: column;
+}
+.flutter-screen--bare {
+  flex-direction: row;
+  width: 375px;          /* 机身定宽：同宽原型（如蓝湖 750）显示为统一宽度的机身 */
+  max-width: 100%;
+  height: auto;          /* 高度随屏内图片比例展开 */
+  align-items: center;
+  justify-content: center;
+  background: #010101;
+}
+.flutter-mock--bare .flutter-home-bar::after {
+  max-width: 40%;
+}
+
 @media (max-width: 968px) {
   .flutter-mock { max-width: 320px; }
+  .flutter-mock--bare { max-width: none; }
 }
 
 /* ── 赛博加载态 ── */

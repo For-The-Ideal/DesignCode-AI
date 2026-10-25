@@ -2,7 +2,7 @@ package handler
 
 import (
 	"crypto/rand"
-	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"frontend_api/internal/model"
 	"frontend_api/internal/queue"
@@ -11,6 +11,7 @@ import (
 	"frontend_api/pkg/logger"
 	"frontend_api/pkg/mysql"
 	"frontend_api/utils"
+	"math/big"
 	"strconv"
 	"time"
 
@@ -25,15 +26,39 @@ import (
 // ═══════════════════════════════════════════════
 
 func generateTaskID() string {
-	// 时间戳前缀（精确到毫秒，可排序）
-	ts := time.Now().Format("20060102150405.000")
-	// 4字节随机后缀（8 hex chars）
-	b := make([]byte, 4)
-	if _, err := rand.Read(b); err == nil {
-		return ts + "_" + hex.EncodeToString(b)
+	// 标准 ULID：26 位 Crockford Base32。
+	// 前 48bit = 毫秒时间戳（字典序即时间序，天然可排序），后 80bit = 加密随机。
+	var id [16]byte
+	ms := uint64(time.Now().UnixMilli())
+	id[0] = byte(ms >> 40)
+	id[1] = byte(ms >> 32)
+	id[2] = byte(ms >> 24)
+	id[3] = byte(ms >> 16)
+	id[4] = byte(ms >> 8)
+	id[5] = byte(ms)
+	if _, err := rand.Read(id[6:]); err != nil {
+		// 极端情况兜底：用纳秒时间滚动填充随机段（不影响可排序性）
+		n := uint64(time.Now().UnixNano())
+		for i := 6; i < 16; i++ {
+			id[i] = byte(n)
+			n = n>>8 | n<<56
+		}
 	}
-	// 极少发生的 fallback
-	return ts + fmt.Sprintf("_%04d", time.Now().UnixMilli()%10000)
+	return crockfordBase32(id)
+}
+
+// crockfordBase32 将 16 字节（128bit）编码为 26 位 Crockford Base32（大写，不含 I/L/O/U）。
+func crockfordBase32(id [16]byte) string {
+	const alphabet = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
+	n := new(big.Int).SetBytes(id[:])
+	mod := big.NewInt(32)
+	rem := new(big.Int)
+	out := make([]byte, 26)
+	for i := 25; i >= 0; i-- {
+		n.DivMod(n, mod, rem)
+		out[i] = alphabet[rem.Int64()]
+	}
+	return string(out)
 }
 
 // ═══════════════════════════════════════════════
@@ -46,12 +71,12 @@ func generateTaskID() string {
 //
 //	target   - flutter | vue3 | react
 //	platform - mobile | desktop | tablet（必选）
-//	images   - 图片列表，每项含 url / desc / sort_order，最多5张
+//	images   - 图片列表，每项含 url / tree / width / height / sort_order，最多5张（tree 为结构编辑器提交的嵌套节点，为空时后端回退 Vision）
 //	options  - 生成选项 responsive/comment/component
 //	advanced - 高级选项 perf/docs
 //	component_lib - 使用的组件库
 //
-//	示例：{"target":"flutter","platform":"mobile","images":[{"url":"https://...","desc":"首页","sort_order":1}],"options":["responsive"],"advanced":[],"component_lib":"material"}
+//	示例：{"target":"flutter","platform":"mobile","images":[{"url":"https://...","tree":[...],"width":2732,"height":1534,"sort_order":1}],"options":["responsive"],"advanced":[],"component_lib":"material"}
 type CreateTaskRequest struct {
 	Target       string            `json:"target" binding:"required"`
 	Platform     string            `json:"platform" binding:"required"`
@@ -85,7 +110,7 @@ func NewTaskHandler(taskRepo *repository.TaskRepository, resultRepo *repository.
 
 // CreateTask 创建生成任务
 //
-//	请求：{"target":"flutter","images":[{"url":"...","desc":"..."}]}
+//	请求：{"target":"flutter","images":[{"url":"...","tree":[...],"width":2732,"height":1534}]}
 //	流程：校验参数 → 创建 Task(status=pending) → 入队
 //	响应：{"task_id":"xxx","status":"pending"}
 func (h *TaskHandler) CreateTask(c *gin.Context) {
@@ -172,10 +197,19 @@ func (h *TaskHandler) CreateTask(c *gin.Context) {
 
 	h.log.Infof("任务创建成功: id=%s, target=%s, images=%d, user=%d, credits_after=%d", task.ID, task.Target, imageCount, userID, user.Credits-imageCount)
 
-	// 通过 SSE 通知用户
+	// 通过 SSE 通知用户（携带权威计数，前端直接更新，无需回拉 /task/status）
+	counts, _ := h.taskRepo.CountByUserID(userID)
+	if counts == nil {
+		counts = &model.TaskCountResponse{}
+	}
+	payload, _ := json.Marshal(map[string]interface{}{
+		"task_id": task.ID,
+		"status":  "pending",
+		"counts":  counts,
+	})
 	h.sseManager.PushUser(fmt.Sprintf("%d", userID), sse.SSEEvent{
 		Event: "task_status",
-		Data:  fmt.Sprintf(`{"task_id":"%s","status":"pending"}`, task.ID),
+		Data:  string(payload),
 	})
 
 	utils.Success(c, gin.H{
@@ -291,7 +325,7 @@ func (h *TaskHandler) DeleteTask(c *gin.Context) {
 		return
 	}
 
-	if err := h.taskRepo.Delete(id); err != nil {
+	if err := h.taskRepo.DeleteWithResults(id); err != nil {
 		utils.InternalError(c, "删除任务失败")
 		return
 	}

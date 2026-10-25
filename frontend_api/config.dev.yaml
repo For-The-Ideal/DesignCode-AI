@@ -22,7 +22,7 @@ ai:
   models:
     - provider: "qwen"
       name: "通义千问 Qwen-VL"
-      api_key: ""
+      api_key: "sk-afc076a48f404baaa4bd1c149861ca5f"
       endpoint: "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
       enabled: true
       max_retries: 3
@@ -33,7 +33,7 @@ ai:
 
     - provider: "deepseek"
       name: "DeepSeek V4"
-      api_key: ""
+      api_key: "sk-781f64056e7a42b185b040f5682aeab4"
       endpoint: "https://api.deepseek.com/chat/completions"
       enabled: true
       max_retries: 3

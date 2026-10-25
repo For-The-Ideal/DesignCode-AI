@@ -7,24 +7,6 @@ export const createTaskActions = (ctx) => {
 
   const targetMap = { Flutter: 'flutter', React: 'react', Vue: 'vue3' }
 
-  // 序列化描述：整体描述在前，标注框逐条输出 [标签 x%,y%,w%,h] 描述
-  // 坐标为相对原图的 0~1 比例，后端 Vision 可直接换算像素与 DSLComponent.position 对齐
-  const buildImageDesc = (img) => {
-    const parts = []
-    if (img.description) parts.push(img.description.trim())
-    ;(img.annotations || []).forEach((a) => {
-      const label = a.label ? a.label.trim() : '区域'
-      const pos = [
-        Math.round(a.x * 100),
-        Math.round(a.y * 100),
-        Math.round(a.w * 100),
-        Math.round(a.h * 100),
-      ].join(',') + '%'
-      parts.push(`[${label} ${pos}] ${(a.desc || '').trim()}`.trim())
-    })
-    return parts.join('\n')
-  }
-
   // ═══ 创建任务 ═══
   const createTask = async () => {
     const target = targetMap[state.config.framework] || 'flutter'
@@ -55,7 +37,13 @@ export const createTaskActions = (ctx) => {
       component_lib: state.config.options.includes('component') ? state.config.componentLib : '',
       images: state.images.map((img, i) => ({
         url: img.cosUrl,
-        desc: buildImageDesc(img),
+        // 每图简短标题：优先文件名去扩展名，回退顶层区域名（供列表/详情回显，不需携带整棵 tree）
+        title: (img.file?.name || '').replace(/\.[^.]+$/, '') || img.annotationTree?.[0]?.name || undefined,
+        // 结构编辑器确认后的树（含坐标/描述/层级），后端据此跳过 Vision 直接生成
+        tree: img.annotationTree || undefined,
+        // 原图像素尺寸（naturalWidth 刷新后丢失，回退持久化的 treeWidth/Height）
+        width: img.treeWidth || img.naturalWidth || undefined,
+        height: img.treeHeight || img.naturalHeight || undefined,
         sort_order: i + 1,
       })),
     }

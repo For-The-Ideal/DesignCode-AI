@@ -3,6 +3,7 @@ package workflow
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"frontend_api/internal/model"
 	"frontend_api/internal/repository"
@@ -85,19 +86,39 @@ func (w *GenerateUIWorkflow) pushProgress(task *model.Task, step string, progres
 	task.AddStep(step, progress, "done")
 	task.Progress = progress
 	task.CurrentStep = step
-	_ = w.taskRepo.Save(task)
-	// SSE 推送
+	_ = w.taskRepo.UpdateProgressAndSteps(task)
+	// SSE 推送（任务级通道：详情页）
 	w.sseManager.Push(task.ID, sse.SSEEvent{
 		Event: "progress",
 		Data:  fmt.Sprintf(`{"progress":%d,"step":"%s"}`, progress, step),
 	})
+	// 用户级通道：任务列表页实时进度（零轮询，与 task_status 共用同一条长连接）
+	progPayload, _ := json.Marshal(map[string]interface{}{
+		"task_id":      task.ID,
+		"status":       task.Status,
+		"progress":     progress,
+		"current_step": step,
+	})
+	w.sseManager.PushUser(fmt.Sprintf("%d", task.UserID), sse.SSEEvent{
+		Event: "task_progress",
+		Data:  string(progPayload),
+	})
 }
 
-// pushUserStatus 向用户级 SSE 推送任务状态变更
+// pushUserStatus 向用户级 SSE 推送任务状态变更（携带权威计数，前端直接更新，无需回拉 /task/status）
 func (w *GenerateUIWorkflow) pushUserStatus(task *model.Task, status model.TaskStatus) {
+	counts, _ := w.taskRepo.CountByUserID(task.UserID)
+	if counts == nil {
+		counts = &model.TaskCountResponse{}
+	}
+	payload, _ := json.Marshal(map[string]interface{}{
+		"task_id": task.ID,
+		"status":  status,
+		"counts":  counts,
+	})
 	w.sseManager.PushUser(fmt.Sprintf("%d", task.UserID), sse.SSEEvent{
 		Event: "task_status",
-		Data:  fmt.Sprintf(`{"task_id":"%s","status":"%s"}`, task.ID, status),
+		Data:  string(payload),
 	})
 }
 
@@ -200,20 +221,25 @@ func (w *GenerateUIWorkflow) Execute(ctx context.Context, task *model.Task) erro
 	}
 	w.simulateProgress(ctx, task.ID, StepDownloadImages, 5, 20, 400)
 
-	// ── Step 2: VisionAnalyzeSkill → DSL ──────────
+	// ── Step 2: DSL 来源 —— 优先用结构编辑器提交的树（跳过 Vision），否则回退视觉分析 ──
 	w.pushProgress(task, StepVisionAnalyzeSkill, 20)
-	w.log.Infof("[Workflow] step 2/6: 视觉分析 (VisionAnalyzeSkill)...")
-	w.simulateProgress(ctx, task.ID, StepVisionAnalyzeSkill, 20, 35, 300)
-
-	visionOutput, err := w.visionSkill.Execute(ctx, vision.Input{Images: imageURLs})
-	if err != nil {
-		w.handleError(task, fmt.Errorf("视觉分析失败: %w", err))
-		return err
+	var dsl string
+	if built, ok := BuildDSLFromTrees(task.Images); ok {
+		dsl = built
+		w.log.Infof("[Workflow] step 2/6: 使用结构标注生成 DSL（跳过 Vision）...")
+		w.simulateProgress(ctx, task.ID, StepVisionAnalyzeSkill, 20, 50, 150)
+	} else {
+		w.log.Infof("[Workflow] step 2/6: 无结构标注，回退视觉分析 (VisionAnalyzeSkill)...")
+		w.simulateProgress(ctx, task.ID, StepVisionAnalyzeSkill, 20, 35, 300)
+		visionOutput, err := w.visionSkill.Execute(ctx, vision.Input{Images: imageURLs})
+		if err != nil {
+			w.handleError(task, fmt.Errorf("视觉分析失败: %w", err))
+			return err
+		}
+		dsl = visionOutput.(vision.Output).DSL
+		w.simulateProgress(ctx, task.ID, StepVisionAnalyzeSkill, 35, 50, 200)
 	}
-
-	dsl := visionOutput.(vision.Output).DSL
 	w.log.Infof("[Workflow] step 2/6 完成, DSL: %s", dsl)
-	w.simulateProgress(ctx, task.ID, StepVisionAnalyzeSkill, 35, 50, 200)
 
 	// ── Step 3: GeneratorSkill → Code + Preview ───
 	genStep := getGeneratorStepName(task.Target)
@@ -247,6 +273,14 @@ func (w *GenerateUIWorkflow) Execute(ctx context.Context, task *model.Task) erro
 	// 清洗 markdown 代码块包裹 (```dart ... ``` → 纯代码)
 	out.Code = cleanCodeBlock(out.Code)
 	w.log.Infof("[Workflow] step 3/6 完成, code=%d chars", len(out.Code))
+
+	// 空结果拦截：模型偶尔会因思维链(reasoning_content)吃满 max_tokens 而返回空 content。
+	// 此时不得当作成功入库（否则出现 code="" 的 success 记录），直接判失败并退积分。
+	if strings.TrimSpace(out.Code) == "" {
+		emptyErr := fmt.Errorf("代码生成结果为空（模型未返回有效代码，疑似思维链耗尽 max_tokens）")
+		w.handleError(task, emptyErr)
+		return emptyErr
+	}
 
 	// 逐步推送 templateCode（逐行，SSE message 事件）
 	w.streamCode(ctx, task.ID, out.Code)

@@ -240,7 +240,7 @@ export function useSSE () {
 
   // ═══ 用户级 SSE 连接（长期保活，推送任务状态变更） ═══
 
-  const connectUser = async (onStatusEvent) => {
+  const connectUser = async (onStatusEvent, onProgressEvent) => {
     if (userActive) {
       console.log('[UserSSE] 已有活跃连接，跳过')
       return
@@ -300,6 +300,9 @@ export function useSSE () {
             }
             if (eventType === 'task_status' && data) {
               try { onStatusEvent(JSON.parse(data)) } catch { /* ignore */ }
+            }
+            if (eventType === 'task_progress' && data && onProgressEvent) {
+              try { onProgressEvent(JSON.parse(data)) } catch { /* ignore */ }
             }
           }
         }

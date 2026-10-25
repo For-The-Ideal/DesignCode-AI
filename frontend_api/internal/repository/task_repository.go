@@ -69,6 +69,18 @@ func (r *TaskRepository) UpdateProgress(id string, progress int, currentStep str
 		}).Error
 }
 
+// UpdateProgressAndSteps 只更新 progress/current_step/task_steps 三列。
+// 用于 pushProgress 高频进度落库：避免 db.Save(task) 重写包括 images 在内的整行（写放大）。
+func (r *TaskRepository) UpdateProgressAndSteps(task *model.Task) error {
+	db := mysql.GetDB()
+	if db == nil {
+		return nil
+	}
+	return db.Model(task).
+		Select("progress", "current_step", "task_steps").
+		Updates(task).Error
+}
+
 // Save 完整保存Task（含 task_steps JSON）
 func (r *TaskRepository) Save(task *model.Task) error {
 	db := mysql.GetDB()
@@ -85,6 +97,20 @@ func (r *TaskRepository) Delete(id string) error {
 		return nil
 	}
 	return db.Where("id = ?", id).Delete(&model.Task{}).Error
+}
+
+// DeleteWithResults 删除任务的同时删除其关联生成结果（同一事务，避免 results 孤儿记录）
+func (r *TaskRepository) DeleteWithResults(id string) error {
+	db := mysql.GetDB()
+	if db == nil {
+		return nil
+	}
+	return db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("task_id = ?", id).Delete(&model.Result{}).Error; err != nil {
+			return err
+		}
+		return tx.Where("id = ?", id).Delete(&model.Task{}).Error
+	})
 }
 
 // GetByUserID 根据用户 ID 获取所有任务（按创建时间倒序）

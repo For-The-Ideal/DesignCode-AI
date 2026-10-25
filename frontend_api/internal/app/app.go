@@ -46,6 +46,8 @@ func Run() {
 			&model.MembershipPlan{},
 			&model.CreditsPackage{},
 			&model.PaymentOrder{},
+			&model.TaskTemplate{},
+			&model.GenConfigOption{},
 		); err != nil {
 			log.Fatalf("[AutoMigrate] 自动建表失败: %v", err)
 		}
@@ -60,6 +62,12 @@ func Run() {
 	// 4. 创建 Repository
 	taskRepo := repository.NewTaskRepository()
 	resultRepo := repository.NewResultRepository()
+	genConfigRepo := repository.NewGenConfigRepository()
+
+	// 4.0 生成配置字典首次启动灌入默认数据（幂等）
+	if err := genConfigRepo.SeedIfEmpty(); err != nil {
+		appLog.Errorf("[App] 初始化生成配置字典失败: %v", err)
+	}
 
 	// 4.1 恢复残留的 running 状态任务（服务重启后清理）
 	if n, err := taskRepo.ResetRunningTasks(); err != nil {
@@ -80,6 +88,7 @@ func Run() {
 		appLog.Warn("[App] 未配置视觉AI模型(千问)，视觉分析将不可用")
 	}
 	visionSkill := vision.NewSkill(readAI)
+	regionSkill := vision.NewRegionSkill(readAI) // 顶层区域识别，复用 read(千问) 客户端
 	writeAI, err := ai.SelectClient("write")
 	if err != nil {
 		log.Fatalf("初始化AI写客户端失败: %v", err)
@@ -100,6 +109,8 @@ func Run() {
 	userHandler := handler.NewUserHandler()
 	adminHandler := handler.NewAdminHandler()
 	membershipHandler := handler.NewMembershipHandler()
+	uiProjectHandler := handler.NewUiProjectHandler(regionSkill)
+	configHandler := handler.NewConfigHandler(genConfigRepo)
 
 	// 10. 设置 Gin
 	r := gin.Default()
@@ -107,7 +118,7 @@ func Run() {
 	r.Use(middleware.CORSMiddleware())
 
 	// 11. 初始化路由
-	routes.InitV1Routes(r, taskHandler, sseHandler, uploadHandler, authHandler, userHandler, adminHandler, membershipHandler)
+	routes.InitV1Routes(r, taskHandler, sseHandler, uploadHandler, authHandler, userHandler, adminHandler, membershipHandler, uiProjectHandler, configHandler)
 
 	// 12. 创建 HTTP Server（支持优雅关闭）
 	// Addr 是监听地址（host:port），不是对外 URL

@@ -52,7 +52,7 @@ func (s *ReactSkill) Execute(ctx context.Context, input interface{}) (interface{
 		{Role: "user", Content: fmt.Sprintf("Platform: %s\nOptions: %v\nComponentLib: %s\nDSL:\n%s", gi.Platform, gi.Options, gi.ComponentLib, gi.DSL)},
 	}
 
-	content, err := s.aiClient.Chat(ctx, messages, ai.WithDeepSeekThinking("high"), ai.WithMaxTokens(8192))
+	content, err := s.aiClient.Chat(ctx, messages, ai.WithDeepSeekThinking("high"), ai.WithMaxTokens(16384))
 	if err != nil {
 		return nil, fmt.Errorf("react: AI 调用失败: %w", err)
 	}

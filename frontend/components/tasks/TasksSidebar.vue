@@ -15,10 +15,10 @@
             <div
               class="task-item"
               :class="{ expanded: expandedId === task.id }"
-              @click="toggleExpand(task.id)"
+              @click="onItemClick(task)"
             >
               <div class="task-item-top">
-                <div class="task-item-title">{{ taskDisplayName(task) }}</div>
+                <div class="task-item-title">{{ taskName(task) }}</div>
                 <span class="task-status-badge" :class="'status--' + task.status">
                   <span class="status-dot"></span>
                   {{ statusLabel(task.status) }}
@@ -59,22 +59,12 @@
                     <i v-if="!task.images?.[0]?.url" class="fa-solid fa-image"></i>
                   </div>
                   <div class="card-head-info">
-                    <h3 class="card-title">{{ taskDisplayName(task) }}</h3>
+                    <h3 class="card-title">{{ taskName(task) }}</h3>
                     <div class="card-tags">
                       <span v-for="(tag, i) in taskTags(task)" :key="i" class="card-tag">{{ tag }}</span>
                     </div>
                   </div>
                   <span class="card-time">{{ task.createdAt || task.time }}</span>
-                </div>
-
-                <!-- 进度条 -->
-                <div class="progress-block">
-                  <span class="progress-label">还原度 {{ task.progress }}%</span>
-                  <div class="progress-bar">
-                    <div class="progress-fill" :style="{ width: task.progress + '%' }">
-                      <div class="progress-shine"></div>
-                    </div>
-                  </div>
                 </div>
 
                 <!-- 时间轴步骤 -->
@@ -119,7 +109,11 @@
 </template>
 
 <script setup>
-import { statusLabel, taskDisplayName } from '~/helpers/index'
+import { onMounted } from 'vue'
+import { useConfigStore } from '~/stores/config'
+
+const configStore = useConfigStore()
+onMounted(() => configStore.load())
 
 const props = defineProps({
   tasks: { type: Array, required: true },
@@ -130,11 +124,13 @@ const props = defineProps({
   showTitle: { type: Boolean, default: true },
 })
 
-const emit = defineEmits(['update:expandedId', 'navigate'])
+const emit = defineEmits(['update:expandedId', 'navigate', 'blocked'])
 
-const toggleExpand = (id) => {
-  if (!props.collapsible) return
-  emit('update:expandedId', props.expandedId === id ? null : id)
+// 条目点击：排队中/失败仅提示不可进入；其余展开该项并通知切换详情
+const onItemClick = (task) => {
+  if (task.status === 'pending' || task.status === 'failed') { emit('blocked', task); return }
+  emit('update:expandedId', task.id)
+  emit('navigate', task.id)
 }
 
 const goToDetail = (id) => {
@@ -150,15 +146,19 @@ const stepPhase = (task, idx) => {
   return 'phase-future'
 }
 
-// 任务标签列表：自动收集 framework、platform、options 等
+// 任务标签列表：framework、platform、options 均回显字典 label
 const taskTags = (task) => {
   const tags = []
-  if (task.framework) tags.push(task.framework)
-  if (task.platform)  tags.push(task.platform)
-  if (task.options && task.options.length) tags.push(...task.options)
+  if (task.framework) tags.push(configStore.frameworkLabel(task.framework))
+  if (task.platform)  tags.push(configStore.platformLabel(task.platform))
+  ;(task.options || []).forEach(v => { if (v !== 'component') tags.push(configStore.optionLabel(v)) })
   if (task.component_lib) tags.push(task.component_lib)
   return tags
 }
+
+// 模板保持简洁：任务名 / 状态 label 在此封装为短方法（数据源仍是配置字典）
+const taskName    = (task) => configStore.taskName(task)
+const statusLabel = (s) => configStore.statusLabel(s)
 </script>
 
 <style scoped>
@@ -391,37 +391,6 @@ const taskTags = (task) => {
   font-family: 'Fira Code', monospace;
   flex-shrink: 0;
   padding-top: 2px;
-}
-
-/* 进度条 */
-.progress-block {
-  margin-bottom: 16px;
-}
-.progress-label {
-  font-size: 11px;
-  font-weight: 600;
-  color: rgba(148, 163, 184, 0.6);
-  letter-spacing: 0.3px;
-}
-.progress-bar {
-  height: 5px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 3px;
-  overflow: hidden;
-  margin-top: 6px;
-}
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #2563eb, #22d3ee);
-  border-radius: 3px;
-  transition: width 1s ease-out;
-  position: relative;
-}
-.progress-shine {
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 1px;
-  background: rgba(255, 255, 255, 0.3);
 }
 
 /* 时间轴 */

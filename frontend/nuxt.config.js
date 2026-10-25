@@ -22,15 +22,6 @@ export default defineNuxtConfig({
     "@nuxtjs/color-mode",
   ],
 
-  head: {
-    script: [
-      {
-        src: "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.34.1/min/vs/loader.min.js",
-        defer: true,
-      },
-    ],
-  },
-
   css: [
     "~/assets/css/main.css",
     "@fortawesome/fontawesome-free/css/all.min.css",

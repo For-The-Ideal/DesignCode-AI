@@ -8,7 +8,7 @@ export const useCodeStore = defineStore('code', () => {
   const state = reactive({
     // ── 上传 ──
     images: [],
-    maxImages: 3,
+    maxImages: 1,
 
     // ── 配置 ──
     config: {

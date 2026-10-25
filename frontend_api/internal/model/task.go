@@ -22,9 +22,12 @@ const (
 
 // ImageItem 上传图片项
 type ImageItem struct {
-	URL       string `json:"url"`
-	Desc      string `json:"desc"`
-	SortOrder int    `json:"sort_order"` // 排序，1-N
+	URL       string   `json:"url"`
+	Title     string   `json:"title,omitempty"`  // 每图简短标题（列表/详情回显用，如文件名去扩展名）
+	Tree      []UINode `json:"tree,omitempty"`   // 结构编辑器确认的嵌套树（做法 B：有则优先据此生成，跳过 Vision）
+	Width     int      `json:"width,omitempty"`  // 原图像素宽（供 DSL canvas 坐标换算）
+	Height    int      `json:"height,omitempty"` // 原图像素高
+	SortOrder int      `json:"sort_order"`       // 排序，1-N（多图页序，生成时按其升序消费）
 }
 
 // TaskStep 任务执行步骤记录
@@ -50,7 +53,7 @@ type Task struct {
 	Progress       int         `json:"progress"`                                            // 当前进度 0-100
 	CurrentStep    string      `json:"current_step"`                                        // 当前执行步骤
 	TaskSteps      []TaskStep  `json:"task_steps" gorm:"column:task_steps;serializer:json"` // 执行步骤记录
-	UserID         uint        `json:"user_id"`
+	UserID         uint        `json:"user_id" gorm:"index"`                                // 列表/统计按用户过滤，加索引避免全表扫
 	CreatedAt      time.Time   `json:"created_at"`
 	UpdatedAt      time.Time   `json:"updated_at"`
 }
@@ -69,6 +72,7 @@ type Task struct {
 type TaskStatusResponse struct {
 	TaskID      string      `json:"task_id"`
 	Target      string      `json:"target"`
+	Platform    string      `json:"platform"`
 	Status      TaskStatus  `json:"status"`
 	Progress    int         `json:"progress"`
 	CurrentStep string      `json:"current_step"`
@@ -84,6 +88,7 @@ func (t *Task) ToTaskStatusResponse(result *Result) *TaskStatusResponse {
 	return &TaskStatusResponse{
 		TaskID:      t.ID,
 		Target:      t.Target,
+		Platform:    t.Platform,
 		Status:      t.Status,
 		Progress:    t.Progress,
 		CurrentStep: t.CurrentStep,
@@ -106,29 +111,44 @@ type TaskCountResponse struct {
 
 // ── 任务列表响应 ──────────────────────────
 
-// TaskListItem GET /api/v1/tasks 的列表项（精简字段）
-type TaskListItem struct {
-	ID        string      `json:"id"`
-	Target    string      `json:"framework"` // 前端字段名兼容：framework
-	Platform  string      `json:"platform"`
-	Status    TaskStatus  `json:"status"`
-	Progress  int         `json:"progress"`
-	Images    []ImageItem `json:"images"`
-	Options   []string    `json:"options"`
-	CreatedAt string      `json:"created_at"`
+// ListItemImage 列表用轻量图片项：只回缩略图 URL 与标题，不回整棵 tree
+// （tree 只在详情 TaskStatusResponse 中返回，供按标注位置回显/重开编辑）
+type ListItemImage struct {
+	URL   string `json:"url"`
+	Title string `json:"title,omitempty"`
 }
 
-// ToTaskListItem 将 Task 转为列表项
+// TaskListItem GET /api/v1/tasks 的列表项（精简字段）
+type TaskListItem struct {
+	ID           string          `json:"id"`
+	Target       string          `json:"framework"` // 前端字段名兼容：framework
+	Platform     string          `json:"platform"`
+	Status       TaskStatus      `json:"status"`
+	Progress     int             `json:"progress"`
+	Images       []ListItemImage `json:"images"`
+	Options      []string        `json:"options"`
+	Advanced     []string        `json:"advanced"`
+	ComponentLib string          `json:"component_lib"`
+	CreatedAt    string          `json:"created_at"`
+}
+
+// ToTaskListItem 将 Task 转为列表项（图片瘦身为 url+title，剥离 tree）
 func (t *Task) ToTaskListItem() TaskListItem {
+	imgs := make([]ListItemImage, 0, len(t.Images))
+	for _, im := range t.Images {
+		imgs = append(imgs, ListItemImage{URL: im.URL, Title: im.Title})
+	}
 	return TaskListItem{
-		ID:        t.ID,
-		Target:    t.Target,
-		Platform:  t.Platform,
-		Status:    t.Status,
-		Progress:  t.Progress,
-		Images:    t.Images,
-		Options:   t.Options,
-		CreatedAt: t.CreatedAt.Format("2006-01-02 15:04"),
+		ID:           t.ID,
+		Target:       t.Target,
+		Platform:     t.Platform,
+		Status:       t.Status,
+		Progress:     t.Progress,
+		Images:       imgs,
+		Options:      t.Options,
+		Advanced:     t.Advanced,
+		ComponentLib: t.ComponentLib,
+		CreatedAt:    t.CreatedAt.Format("2006-01-02 15:04"),
 	}
 }
 
