@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: flutter-real-test
+  namespace: default
+spec:
+  restartPolicy: Never
+  imagePullSecrets:
+    - name: tcr-credential
+  containers:
+    - name: builder
+      image: ccr.ccs.tencentyun.com/designcode/flutter-builder:v1
+      resources:
+        requests: { cpu: "2", memory: "4Gi" }
+        limits:   { cpu: "2", memory: "4Gi" }
+      env:
+        - name: TASK_ID
+          value: "test-real-001"
+        - name: CODE_B64
+          value: "aW1wb3J0ICdwYWNrYWdlOmZsdXR0ZXIvbWF0ZXJpYWwuZGFydCc7CgpjbGFzcyBHZW5lcmF0ZWRXaWRnZXQgZXh0ZW5kcyBTdGF0ZWxlc3NXaWRnZXQgewogIGNvbnN0IEdlbmVyYXRlZFdpZGdldCh7c3VwZXIua2V5fSk7CiAgQG92ZXJyaWRlCiAgV2lkZ2V0IGJ1aWxkKEJ1aWxkQ29udGV4dCBjb250ZXh0KSB7CiAgICByZXR1cm4gY29uc3QgQ2VudGVyKGNoaWxkOiBUZXh0KCdIZWxsbyBXb3JsZCcpKTsKICB9Cn0="
+        - name: CALLBACK_URL
+          value: "http://111.229.28.247/api/v1/internal/preview-callback"
+        - name: BUILD_TOKEN
+          value: "你之前在后端配置的build_token" # 必须和 Go 代码里校验的一致
+        - name: COS_BUCKET
+          value: "upload-image-1301638170"
+        - name: COS_REGION
+          value: "ap-guangzhou"
+        - name: COS_SECRET_ID
+          value: "AKIDplYGoIervrnhPtLchaFvRnIi2EPQDq9L" # 替换！
+        - name: COS_SECRET_KEY
+          value: "1vY0FFzqY1EMIqOp9VgeOvDFguwraJtG" # 替换！

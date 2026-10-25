@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: flutter-final-test
+  namespace: default
+spec:
+  restartPolicy: Never
+  imagePullSecrets:
+    - name: tcr-credential
+  containers:
+    - name: builder
+      image: ccr.ccs.tencentyun.com/designcode/flutter-builder:v1
+      imagePullPolicy: Always
+      command: ["/bin/bash", "-c"]
+      args:
+        - |
+          set -euo pipefail
+          echo "[build] task=$TASK_ID 解码代码…"
+          mkdir -p /work && cp -r /opt/template/. /work/
+          echo "$CODE_B64" | base64 -d > /work/lib/generated_page.dart
+          
+          echo "[build] flutter pub get…"
+          cd /work && flutter pub get
+          
+          echo "[build] flutter build web --release…"
+          flutter build web --release
+          
+          echo "[build] 上传产物到 COS…"
+          # ★ 核心修复：用官方命令生成配置，抛弃手写的 YAML
+          coscli config add -b "${COS_BUCKET}" -r "${COS_REGION}" -i "${COS_SECRET_ID}" -k "${COS_SECRET_KEY}" > /dev/null 2>&1 || true
+          
+          coscli cp -r /work/build/web "cos://${COS_BUCKET}/preview/${TASK_ID}"
+          
+          echo "[build] 上传完成，准备回调"
+          curl -sS -X POST "$CALLBACK_URL" \
+            -H "Content-Type: application/json" \
+            -H "X-Build-Token: ${BUILD_TOKEN}" \
+            -d "{\"task_id\":\"${TASK_ID}\",\"status\":\"success\",\"iframe_url\":\"https://${COS_BUCKET}.cos.${COS_REGION}.myqcloud.com/preview/${TASK_ID}/index.html\",\"error\":\"\"}" || true
+            
+          echo "=== 所有步骤执行完毕 ==="
+          sleep 600
+      resources:
+        requests: { cpu: "2", memory: "4Gi" }
+        limits:   { cpu: "2", memory: "4Gi" }
+      env:
+        - name: TASK_ID
+          value: "test-real-001"
+        - name: CODE_B64
+          value: "aW1wb3J0ICdwYWNrYWdlOmZsdXR0ZXIvbWF0ZXJpYWwuZGFydCc7CgpjbGFzcyBHZW5lcmF0ZWRXaWRnZXQgZXh0ZW5kcyBTdGF0ZWxlc3NXaWRnZXQgewogIGNvbnN0IEdlbmVyYXRlZFdpZGdldCh7c3VwZXIua2V5fSk7CiAgQG92ZXJyaWRlCiAgV2lkZ2V0IGJ1aWxkKEJ1aWxkQ29udGV4dCBjb250ZXh0KSB7CiAgICByZXR1cm4gY29uc3QgQ2VudGVyKGNoaWxkOiBUZXh0KCdIZWxsbyBXb3JsZCcpKTsKICB9Cn0="
+        - name: CALLBACK_URL
+          value: "http://111.229.28.247/api/v1/internal/preview-callback"
+        - name: BUILD_TOKEN
+          value: "designcode-flutter-preview-2026-secret"
+        - name: COS_BUCKET
+          value: "upload-image-1301638170"
+        - name: COS_REGION
+          value: "ap-guangzhou"
+        - name: COS_SECRET_ID
+          value: "AKIDplYGoIervrnhPtLchaFvRnIi2EPQDq9L" # 替换！
+        - name: COS_SECRET_KEY
+          value: "1vY0FFzqY1EMIqOp9VgeOvDFguwraJtG" # 替换！
