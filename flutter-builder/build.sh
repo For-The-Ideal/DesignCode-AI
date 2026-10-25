@@ -34,17 +34,24 @@ echo "[build] flutter build web --release…"
 flutter build web --release
 
 echo "[build] 上传产物到 COS…"
-# 暴力破解：直接让 coscli 去读底层环境变量
-export COS_SECRET_ID="${COS_SECRET_ID}"
-export COS_SECRET_KEY="${COS_SECRET_KEY}"
-export COS_REGION="${COS_REGION}"
-export COS_BUCKET="${COS_BUCKET}"
 
-# 先把之前的配置清理干净，防止干扰
-rm -f /root/.cos.yaml
+# 🌟 终极必杀：伪造它生成的配置格式，并把 stdin 重定向到 /dev/null，彻底杜绝它弹交互模式
+mkdir -p /root
+cat > /root/.cos.yaml <<EOF
+cos:
+  base_url: https://${COS_REGION}.cos.myqcloud.com
+  secret_id: ${COS_SECRET_ID}
+  secret_key: ${COS_SECRET_KEY}
+  protocol: https
+  buckets:
+    - name: ${COS_BUCKET}
+      alias: ${COS_BUCKET}
+      region: ${COS_REGION}
+      endpoint: ${COS_REGION}.cos.myqcloud.com
+EOF
 
-# 直接执行上传命令
-coscli cp -r /work/build/web "cos://${COS_BUCKET}/${IFRAME_PATH}"
+# 把 < /dev/null 加上，它就永远别想弹出 Input Your Mode
+coscli cp -r /work/build/web "cos://${COS_BUCKET}/${IFRAME_PATH}" < /dev/null
 
 echo "[build] 回调成功 url=$INDEX_URL"
 post_callback "success" "$INDEX_URL" ""
