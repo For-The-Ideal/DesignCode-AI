@@ -27,6 +27,14 @@
     "cross-env": "^7.0.3",
     "sass-embedded": "^1.98.0",
     "vite-plugin-monaco-editor": "^1.1.0"
+  },
+  "optionalDependencies": {
+    "@oxc-parser/binding-linux-x64-gnu": "0.156.0",
+    "@oxc-transform/binding-linux-x64-gnu": "0.156.0",
+    "@oxc-minify/binding-linux-x64-gnu": "0.156.0"
+  },
+  "engines": {
+    "node": ">=22.12.0"
   }
 }
 
