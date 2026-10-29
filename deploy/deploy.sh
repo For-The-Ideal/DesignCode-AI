@@ -134,23 +134,55 @@ fi
 
 step "6 重启并自检（模式: $MODE）"
 case "$MODE" in
-  backend)  systemctl restart designcode-api ;;
-  frontend) systemctl restart designcode-frontend ;;
-  *)        systemctl restart designcode-api designcode-frontend ;;
+  backend)  UNITS="designcode-api" ;;
+  frontend) UNITS="designcode-frontend" ;;
+  *)        UNITS="designcode-api designcode-frontend" ;;
 esac
+systemctl restart $UNITS
 sleep 4
+
+OK=1
 for u in designcode-api designcode-frontend; do
   printf '  %-22s %s\n' "$u" "$(systemctl is-active "$u")"
 done
+for u in $UNITS; do
+  [ "$(systemctl is-active "$u")" = "active" ] || { echo "  !!! $u 不是 active"; OK=0; }
+done
 
 if [ "$MODE" != "frontend" ]; then
-  curl -s -o /dev/null -w '  backend  :%{http_code}\n' http://127.0.0.1:8888/api/v1/config/options
+  c=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8888/api/v1/config/options)
+  echo "  backend  :$c"
+  [ "$c" = "200" ] || OK=0
 fi
 if [ "$MODE" != "backend" ]; then
-  curl -s -o /dev/null -w '  frontend :%{http_code}\n' http://127.0.0.1:3000
+  c=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3000)
+  echo "  frontend :$c"
+  [ "$c" = "200" ] || OK=0
 fi
-curl -s -o /dev/null -w '  gateway  :%{http_code}\n' http://127.0.0.1/
-nginx -T 2>/dev/null | grep -q 'proxy_pass http://127.0.0.1:8888' \
-  && echo '  api 路由 :已配置 -> 8888' || echo '  api 路由 :!! 未配置'
+c=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1/)
+echo "  gateway  :$c"
+[ "$c" = "200" ] || OK=0
+
+if nginx -T 2>/dev/null | grep -q 'proxy_pass http://127.0.0.1:8888'; then
+  echo '  api 路由 :已配置 -> 8888'
+else
+  echo '  api 路由 :!! 未配置'
+  OK=0
+fi
+
+case "$MODE" in
+  frontend) NAME="前端" ;;
+  backend)  NAME="后端" ;;
+  *)        NAME="全量" ;;
+esac
+
 echo
-echo "发布结束：状态码全 200 + api 路由已配置 才算成功"
+echo "=================================================="
+if [ "$OK" = "1" ]; then
+  echo "  $NAME部署成功"
+  echo "=================================================="
+else
+  echo "  $NAME部署失败 —— 检查上面非 200 或标 !!! 的项"
+  echo "=================================================="
+  exit 1
+fi
