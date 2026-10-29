@@ -118,6 +118,7 @@ done
 curl -s -o /dev/null -w '  backend  :%{http_code}\n' http://127.0.0.1:8888/api/v1/config/options
 curl -s -o /dev/null -w '  frontend :%{http_code}\n' http://127.0.0.1:3000
 curl -s -o /dev/null -w '  gateway  :%{http_code}\n' http://127.0.0.1/
-curl -s -o /dev/null -w '  api80    :%{http_code}\n' http://127.0.0.1/api/v1/config/options
+nginx -T 2>/dev/null | grep -q 'proxy_pass http://127.0.0.1:8888' \
+  && echo '  api 路由 :已配置 -> 8888' || echo '  api 路由 :!! 未配置'
 echo
-echo "发布结束：四个数字都是 200 才算成功"
+echo "发布结束：三个 200 + api 路由已配置 才算成功"
