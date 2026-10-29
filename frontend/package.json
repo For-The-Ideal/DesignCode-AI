@@ -16,8 +16,7 @@
     "element-plus": "^2.14.1",
     "monaco-editor": "^0.55.1",
     "nuxt": "^4.4.2",
-    "vue": "^3.5.30",
-    "oxc-parser": "^0.133.0"
+    "vue": "^3.5.30"
   },
   "devDependencies": {
     "@nuxt/image": "^2.0.0",
