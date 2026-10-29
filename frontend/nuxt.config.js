@@ -9,6 +9,15 @@ export default defineNuxtConfig({
   future: {
     compatibilityVersion: 4,
   },
+  app: {
+    head: {
+      meta: [
+        { name: "description", content: "DesignCode AI" },
+        { name: "keywords", content: "DesignCode AI" },
+        { name: "author", content: "DesignCode AI" },
+      ],
+    },
+  },
 
   // ========== 自动导入配置 ==========
   imports: {
