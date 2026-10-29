@@ -1,0 +1,21 @@
+[Unit]
+Description=DesignCode-AI Frontend (Nuxt SSR)
+After=network-online.target designcode-api.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/DesignCode-AI/frontend
+EnvironmentFile=-/root/DesignCode-AI/frontend/.env.prod
+Environment=NODE_ENV=production
+Environment=NITRO_PORT=3000
+Environment=NITRO_HOST=127.0.0.1
+Environment=HOST=127.0.0.1
+ExecStart=/usr/local/node/bin/node .output/server/index.mjs
+Restart=always
+RestartSec=3
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,4 @@
+# 服务器上执行的脚本必须是 LF，否则 bash 报 $'\r': command not found
+*.sh text eol=lf
+*.service text eol=lf
+deploy/versions.env text eol=lf
