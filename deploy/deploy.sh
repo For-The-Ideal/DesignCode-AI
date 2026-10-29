@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 # DesignCode-AI 服务器发布入口（唯一入口：本地改这个文件，服务器就跟着变）
-#   bash deploy/deploy.sh              拉代码 + 装依赖 + 构建 + 重启 + 自检
-#   bash deploy/deploy.sh --no-pull    跳过 git，只构建并重启
+#   bash deploy/deploy.sh                全量：拉代码 + 编译后端 + 构建前端 + 重启 + 自检
+#   bash deploy/deploy.sh --frontend     只改前端：拉代码 + 依赖 + 构建 + 重启前端
+#   bash deploy/deploy.sh --backend      只改后端：拉代码 + 编译 + 重启后端
+#   bash deploy/deploy.sh --no-pull      不拉代码，只按上面的方式重新构建
+# 可组合：bash deploy/deploy.sh --frontend --no-pull
 set -uo pipefail
 
 # 先把自己拷到 /tmp 再执行：git reset 会覆盖仓库里的脚本，不能边改边跑
@@ -16,6 +19,18 @@ ROOT="${DEPLOY_ROOT:-/root/DesignCode-AI}"
 cd "$ROOT" || { echo "!!! 目录不存在: $ROOT"; exit 1; }
 # shellcheck disable=SC1091
 source "$ROOT/deploy/versions.env"
+
+MODE=all
+NOPULL=0
+for a in "$@"; do
+  case "$a" in
+    --frontend) MODE=frontend ;;
+    --backend)  MODE=backend ;;
+    --no-pull)  NOPULL=1 ;;
+    -h|--help)  sed -n '2,7p' "$ROOT/deploy/deploy.sh"; exit 0 ;;
+    *) echo "未知参数: $a（可用: --frontend --backend --no-pull）"; exit 1 ;;
+  esac
+done
 
 step() { echo; echo "===== $* ====="; }
 
@@ -63,62 +78,79 @@ ensure_oxc() {
   echo "  ok  $pkg (解压安装)"
 }
 
-step "0/6 版本对齐"
+step "0 版本对齐"
 install_node || exit 1
 export PATH="$NODE_HOME/bin:$GO_HOME/bin:$PATH"
 node -v; npm -v; go version || { echo "!!! go 未安装"; exit 1; }
 
-if [ "${1:-}" != "--no-pull" ]; then
-  step "1/6 拉取代码（服务器不做任何手工改动）"
+if [ "$NOPULL" = "1" ]; then
+  step "1 跳过 git（--no-pull）"
+else
+  step "1 拉取代码（服务器不做任何手工改动）"
   git fetch origin main && git reset --hard origin/main || { echo "!!! git 失败"; exit 1; }
   git log --oneline -1
-else
-  step "1/6 跳过 git（--no-pull）"
 fi
 
-step "2/6 同步 systemd 单元（软链到仓库）"
+step "2 同步 systemd 单元（软链到仓库）"
 sync_units
 
-step "3/6 编译后端"
-cd "$ROOT/frontend_api" || exit 1
-go build -trimpath -ldflags="-s -w" -o server.new main.go || { echo "!!! 后端编译失败"; exit 1; }
-mv -f server.new server
-ls -lh server | awk '{print "  server", $5}'
+if [ "$MODE" != "frontend" ]; then
+  step "3 编译后端"
+  cd "$ROOT/frontend_api" || exit 1
+  go build -trimpath -ldflags="-s -w" -o server.new main.go || { echo "!!! 后端编译失败"; exit 1; }
+  mv -f server.new server
+  ls -lh server | awk '{print "  server", $5}'
+else
+  step "3 跳过后端编译（--frontend）"
+fi
 
-step "4/6 安装前端依赖"
-cd "$ROOT/frontend" || exit 1
-rm -rf node_modules .nuxt
-npm ci --include=optional --no-audit --no-fund \
-  || echo ">>> npm ci 退出码非 0（postinstall 可能失败），继续检查依赖树"
+if [ "$MODE" != "backend" ]; then
+  step "4 安装前端依赖"
+  cd "$ROOT/frontend" || exit 1
+  rm -rf node_modules .nuxt
+  npm ci --include=optional --no-audit --no-fund \
+    || echo ">>> npm ci 退出码非 0（postinstall 可能失败），继续检查依赖树"
 
-OXV=$(node -p "require('./package.json').optionalDependencies['@oxc-parser/binding-linux-x64-gnu']" 2>/dev/null || echo "0.156.0")
-echo "  oxc 平台包版本: $OXV"
-ensure_oxc "@oxc-parser/binding-linux-x64-gnu" "$OXV"
-ensure_oxc "@oxc-transform/binding-linux-x64-gnu" "$OXV"
-ensure_oxc "@oxc-minify/binding-linux-x64-gnu" "$OXV"
-node --input-type=module -e "await import('oxc-parser');console.log('  oxc native ok')" \
-  || { echo "!!! 原生绑定仍缺失"; exit 1; }
+  OXV=$(node -p "require('./package.json').optionalDependencies['@oxc-parser/binding-linux-x64-gnu']" 2>/dev/null || echo "0.156.0")
+  echo "  oxc 平台包版本: $OXV"
+  ensure_oxc "@oxc-parser/binding-linux-x64-gnu" "$OXV"
+  ensure_oxc "@oxc-transform/binding-linux-x64-gnu" "$OXV"
+  ensure_oxc "@oxc-minify/binding-linux-x64-gnu" "$OXV"
+  node --input-type=module -e "await import('oxc-parser');console.log('  oxc native ok')" \
+    || { echo "!!! 原生绑定仍缺失"; exit 1; }
 
-step "5/6 构建前端（期间停 MySQL 腾内存）"
-systemctl stop mysqld 2>/dev/null || true
-npm run build
-rc=$?
-systemctl start mysqld 2>/dev/null || true
-sleep 3
-ss -tlnp | grep -q ':3306 ' && echo "  MySQL 3306 正常" || echo "  !!! MySQL 未监听 3306"
-[ $rc -eq 0 ] || { echo "!!! 前端构建失败 rc=$rc"; exit $rc; }
-ls -lh .output/server/index.mjs
+  step "5 构建前端（期间停 MySQL 腾内存）"
+  systemctl stop mysqld 2>/dev/null || true
+  npm run build
+  rc=$?
+  systemctl start mysqld 2>/dev/null || true
+  sleep 3
+  ss -tlnp | grep -q ':3306 ' && echo "  MySQL 3306 正常" || echo "  !!! MySQL 未监听 3306"
+  [ $rc -eq 0 ] || { echo "!!! 前端构建失败 rc=$rc"; exit $rc; }
+  ls -lh .output/server/index.mjs
+else
+  step "4-5 跳过前端构建（--backend）"
+fi
 
-step "6/6 重启并自检"
-systemctl restart designcode-api designcode-frontend
+step "6 重启并自检（模式: $MODE）"
+case "$MODE" in
+  backend)  systemctl restart designcode-api ;;
+  frontend) systemctl restart designcode-frontend ;;
+  *)        systemctl restart designcode-api designcode-frontend ;;
+esac
 sleep 4
 for u in designcode-api designcode-frontend; do
   printf '  %-22s %s\n' "$u" "$(systemctl is-active "$u")"
 done
-curl -s -o /dev/null -w '  backend  :%{http_code}\n' http://127.0.0.1:8888/api/v1/config/options
-curl -s -o /dev/null -w '  frontend :%{http_code}\n' http://127.0.0.1:3000
+
+if [ "$MODE" != "frontend" ]; then
+  curl -s -o /dev/null -w '  backend  :%{http_code}\n' http://127.0.0.1:8888/api/v1/config/options
+fi
+if [ "$MODE" != "backend" ]; then
+  curl -s -o /dev/null -w '  frontend :%{http_code}\n' http://127.0.0.1:3000
+fi
 curl -s -o /dev/null -w '  gateway  :%{http_code}\n' http://127.0.0.1/
 nginx -T 2>/dev/null | grep -q 'proxy_pass http://127.0.0.1:8888' \
   && echo '  api 路由 :已配置 -> 8888' || echo '  api 路由 :!! 未配置'
 echo
-echo "发布结束：三个 200 + api 路由已配置 才算成功"
+echo "发布结束：状态码全 200 + api 路由已配置 才算成功"
