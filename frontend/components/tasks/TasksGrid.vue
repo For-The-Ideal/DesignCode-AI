@@ -122,7 +122,6 @@ const stepLabel = s => STEP_LABELS[s] || s
 
 // 进入详情：生成中/失败 不可查看，给出提示
 const openDetail = (row) => {
-  if (row.status === 'running') { ElMessage.info('任务正在生成中，暂不可查看详情'); return }
   if (row.status === 'failed') { ElMessage.warning('任务生成失败，无法查看详情'); return }
   emit('detail', row)
 }

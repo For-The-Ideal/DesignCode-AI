@@ -59,8 +59,8 @@
                 ></iframe>
                 <!-- 其它平台（vue/react）及 flutter 未构建时的兜底：HTML 内联预览 -->
                 <PreviewTemplate
-                  v-else-if="taskDetail?.previewHtml"
-                  :html="taskDetail.previewHtml"
+                  v-else-if="taskDetail?.preview"
+                  :html="taskDetail.preview"
                   :showBottomNav="task.platform === 'mobile'"
                 />
                 <div v-else class="pv-empty">
@@ -79,6 +79,7 @@
                   :modelValue="taskDetail.code"
                   :language="codeLang(task.framework)"
                   :readonly="true"
+                  @copy="copy"
                   height="100%"
                 />
                 <div v-else class="code-empty">
@@ -143,7 +144,7 @@ const codeLang = (fw) => ({ Flutter: 'dart', React: 'typescript', Vue3: 'html', 
 
 // ═══ 数据（真实接口，非 Mock） ═══
 const task = ref(null)         // 当前任务概要（驱动预览/代码渲染）
-const taskDetail = ref(null)   // 生成结果（code + previewHtml + iframeUrl）
+const taskDetail = ref(null)   // 生成结果（code + preview + iframeUrl）
 const taskList = ref([])       // 侧栏任务列表
 const loading = ref(false)
 
@@ -170,7 +171,7 @@ async function loadTask(id) {
       images: d.images || [],
     }
     const r = d.result
-    taskDetail.value = r ? { code: r.code, previewHtml: r.preview, iframeUrl: r.iframe_url } : null
+    taskDetail.value = r ? { code: r.code, preview: r.preview, iframeUrl: r.iframe_url } : null
   } catch {
     task.value = null
     taskDetail.value = null
@@ -182,7 +183,7 @@ async function loadTask(id) {
 // 1) watch 路由参数变化：同步侧栏展开项 + 加载新任务（实例复用后统一走此处，不再另设 onBeforeRouteUpdate 以免重复请求）
 watch(() => route.params.id, (id) => { sidebarExpandedId.value = id; loadTask(id) })
 
-const copyCode = () => {
+const copy = () => {
   if (!taskDetail.value?.code) return
   navigator.clipboard.writeText(taskDetail.value.code)
 }

@@ -1,0 +1,13 @@
+# 环境配置（含密钥）——只有 *.env.example 入库
+deploy/envs/*.env
+!deploy/envs/*.env.example
+deploy/envs/config.*.yaml
+!deploy/envs/config.*.yaml.example
+
+# 部署面板运行时
+panel/panel.env
+panel/deploy-panel
+panel/*.exe
+
+# 构建机运行时目录（若在仓库内调试产生）
+.release-tmp/
