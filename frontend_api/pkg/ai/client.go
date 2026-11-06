@@ -6,8 +6,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"frontend_api/config"
+	"frontend_api/utils"
 	"io"
+	"log"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -86,6 +89,7 @@ type chatClient struct {
 	endpoint   string
 	apiKey     string
 	model      string
+	maxRetries int
 }
 
 // Option 请求选项
@@ -119,25 +123,31 @@ func WithDeepSeekThinking(effort string) Option {
 //	apiKey:   API Key
 //	model:    模型名称，如 "deepseek-chat" / "qwen-vl-plus"
 func NewClient(endpoint, apiKey, model string) Client {
-	return &chatClient{
-		httpClient: &http.Client{
-			Timeout: 600 * time.Second, // 10 分钟，长代码生成任务可能较慢
-		},
-		endpoint: endpoint,
-		apiKey:   apiKey,
-		model:    model,
-	}
+	return NewClientWithOptions(endpoint, apiKey, model, 600*time.Second, 0)
 }
 
 // NewClientWithTimeout 创建 AI 客户端并指定超时
 func NewClientWithTimeout(endpoint, apiKey, model string, timeout time.Duration) Client {
+	return NewClientWithOptions(endpoint, apiKey, model, timeout, 0)
+}
+
+// NewClientWithOptions 创建 AI 客户端，同时指定超时与最大重试次数
+// maxRetries 只针对限流（429）与临时故障（5xx/网络错误）生效
+func NewClientWithOptions(endpoint, apiKey, model string, timeout time.Duration, maxRetries int) Client {
+	if timeout <= 0 {
+		timeout = 600 * time.Second
+	}
+	if maxRetries < 0 {
+		maxRetries = 0
+	}
 	return &chatClient{
 		httpClient: &http.Client{
 			Timeout: timeout,
 		},
-		endpoint: endpoint,
-		apiKey:   apiKey,
-		model:    model,
+		endpoint:   endpoint,
+		apiKey:     apiKey,
+		model:      model,
+		maxRetries: maxRetries,
 	}
 }
 
@@ -152,7 +162,7 @@ var deepSeekError = map[int]string{
 	503: "服务器负载过高，请稍后重试",
 }
 
-// Chat 发送对话请求
+// Chat 发送对话请求；限流/临时故障时按 maxRetries 做指数退避重试
 func (c *chatClient) Chat(ctx context.Context, messages []Message, opts ...Option) (string, error) {
 	reqBody := chatRequest{
 		Model:    c.model,
@@ -163,24 +173,62 @@ func (c *chatClient) Chat(ctx context.Context, messages []Message, opts ...Optio
 		opt(&reqBody)
 	}
 
-	body, _ := json.Marshal(reqBody)
+	body, err := json.Marshal(reqBody)
+	if err != nil {
+		return "", fmt.Errorf("ai: 序列化请求失败: %w", err)
+	}
 
+	var lastErr error
+	var serverWait time.Duration
+	for attempt := 0; attempt <= c.maxRetries; attempt++ {
+		if attempt > 0 {
+			delay := utils.RetryDelay(attempt)
+			// 服务端给了 Retry-After 且更大时，优先听从服务端
+			if serverWait > delay && serverWait <= 30*time.Second {
+				delay = serverWait
+			}
+			log.Printf("[AI] %s 第 %d/%d 次重试，等待 %s", c.model, attempt, c.maxRetries, delay)
+			select {
+			case <-ctx.Done():
+				return "", ctx.Err()
+			case <-time.After(delay):
+			}
+		}
+
+		content, retryable, retryAfter, err := c.doChat(ctx, body)
+		if err == nil {
+			return content, nil
+		}
+		lastErr, serverWait = err, retryAfter
+		if !retryable {
+			return "", err
+		}
+	}
+	return "", lastErr
+}
+
+// doChat 单次请求；retryable 表示该错误是否值得重试，retryAfter 为服务端建议等待时间
+func (c *chatClient) doChat(ctx context.Context, body []byte) (content string, retryable bool, retryAfter time.Duration, err error) {
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, c.endpoint, bytes.NewReader(body))
 	if err != nil {
-		return "", fmt.Errorf("ai: 创建请求失败: %w", err)
+		return "", false, 0, fmt.Errorf("ai: 创建请求失败: %w", err)
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("Authorization", "Bearer "+c.apiKey)
 
 	resp, err := c.httpClient.Do(httpReq)
 	if err != nil {
-		return "", fmt.Errorf("ai: 请求失败: %w", err)
+		// 上下文取消/超时不再重试
+		if ctx.Err() != nil {
+			return "", false, 0, ctx.Err()
+		}
+		return "", true, 0, fmt.Errorf("ai: 请求失败: %w", err)
 	}
 	defer resp.Body.Close()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", fmt.Errorf("ai: 读取响应失败: %w", err)
+		return "", true, 0, fmt.Errorf("ai: 读取响应失败: %w", err)
 	}
 
 	if resp.StatusCode != http.StatusOK {
@@ -188,23 +236,34 @@ func (c *chatClient) Chat(ctx context.Context, messages []Message, opts ...Optio
 		if errDesc == "" {
 			errDesc = fmt.Sprintf("未知错误 (HTTP %d)", resp.StatusCode)
 		}
-		return "", fmt.Errorf("ai: %s, body=%s", errDesc, string(respBody))
+		retry := resp.StatusCode == http.StatusTooManyRequests ||
+			resp.StatusCode == http.StatusInternalServerError ||
+			resp.StatusCode == http.StatusBadGateway ||
+			resp.StatusCode == http.StatusServiceUnavailable ||
+			resp.StatusCode == http.StatusGatewayTimeout
+		var wait time.Duration
+		if ra := resp.Header.Get("Retry-After"); ra != "" {
+			if secs, e := strconv.Atoi(ra); e == nil && secs > 0 {
+				wait = time.Duration(secs) * time.Second
+			}
+		}
+		return "", retry, wait, fmt.Errorf("ai: %s, body=%s", errDesc, string(respBody))
 	}
 
 	var chatResp chatResponse
 	if err := json.Unmarshal(respBody, &chatResp); err != nil {
-		return "", fmt.Errorf("ai: 解析响应失败: %w", err)
+		return "", false, 0, fmt.Errorf("ai: 解析响应失败: %w", err)
 	}
 
 	if chatResp.Error != nil {
-		return "", fmt.Errorf("ai: API 错误: %s", chatResp.Error.Message)
+		return "", false, 0, fmt.Errorf("ai: API 错误: %s", chatResp.Error.Message)
 	}
 
 	if len(chatResp.Choices) == 0 {
-		return "", fmt.Errorf("ai: 响应中无 choices 字段")
+		return "", false, 0, fmt.Errorf("ai: 响应中无 choices 字段")
 	}
 
-	return chatResp.Choices[0].Message.Content, nil
+	return chatResp.Choices[0].Message.Content, false, 0, nil
 }
 
 // SelectClient 按能力从配置中选取第一个启用的模型并创建客户端
@@ -216,13 +275,18 @@ func SelectClient(capability string) (Client, error) {
 			continue
 		}
 		if m.Capability == capability || m.Capability == "both" {
+			// 超时与重试次数改为读取配置（此前写死 600s 且忽略 max_retries）
+			timeout := time.Duration(m.Timeout) * time.Second
+			if timeout <= 0 {
+				timeout = 60 * time.Second
+			}
 			switch m.Provider {
 			case "deepseek":
-				return NewDeepSeek(m.APIKey, m.Endpoint), nil
+				return NewDeepSeekWithOptions(m.APIKey, m.Endpoint, timeout, m.MaxRetries), nil
 			case "qwen":
-				return NewQwen(m.APIKey, m.Endpoint), nil
+				return NewQwenWithOptions(m.APIKey, m.Endpoint, timeout, m.MaxRetries), nil
 			default:
-				return NewClient(m.Endpoint, m.APIKey, m.Provider), nil
+				return NewClientWithOptions(m.Endpoint, m.APIKey, m.Provider, timeout, m.MaxRetries), nil
 			}
 		}
 	}

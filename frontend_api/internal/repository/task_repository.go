@@ -163,37 +163,47 @@ func (r *TaskRepository) CountByUserID(userID uint) (*model.TaskCountResponse, e
 	return resp, nil
 }
 
-// ResetRunningTasks 将残留的 running 状态任务标记为 failed（服务重启恢复）
-// 同时退还预扣积分（创建任务时已扣）
-func (r *TaskRepository) ResetRunningTasks() (int64, error) {
+// ResetInterruptedTasks 服务启动时恢复残留任务：把 pending/running 标记为 failed 并退还预扣积分。
+// pending 任务只存在于内存队列，进程重启后不会再被消费；若不清理会永久占用用户活跃名额
+// （CountActive 统计 pending+running），且已预扣的积分无法退回。
+func (r *TaskRepository) ResetInterruptedTasks() (int64, error) {
 	db := mysql.GetDB()
 	if db == nil {
 		return 0, nil
 	}
 
-	// 查找所有 running 任务
-	var tasks []model.Task
-	if err := db.Where("status = ?", model.TaskStatusRunning).Find(&tasks).Error; err != nil {
-		return 0, err
-	}
+	interrupted := []model.TaskStatus{model.TaskStatusPending, model.TaskStatusRunning}
+	var count int64
+	err := db.Transaction(func(tx *gorm.DB) error {
+		var tasks []model.Task
+		if err := tx.Where("status IN ?", interrupted).Find(&tasks).Error; err != nil {
+			return err
+		}
 
-	// 退还预扣积分
-	for _, task := range tasks {
-		if task.RequiredPoints > 0 {
-			db.Model(&model.User{}).Where("id = ?", task.UserID).
+		// 逐个退还预扣积分（与状态更新处于同一事务，避免重复退款）
+		for _, task := range tasks {
+			if task.RequiredPoints <= 0 {
+				continue
+			}
+			if err := tx.Model(&model.User{}).Where("id = ?", task.UserID).
 				Updates(map[string]interface{}{
 					"credits":      gorm.Expr("credits + ?", task.RequiredPoints),
 					"credits_used": gorm.Expr("credits_used - ?", task.RequiredPoints),
-				})
+				}).Error; err != nil {
+				return err
+			}
 		}
-	}
 
-	// 批量更新状态
-	result := db.Model(&model.Task{}).
-		Where("status = ?", model.TaskStatusRunning).
-		Updates(map[string]interface{}{
-			"status":       model.TaskStatusFailed,
-			"current_step": "服务重启，任务中断",
-		})
-	return result.RowsAffected, result.Error
+		result := tx.Model(&model.Task{}).Where("status IN ?", interrupted).
+			Updates(map[string]interface{}{
+				"status":       model.TaskStatusFailed,
+				"current_step": "服务重启，任务中断",
+			})
+		if result.Error != nil {
+			return result.Error
+		}
+		count = result.RowsAffected
+		return nil
+	})
+	return count, err
 }

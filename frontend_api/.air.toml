@@ -1,0 +1,19 @@
+# air 热重载配置（在 frontend_api 根目录运行 air）
+#
+# 唯一入口是 cmd/server，这里只负责构建与监听；
+# 运行进程的工作目录是 frontend_api 根，config.dev.yaml / prompts/ / logs/ 均按根解析。
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  cmd = "go build -o ./tmp/main.exe ./cmd/server"
+  entrypoint = ["./tmp/main.exe"]
+  delay = 1000
+  exclude_dir = ["tmp", "logs", "node_modules", ".git", ".nuxt"]
+  exclude_regex = ["_test\\.go"]
+
+[log]
+  time = true
+
+[misc]
+  clean_on_exit = true

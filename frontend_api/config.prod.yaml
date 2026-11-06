@@ -5,6 +5,16 @@ server:
   site_url: "http://111.229.28.247"
   port: ":8888"
   jwt_secret: "design_code_ai_secret_key"
+  # 管理员邮箱白名单（为空时 /api/v1/admin/* 全部拒绝）
+  admin_emails: []
+  # 生成任务额外允许下载的图片域名（COS 桶域名自动放行）
+  allowed_image_hosts: []
+
+# 任务队列
+queue:
+  type: "memory"           # memory=进程内存队列；redis 为后续多实例预留
+  max_active_per_user: 2   # 单用户活跃任务上限（pending+running），超出拒绝提交
+  worker_count: 1          # 并发 worker 数（1=串行；2G 内存建议先保持 1，观察日志堆内存再调）
 
 # ═══════════════════════════════════════════════
 #  AI 模型配置

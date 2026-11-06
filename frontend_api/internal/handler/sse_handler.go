@@ -2,9 +2,11 @@ package handler
 
 import (
 	"fmt"
+	"frontend_api/internal/repository"
 	"frontend_api/internal/sse"
 	"frontend_api/pkg/logger"
 	"log"
+	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -21,13 +23,15 @@ import (
 // SSEHandler SSE 事件流处理器
 type SSEHandler struct {
 	sseManager *sse.Manager
+	taskRepo   *repository.TaskRepository
 	log        *logger.Logger
 }
 
 // NewSSEHandler 创建 SSE 处理器
-func NewSSEHandler(manager *sse.Manager) *SSEHandler {
+func NewSSEHandler(manager *sse.Manager, taskRepo *repository.TaskRepository) *SSEHandler {
 	return &SSEHandler{
 		sseManager: manager,
+		taskRepo:   taskRepo,
 		log:        logger.NewLogger("sse-handler"),
 	}
 }
@@ -39,6 +43,18 @@ func (h *SSEHandler) StreamTask(c *gin.Context) {
 	taskID := c.Param("id")
 	if taskID == "" {
 		c.JSON(400, gin.H{"error": "缺少 task_id"})
+		return
+	}
+
+	// 归属校验：只能订阅自己的任务（防止按 ID 遍历读取他人代码与进度）
+	userID := getUserID(c)
+	task, err := h.taskRepo.GetByID(taskID)
+	if err != nil || task == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "任务不存在"})
+		return
+	}
+	if task.UserID != userID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "无权订阅该任务"})
 		return
 	}
 

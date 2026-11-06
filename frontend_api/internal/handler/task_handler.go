@@ -3,7 +3,9 @@ package handler
 import (
 	"crypto/rand"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"frontend_api/config"
 	"frontend_api/internal/model"
 	"frontend_api/internal/queue"
 	"frontend_api/internal/repository"
@@ -12,6 +14,7 @@ import (
 	"frontend_api/pkg/mysql"
 	"frontend_api/utils"
 	"math/big"
+	"net/http"
 	"strconv"
 	"time"
 
@@ -86,6 +89,19 @@ type CreateTaskRequest struct {
 	ComponentLib string            `json:"component_lib"`
 }
 
+// 创建任务事务内使用的哨兵错误
+var errInsufficientCredits = errors.New("积分不足")
+
+// activeTaskLimitError 单用户活跃任务超限（携带实际数量，便于返回友好提示）
+type activeTaskLimitError struct {
+	active int64
+	limit  int
+}
+
+func (e *activeTaskLimitError) Error() string {
+	return fmt.Sprintf("活跃任务超限: %d/%d", e.active, e.limit)
+}
+
 // TaskHandler 任务处理器
 type TaskHandler struct {
 	taskRepo   *repository.TaskRepository
@@ -141,6 +157,14 @@ func (h *TaskHandler) CreateTask(c *gin.Context) {
 		return
 	}
 
+	// 图片地址白名单校验：只允许 https + COS/配置域名，防止生成任务被用作 SSRF 探测内网
+	for i, img := range req.Images {
+		if err := utils.ValidateImageURL(img.URL); err != nil {
+			utils.BadRequest(c, fmt.Sprintf("第 %d 张图片地址不合法: %v", i+1, err))
+			return
+		}
+	}
+
 	// 检查积分
 	db := mysql.GetDB()
 	var user model.User
@@ -173,25 +197,78 @@ func (h *TaskHandler) CreateTask(c *gin.Context) {
 		UpdatedAt:      time.Now(),
 	}
 
-	if err := db.Create(task).Error; err != nil {
-		h.log.Errorf("保存任务失败: %v", err)
-		utils.InternalError(c, "创建任务失败")
+	// 事务内完成：活跃上限校验 → 建任务 → 原子扣积分（任一步失败整体回滚）
+	err := db.Transaction(func(tx *gorm.DB) error {
+		// 单用户活跃任务上限（pending + running），防止单用户占满全局串行队列
+		if limit := config.AppConfig.Queue.MaxActivePerUser; limit > 0 {
+			var active int64
+			if err := tx.Model(&model.Task{}).
+				Where("user_id = ? AND status IN ?", userID, []model.TaskStatus{model.TaskStatusPending, model.TaskStatusRunning}).
+				Count(&active).Error; err != nil {
+				return fmt.Errorf("统计活跃任务失败: %w", err)
+			}
+			if active >= int64(limit) {
+				return &activeTaskLimitError{active: active, limit: limit}
+			}
+		}
+
+		if err := tx.Create(task).Error; err != nil {
+			return fmt.Errorf("保存任务失败: %w", err)
+		}
+
+		// 预扣积分：WHERE credits >= ? 保证并发下不会扣成负数（防双花）
+		if imageCount > 0 {
+			res := tx.Model(&model.User{}).
+				Where("id = ? AND credits >= ?", userID, imageCount).
+				Updates(map[string]interface{}{
+					"credits":      gorm.Expr("credits - ?", imageCount),
+					"credits_used": gorm.Expr("credits_used + ?", imageCount),
+				})
+			if res.Error != nil {
+				return fmt.Errorf("扣减积分失败: %w", res.Error)
+			}
+			if res.RowsAffected == 0 {
+				return errInsufficientCredits
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		var limitErr *activeTaskLimitError
+		switch {
+		case errors.Is(err, errInsufficientCredits):
+			utils.Error(c, 403, fmt.Sprintf("积分不足，需要 %d 积分，当前剩余 %d 积分", imageCount, user.Credits))
+		case errors.As(err, &limitErr):
+			utils.Error(c, http.StatusTooManyRequests,
+				fmt.Sprintf("你已有 %d 个任务在排队或生成中（上限 %d 个），请等待完成后再提交", limitErr.active, limitErr.limit))
+		default:
+			h.log.Errorf("创建任务失败: user=%d, err=%v", userID, err)
+			utils.InternalError(c, "创建任务失败")
+		}
 		return
 	}
 
-	// 预扣积分（失败时由 workflow.handleError / ResetRunningTasks 退还）
-	if imageCount > 0 {
-		db.Model(&model.User{}).Where("id = ?", userID).
-			Updates(map[string]interface{}{
-				"credits":      gorm.Expr("credits - ?", imageCount),
-				"credits_used": gorm.Expr("credits_used + ?", imageCount),
-			})
-	}
-
-	// 入队
+	// 入队（失败补偿：任务置 failed 并退还预扣积分）
 	if err := h.queue.Enqueue(task.ID); err != nil {
 		h.log.Errorf("任务入队失败: %v", err)
-		utils.InternalError(c, "任务入队失败")
+		_ = db.Transaction(func(tx *gorm.DB) error {
+			if err := tx.Model(&model.Task{}).Where("id = ?", task.ID).
+				Updates(map[string]interface{}{
+					"status":       model.TaskStatusFailed,
+					"current_step": "任务入队失败",
+				}).Error; err != nil {
+				return err
+			}
+			if imageCount > 0 {
+				return tx.Model(&model.User{}).Where("id = ?", userID).
+					Updates(map[string]interface{}{
+						"credits":      gorm.Expr("credits + ?", imageCount),
+						"credits_used": gorm.Expr("credits_used - ?", imageCount),
+					}).Error
+			}
+			return nil
+		})
+		utils.InternalError(c, "任务入队失败，请重试")
 		return
 	}
 
@@ -237,9 +314,16 @@ func (h *TaskHandler) CreateTask(c *gin.Context) {
 //	  4. 前端恢复进度显示
 func (h *TaskHandler) GetTask(c *gin.Context) {
 	id := c.Param("id")
+	userID := getUserID(c)
 	task, err := h.taskRepo.GetByID(id)
 	if err != nil || task == nil {
 		utils.Error(c, 404, "任务不存在")
+		return
+	}
+
+	// 归属校验：只能查看自己的任务（防止按 ID 遍历读取他人设计稿与生成代码）
+	if task.UserID != userID {
+		utils.Error(c, 403, "无权查看该任务")
 		return
 	}
 
@@ -325,6 +409,12 @@ func (h *TaskHandler) DeleteTask(c *gin.Context) {
 		return
 	}
 
+	// 执行中的任务不可删除：否则 worker 后续结果回写/进度更新会失靶
+	if task.Status == model.TaskStatusPending || task.Status == model.TaskStatusRunning {
+		utils.BadRequest(c, "任务排队/执行中，暂时无法删除")
+		return
+	}
+
 	if err := h.taskRepo.DeleteWithResults(id); err != nil {
 		utils.InternalError(c, "删除任务失败")
 		return
@@ -346,7 +436,7 @@ func (h *TaskHandler) GetTemplate(c *gin.Context) {
 
 	db := mysql.GetDB()
 	if db == nil {
-		utils.InternalError(c, "数据库未连接: "+err.Error())
+		utils.InternalError(c, "数据库未连接")
 		return
 	}
 

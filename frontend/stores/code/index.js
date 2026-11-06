@@ -8,13 +8,14 @@ import { useUserStore } from '~/stores/user'
 export const MODE_MAX_IMAGES = { single: 1, multi: 8 }
 
 export const useCodeStore = defineStore('code', () => {
+  const route = useRoute()
   const state = reactive({
     // ── 上传 ──（单图/多图各自独立数据桶：切换模式互不影响，不串图）
     modes: {
       single: { images: [], assets: [] },
       multi: { images: [], assets: [] },
     },
-    mode: 'single', // single 单主图 | multi 多主图（页序）
+    mode: route.query.mode || 'single', // single 单主图 | multi 多主图（页序）
     maxImages: MODE_MAX_IMAGES.single,
 
     // ── 配置 ──
@@ -27,7 +28,9 @@ export const useCodeStore = defineStore('code', () => {
     },
 
     // ── 并发 ──
-    maxConcurrent: 5,
+    // 单用户活跃任务上限（pending + running）：与后端 config 的
+    // queue.max_active_per_user 保持一致（默认 2），前端先拦，后端兜底返回 429
+    maxConcurrent: 2,
 
     // ── 提交 ──
     isSubmitting: false,

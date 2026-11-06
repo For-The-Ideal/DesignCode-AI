@@ -182,6 +182,12 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
+	// 禁用账号禁止登录（此前仅忘记密码接口做了该检查）
+	if user.Status == "disabled" {
+		utils.Error(c, 403, "账号已被禁用，请联系管理员")
+		return
+	}
+
 	// 生成 JWT
 	configJWT := mysql.GetConfig() // 通过 mysql 包读取配置
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{

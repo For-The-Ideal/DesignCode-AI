@@ -14,8 +14,8 @@ import (
 	"frontend_api/pkg/ai"
 	"frontend_api/pkg/logger"
 	"frontend_api/pkg/mysql"
+	"frontend_api/utils"
 	"io"
-	"net/http"
 	"strings"
 	"time"
 
@@ -353,31 +353,49 @@ func (w *GenerateUIWorkflow) Execute(ctx context.Context, task *model.Task) erro
 	return nil
 }
 
-// urlToBase64 从 URL 下载图片并转换为 base64 字符串
+// maxImageBytes 图片下载上限，防止异常大图拖垮内存
+const maxImageBytes = 20 << 20 // 20MB
+
+// urlToBase64 从 URL 下载图片，缩放压缩后转为 base64（data URL）
+// 原图（设计稿常见 2700px+）直接 base64 会让单任务内存峰值达到几十 MB，
+// 缩到长边 1600 并转 JPEG 后通常只剩几百 KB；解码失败（如 webp）时回退原图
 func urlToBase64(url string) (string, error) {
-	resp, err := http.Get(url)
+	// 防 SSRF：仅限白名单域名（COS 桶 / server.allowed_image_hosts）+ https
+	if err := utils.ValidateImageURL(url); err != nil {
+		return "", err
+	}
+	// 使用专用客户端：60s 超时 + 重定向逐跳校验
+	resp, err := utils.ImageHTTPClient.Get(url)
 	if err != nil {
 		return "", fmt.Errorf("下载失败: %w", err)
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxImageBytes))
 	if err != nil {
 		return "", fmt.Errorf("读取失败: %w", err)
 	}
 
-	// 从 Content-Type 推断 MIME 类型
+	// 优先压缩：解码 → 缩放到长边上限 → JPEG 编码（公用实现见 utils/helps.go）
+	if compressed, err := utils.CompressImageToBase64(body); err == nil {
+		return compressed, nil
+	}
+
+	// 回退：不支持的格式按原样返回，保证生成流程不中断
 	contentType := resp.Header.Get("Content-Type")
 	if contentType == "" {
 		contentType = "image/png"
 	}
-
-	// data:image/png;base64,... 格式
 	encoded := base64.StdEncoding.EncodeToString(body)
 	return fmt.Sprintf("data:%s;base64,%s", contentType, encoded), nil
 }
 
-// handleError 处理工作流错误：退还预扣积分、更新任务状态、保存失败结果、推送 SSE
+// Fail 处理失败收尾：退还预扣积分、更新任务状态、保存失败结果、推送 SSE。
+// 导出给 worker 的 panic 兜底复用（保证任何异常路径都执行完整善后）。
+func (w *GenerateUIWorkflow) Fail(task *model.Task, err error) {
+	w.handleError(task, err)
+}
+
 func (w *GenerateUIWorkflow) handleError(task *model.Task, err error) {
 	w.log.Errorf("[Workflow] 任务失败: %s, error=%v", task.ID, err)
 
@@ -411,10 +429,11 @@ func (w *GenerateUIWorkflow) handleError(task *model.Task, err error) {
 		w.log.Errorf("[Workflow] 保存失败结果出错: %v", createErr)
 	}
 
-	// 推送 error 事件
+	// 推送 error 事件（用 json.Marshal 构造，避免错误信息中的引号破坏 JSON）
+	errPayload, _ := json.Marshal(map[string]string{"message": err.Error()})
 	w.sseManager.Push(task.ID, sse.SSEEvent{
 		Event: "error",
-		Data:  fmt.Sprintf(`{"message":"%s"}`, err.Error()),
+		Data:  string(errPayload),
 	})
 }
 

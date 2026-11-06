@@ -1,33 +1,75 @@
-mysql:
-  dsn: "root:123456@tcp(127.0.0.1:3306)/design_code_ai?charset=utf8mb4&parseTime=True&loc=Local"
-server:
-  local: "http://localhost"
-  site_url: "http://localhost:3000"
-  port: ":8888"
-  jwt_secret: "design_code_ai_secret_key"
+# ═══════════════════════════════════════════════════════════════════
+#  开发环境配置（本地开发：APP_ENV 未设置或非 prod 时加载本文件）
+#  生产环境请使用 config.prod.yaml（APP_ENV=prod 时加载）
+# ═══════════════════════════════════════════════════════════════════
 
-# ═══════════════════════════════════════════════
+# ── MySQL 数据库 ──────────────────────────────────────────────────
+mysql:
+  # 连接串：用户名:密码@tcp(地址:端口)/库名?charset=utf8mb4&parseTime=True&loc=Local
+  # parseTime=True 必须保留（时间字段才能映射为 time.Time）
+  dsn: "root:123456@tcp(127.0.0.1:3306)/design_code_ai?charset=utf8mb4&parseTime=True&loc=Local"
+
+# ── HTTP 服务 ─────────────────────────────────────────────────────
+server:
+  # 对外访问的基础地址（不含端口），用于拼接静态资源/回调地址
+  local: "http://localhost"
+  # 前端站点地址，用于邮件链接等场景（重置密码等）
+  site_url: "http://localhost:3000"
+  # 后端监听端口（Nginx 反向代理到此处，生产为 :8888）
+  port: ":8888"
+  # JWT 签名密钥：登录 token 的签发/校验密钥，泄露等于所有人可伪造登录
+  jwt_secret: "design_code_ai_secret_key"
+  # 管理员邮箱白名单：命中才能调用 /api/v1/admin/*（为空时全部拒绝，安全默认）
+  # 示例：["admin@qq.com", "ops@163.com"]
+  admin_emails: []
+  # 生成任务允许下载的图片域名（除 COS 桶域名外的额外放行项，支持 *.example.com）
+  allowed_image_hosts: []
+
+# ── 任务队列 ─────────────────────────────────────────────────────
+queue:
+  # 队列类型：memory=进程内存队列（当前实现，重启丢失排队任务）
+  # 预留 redis：后续多实例/持久化时切换
+  type: "memory"
+  # 单用户活跃任务上限（pending + running 合计）
+  # 达到上限后拒绝提交新任务，返回 429；<=0 或缺省时使用默认值 2
+  # 目的：防止单个用户刷满队列导致其他用户长时间排队
+  max_active_per_user: 2
+  # worker 并发数：同时执行的任务数（1=串行）
+  # 2G 内存服务器建议保持 1；调大后观察任务日志里的“堆内存”，确认余量再逐步加
+  worker_count: 1
+
+# ═══════════════════════════════════════════════════════════════════
 #  AI 模型配置
-#  启用 enabled: true 的模型会自动被优先级排序
-#      capability: "read"   # 读代码
-#      capability: "both"   # 读写代码
-#      capability: "write"   # 写代码
-#      priority 越小优先级越高
-# ═══════════════════════════════════════════════
+#  仅 enabled: true 的模型参与选择，并按 priority 升序排列（越小越优先）
+#  capability 决定用途：
+#    read  → 读图/视觉分析（图片描述、区域识别）
+#    write → 写代码（UI 转代码生成）
+#    both  → 读、写都可用
+# ═══════════════════════════════════════════════════════════════════
 ai:
   logging:
+    # 是否记录 AI 请求/响应日志（true 开启，排查提示词问题用）
     enabled: true
+    # 日志目录（相对后端运行目录）
     directory: "logs"
 
   models:
     - provider: "qwen"
+      # 显示名称（仅日志/后台展示用）
       name: "通义千问 Qwen-VL"
+      # API Key（留空则该模型不可用，需填写真实 key）
       api_key: ""
+      # 接口地址（OpenAI 兼容格式的 chat/completions 端点）
       endpoint: "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
+      # 是否启用（false 时本模型完全不参与选择）
       enabled: true
+      # 失败重试次数（429 限流/5xx/网络错误时指数退避重试：1s/2s/4s…最大 8s）
       max_retries: 3
+      # 单次请求超时（秒，已生效）；视觉分析通常较长，建议 ≥60
       timeout: 60
+      # 优先级（数字越小越优先被选中）
       priority: 5
+      # 能力：read=读图分析 / write=写代码 / both=两者
       capability: "read"
 
 
@@ -37,6 +79,7 @@ ai:
       endpoint: "https://api.deepseek.com/chat/completions"
       enabled: true
       max_retries: 3
+      # 代码生成输出长，超时建议 ≥180 秒（已生效）
       timeout: 180
       priority: 10
       capability: "write"
@@ -85,27 +128,36 @@ ai:
       priority: 15
       capability: "both"
 
-
-# ═══════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════
 #  腾讯云对象存储 COS 配置
-#  上传图片时使用，留空则跳过初始化
-# ═══════════════════════════════════════════════
+#  上传图片（设计稿）时使用；留空则跳过 COS 初始化
+# ═══════════════════════════════════════════════════════════════════
 cos:
-  bucket: "upload-image-1301638170" # 桶名
-  region: "ap-guangzhou" # 区域
-  secret_id: "AKIDplYGoIervrnhPtLchaFvRnIi2EPQDq9L" # Secret ID
-  secret_key: "1vY0FFzqY1EMIqOp9VgeOvDFguwraJtG" # Secret Key
+  # 存储桶名称（格式：桶名-APPID）
+  bucket: "upload-image-1301638170"
+  # 存储桶地域（如 ap-guangzhou）
+  region: "ap-guangzhou"
+  # 腾讯云 API 密钥 SecretId（权限：COS 读写）
+  secret_id: "AKIDplYGoIervrnhPtLchaFvRnIi2EPQDq9L"
+  # 腾讯云 API 密钥 SecretKey（切勿提交到公开仓库）
+  secret_key: "1vY0FFzqY1EMIqOp9VgeOvDFguwraJtG"
 
-# ═══════════════════════════════════════════════
-#  邮件 SMTP 配置（密码重置）
-# ═══════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════
+#  邮件 SMTP 配置（用于注册验证/密码重置）
+#  每个服务商一组：host/port/user/password/from 任一项为空则该服务商不可用
+# ═══════════════════════════════════════════════════════════════════
 email:
   providers:
     qq:
+      # SMTP 服务器地址
       host: "smtp.qq.com"
+      # 端口：465=SSL 加密（推荐），587=STARTTLS
       port: "465"
+      # 发件邮箱账号
       user: "1842146958@qq.com"
+      # SMTP 授权码（非邮箱登录密码，QQ 邮箱设置中生成）
       password: "pufwlyvavjefejig"
+      # 发件人显示地址（通常与 user 一致）
       from: "1842146958@qq.com"
     163:
       host: "smtp.163.com"

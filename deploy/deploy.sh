@@ -97,7 +97,7 @@ sync_units
 if [ "$MODE" != "frontend" ]; then
   step "3 编译后端"
   cd "$ROOT/frontend_api" || exit 1
-  go build -trimpath -ldflags="-s -w" -o server.new main.go || { echo "!!! 后端编译失败"; exit 1; }
+  go build -trimpath -ldflags="-s -w" -o server.new ./cmd/server || { echo "!!! 后端编译失败"; exit 1; }
   mv -f server.new server
   ls -lh server | awk '{print "  server", $5}'
 else

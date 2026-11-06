@@ -69,11 +69,12 @@ func Run() {
 		appLog.Errorf("[App] 初始化生成配置字典失败: %v", err)
 	}
 
-	// 4.1 恢复残留的 running 状态任务（服务重启后清理）
-	if n, err := taskRepo.ResetRunningTasks(); err != nil {
+	// 4.1 恢复残留任务（服务重启后清理）：pending 已丢在内存队列、running 被中断，
+	// 统一置 failed 并退还预扣积分
+	if n, err := taskRepo.ResetInterruptedTasks(); err != nil {
 		appLog.Errorf("[App] 恢复残留任务失败: %v", err)
 	} else if n > 0 {
-		appLog.Infof("[App] 已恢复 %d 个残留 running 任务为 failed（服务重启）", n)
+		appLog.Infof("[App] 已清理 %d 个中断任务（pending/running）并退还预扣积分", n)
 	}
 
 	// 5. 创建内存队列
@@ -95,15 +96,22 @@ func Run() {
 	}
 	codeToHtmlSkill := code_to_html.NewSkill(writeAI)
 
-	// 8. 创建 Worker 并启动（带可取消 context）
+	// 8. 创建 Worker 并启动（数量由 queue.worker_count 控制，默认 1，带可取消 context）
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	w := worker.NewGenerateWorker(q, taskRepo, visionSkill, codeToHtmlSkill, resultRepo, sseManager)
-	go w.Run(ctx)
+	workerCount := config.AppConfig.Queue.WorkerCount
+	if workerCount <= 0 {
+		workerCount = 1
+	}
+	for i := 1; i <= workerCount; i++ {
+		w := worker.NewGenerateWorker(q, taskRepo, visionSkill, codeToHtmlSkill, resultRepo, sseManager)
+		go w.Run(ctx)
+		appLog.Infof("[App] 已启动生成 worker #%d/%d", i, workerCount)
+	}
 
 	// 9. 创建 Handlers
 	taskHandler := handler.NewTaskHandler(taskRepo, resultRepo, q, sseManager)
-	sseHandler := handler.NewSSEHandler(sseManager)
+	sseHandler := handler.NewSSEHandler(sseManager, taskRepo)
 	uploadHandler := handler.NewUploadHandler()
 	authHandler := handler.NewAuthHandler()
 	userHandler := handler.NewUserHandler()

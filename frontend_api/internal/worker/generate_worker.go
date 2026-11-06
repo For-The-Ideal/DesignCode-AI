@@ -2,6 +2,8 @@ package worker
 
 import (
 	"context"
+	"fmt"
+	"frontend_api/internal/model"
 	"frontend_api/internal/queue"
 	"frontend_api/internal/repository"
 	"frontend_api/internal/skills/code_to_html"
@@ -9,6 +11,9 @@ import (
 	"frontend_api/internal/sse"
 	"frontend_api/internal/workflow"
 	"frontend_api/pkg/logger"
+	"frontend_api/utils"
+	"runtime/debug"
+	"time"
 )
 
 // ═══════════════════════════════════════════════
@@ -56,19 +61,42 @@ func (w *GenerateWorker) Run(ctx context.Context) {
 				continue
 			}
 
-			w.log.Infof("[Worker] 消费任务: %s", taskID)
-
-			// 获取任务
-			task, err := w.taskRepo.GetByID(taskID)
-			if err != nil || task == nil {
-				w.log.Errorf("[Worker] 获取任务失败: %s, err=%v", taskID, err)
-				continue
-			}
-
-			// 执行工作流
-			if err := w.workflow.Execute(ctx, task); err != nil {
-				w.log.Errorf("[Worker] 工作流执行失败: %s, err=%v", taskID, err)
-			}
+			w.processTask(ctx, taskID)
 		}
 	}
+}
+
+// processTask 执行单个任务。
+// gin 的 HTTP goroutine 有 Recovery 保护，worker goroutine 没有：
+// 任何未预期 panic（如类型断言失败）都会直接打崩整个进程，
+// 因此这里统一 recover 并复用 workflow.Fail 完成退积分 / 落库 / SSE 通知。
+func (w *GenerateWorker) processTask(ctx context.Context, taskID string) {
+	var task *model.Task
+
+	defer func() {
+		if r := recover(); r != nil {
+			w.log.Errorf("[Worker] 任务 panic: %s, panic=%v\n%s", taskID, r, debug.Stack())
+			if task != nil {
+				w.workflow.Fail(task, fmt.Errorf("任务异常中断: %v", r))
+			}
+		}
+	}()
+
+	w.log.Infof("[Worker] 消费任务: %s（堆内存 %.1f MB）", taskID, utils.HeapMB())
+
+	// 获取任务
+	loaded, err := w.taskRepo.GetByID(taskID)
+	if err != nil || loaded == nil {
+		w.log.Errorf("[Worker] 获取任务失败: %s, err=%v", taskID, err)
+		return
+	}
+	task = loaded
+
+	// 执行工作流
+	start := time.Now()
+	if err := w.workflow.Execute(ctx, task); err != nil {
+		w.log.Errorf("[Worker] 工作流执行失败: %s, err=%v", taskID, err)
+	}
+	// 堆内存观测：用于评估 worker 扩容空间（峰值取整任务期间的 After 值，受 GC 时机影响）
+	w.log.Infof("[Worker] 任务 %s 结束（耗时 %s，堆内存 %.1f MB）", taskID, time.Since(start).Round(time.Second), utils.HeapMB())
 }

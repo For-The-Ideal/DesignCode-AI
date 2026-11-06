@@ -23,7 +23,7 @@ frontend_api/
 │   └── response.go     # 统一 API 响应格式
 ├── config.dev.yaml     # 本地开发环境配置
 ├── config.prod.yaml    # 生产环境配置
-├── main.go             # 项目入口
+├── cmd/server/main.go # 项目唯一入口（部署脚本构建 ./cmd/server）
 ├── go.mod              # 依赖管理文件
 ├── go.sum              # 依赖锁定文件
 ├── init.md             # 初始化说明
@@ -57,13 +57,13 @@ mysql:
 ### 5. 运行服务
 
 # 本地开发（加载 config.dev.yaml）
-go run main.go
+go run ./cmd/server
 
 # 本地测试生产配置（加载 config.prod.yaml）
-APP_ENV=prod go run main.go
+APP_ENV=prod go run ./cmd/server
 
 ### 6. 打包命令
 
 # 本地开发编译（Windows）
-go build -o server.exe main.go
+go build -o server.exe ./cmd/server
 

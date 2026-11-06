@@ -116,7 +116,7 @@ const navList = ref([
   },
   {
     name:"代码生成",
-    link:"/code",
+    link:"/code?mode=single",
   },
   {
     name:"历史记录",
