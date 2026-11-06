@@ -15,11 +15,6 @@
             <template #error><div class="thumb-ph"><i class="fas fa-image"></i></div></template>
           </el-image>
           <div v-else class="thumb-ph"><i class="fas fa-image"></i></div>
-
-          <!-- 失败：hover 出现禁止蒙层（仅盖缩略图，不阻断删除） -->
-          <div class="t-block" v-if="row.status === 'failed'">
-            <i class="fas fa-ban"></i>
-          </div>
         </div>
 
         <!-- 信息区 -->
@@ -78,35 +73,45 @@
 
     <!-- ═══ 分页 ═══ -->
     <div class="pager-wrap" v-if="tasks.length > pageSize">
+      <span class="pager-total">共 {{ tasks.length }} 条</span>
       <el-pagination
-        v-model:currentPage="page"
-        :pageSize="pageSize"
+        v-model:current-page="page"
+        :page-size="pageSize"
         :total="tasks.length"
         layout="prev, pager, next"
-        background
         size="small"
       />
+      <span class="pager-size">第 {{ page }} / {{ totalPages }} 页</span>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
 import { useConfigStore } from '~/stores/config'
 
 const props = defineProps({
   tasks: { type: Array, default: () => [] },
   isEmptyFiltered: { type: Boolean, default: false },
+  // 当前页码（受控）：由父级统一管理，与 URL ?page= 双向同步
+  page: { type: Number, default: 1 },
 })
 
-const emit = defineEmits(['detail', 'delete'])
+const emit = defineEmits(['detail', 'delete', 'update:page'])
 
-const page = ref(1)
-const pageSize = ref(8)
+const pageSize = ref(20)
 
-// 筛选结果变化时回到第一页
-watch(() => props.tasks, () => { page.value = 1 })
+const page = computed({
+  get: () => props.page,
+  set: (v) => emit('update:page', v),
+})
+
+const totalPages = computed(() => Math.max(1, Math.ceil(props.tasks.length / pageSize.value)))
+
+// 数据变少（如删除）导致当前页越界时，回退到最后一页；筛选变化由父级重置页码
+watch(totalPages, (tp) => {
+  if (props.tasks.length && page.value > tp) emit('update:page', tp)
+})
 
 const paginatedTasks = computed(() => {
   const s = (page.value - 1) * pageSize.value
@@ -120,11 +125,8 @@ const STEP_LABELS = {
 }
 const stepLabel = s => STEP_LABELS[s] || s
 
-// 进入详情：生成中/失败 不可查看，给出提示
-const openDetail = (row) => {
-  if (row.status === 'failed') { ElMessage.warning('任务生成失败，无法查看详情'); return }
-  emit('detail', row)
-}
+// 进入详情：所有状态均可查看（生成中展示生成动画，失败展示失败样式）
+const openDetail = (row) => emit('detail', row)
 
 // 生成选项/高级选项：数组里每一项拆成独立标签；label 唯一来源为配置字典（共享 store，不写死）
 const configStore = useConfigStore()
@@ -184,7 +186,6 @@ const platformIcon  = (p) => configStore.platformIcon(p)
   border-color: rgba(34, 211, 238, 0.32);
   box-shadow: 0 0 22px rgba(34, 211, 238, 0.10);
 }
-.t-card.st-failed { cursor: not-allowed; }
 
 /* ═══ 手机壳缩略图 ═══ */
 .t-thumb {
@@ -207,18 +208,6 @@ const platformIcon  = (p) => configStore.platformIcon(p)
   display: flex; align-items: center; justify-content: center;
 }
 .thumb-ph i { font-size: 24px; color: rgba(255, 255, 255, 0.12); }
-
-/* 失败禁止蒙层（hover 卡片时淡入） */
-.t-block {
-  position: absolute; inset: 0; z-index: 2;
-  display: flex; align-items: center; justify-content: center;
-  background: rgba(2, 6, 12, 0.62);
-  backdrop-filter: blur(2px);
-  color: #f87171; font-size: 24px;
-  opacity: 0; transition: opacity 0.2s ease;
-  pointer-events: none;
-}
-.t-card.st-failed:hover .t-block { opacity: 1; }
 
 /* ═══ 信息区 ═══ */
 .t-body {
@@ -331,7 +320,57 @@ const platformIcon  = (p) => configStore.platformIcon(p)
 
 /* ═══ 空状态 / 分页 ═══ */
 .empty-place { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 300px; }
-.pager-wrap { display: flex; justify-content: center; margin-top: 18px; flex-shrink: 0; }
+.pager-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 18px;
+  flex-shrink: 0;
+}
+.pager-total,
+.pager-size { font-size: 12px; color: #64748b; font-variant-numeric: tabular-nums; }
+
+/* 深色分页：透明胶囊按钮，当前页青色实心，替换 Element 默认白底方块 */
+.pager-wrap :deep(.el-pagination) {
+  --el-pagination-bg-color: transparent;
+  --el-pagination-text-color: #94a3b8;
+  --el-pagination-button-color: #94a3b8;
+  --el-pagination-hover-color: #22d3ee;
+  --el-pagination-button-disabled-color: #475569;
+  --el-pagination-button-disabled-bg-color: transparent;
+}
+.pager-wrap :deep(.btn-prev),
+.pager-wrap :deep(.btn-next),
+.pager-wrap :deep(.el-pager li) {
+  min-width: 30px;
+  height: 30px;
+  margin: 0 3px;
+  border-radius: 8px;
+  background: rgba(148, 163, 184, 0.08);
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  color: #94a3b8;
+  font-weight: 600;
+  transition: all 0.18s ease;
+}
+.pager-wrap :deep(.btn-prev:hover),
+.pager-wrap :deep(.btn-next:hover),
+.pager-wrap :deep(.el-pager li:hover) {
+  color: #22d3ee;
+  border-color: rgba(34, 211, 238, 0.45);
+  background: rgba(34, 211, 238, 0.08);
+}
+.pager-wrap :deep(.el-pager li.is-active) {
+  color: #06121a;
+  background: linear-gradient(135deg, #22d3ee, #06b6d4);
+  border-color: transparent;
+  box-shadow: 0 0 14px rgba(34, 211, 238, 0.35);
+}
+.pager-wrap :deep(.btn-prev:disabled),
+.pager-wrap :deep(.btn-next:disabled) {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
 
 @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
 @keyframes shimmer { to { transform: translateX(100%); } }

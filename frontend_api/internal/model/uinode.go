@@ -28,6 +28,7 @@ type UINode struct {
 	StyleHints   string   `json:"styleHints"`   // 样式提示
 	Behavior     string   `json:"behavior"`     // 交互行为
 	Status       string   `json:"status"`       // pending | ai_draft | confirmed | empty
+	AssetID      string   `json:"assetId"`      // 关联附图素材：对应附图的 asset_id（空=未关联，生成时直接使用素材）
 	BBox         BBox     `json:"bbox"`
 	Children     []UINode `json:"children"`
 }

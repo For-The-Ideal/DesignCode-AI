@@ -28,6 +28,7 @@
       <TasksGrid
         :tasks="filteredTasks"
         :isEmptyFiltered="!!filterForm.search || !!filterForm.framework || !!filterForm.platform || !!filterForm.status"
+        v-model:page="page"
         @detail="goToDetail"
         @delete="handleDelete"
       />
@@ -37,7 +38,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import AppSidebar from '~/components/layout/AppSidebar.vue'
@@ -50,6 +51,7 @@ import { storeToRefs } from 'pinia'
 import { useUserStore } from '~/stores/user'
 import { taskApi } from '~/api/task'
 const router = useRouter()
+const route = useRoute()
 const sidebarOpen = ref(true)
 const userStore = useUserStore()
 const { taskCounts, taskProgress } = storeToRefs(userStore)
@@ -70,9 +72,37 @@ const handleNavClick = (item) => {
   router.push(item.to)
 }
 
-// ═══ 筛选 ═══
-const filterForm = ref({ search: '', framework: '', platform: '', status: '' })
+// ═══ 筛选 / 分页（参数从 URL 初始化，刷新与分享链接保持状态）═══
+const filterForm = ref({
+  search: String(route.query.search || ''),
+  framework: String(route.query.framework || ''),
+  platform: String(route.query.platform || ''),
+  status: String(route.query.status || ''),
+})
+const page = ref(Math.max(1, Number(route.query.page) || 1))
 const loading = ref(false)
+
+// 筛选条件变化时回到第一页（翻页本身不受影响）
+watch(filterForm, () => { page.value = 1 }, { deep: true })
+
+// URL 同步：搜索输入 / 筛选项 / 翻页变化时写回 query；默认值（第 1 页、空筛选）不写入，保持 URL 干净
+watch(
+  [filterForm, page],
+  ([f, p]) => {
+    const query = { ...route.query }
+    const setOrRemove = (key, val) => {
+      if (val) query[key] = String(val)
+      else delete query[key]
+    }
+    setOrRemove('search', f.search)
+    setOrRemove('framework', f.framework)
+    setOrRemove('platform', f.platform)
+    setOrRemove('status', f.status)
+    setOrRemove('page', p > 1 ? p : '')
+    router.replace({ query })
+  },
+  { deep: true },
+)
 
 // ═══ 操作 ═══
 const goToDetail = row => router.push(`/detail/${row.id}`)

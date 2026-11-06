@@ -1,4 +1,28 @@
 <template>
+  <!-- 模式切换：单图 = 1 张主图 + 附图素材；多图 = 页序多张主图（两种模式共用底部素材池） -->
+  <div class="mode-switch">
+    <button
+      class="mode-btn"
+      :class="{ active: mode === 'single' }"
+      :disabled="isSubmitting"
+      @click="store.setMode('single')"
+    >
+      <i class="fa-regular fa-image"></i>
+      <span class="mode-name">单图模式</span>
+      <small>1 张主图 + 附图素材</small>
+    </button>
+    <button
+      class="mode-btn"
+      :class="{ active: mode === 'multi' }"
+      :disabled="isSubmitting"
+      @click="store.setMode('multi')"
+    >
+      <i class="fa-solid fa-layer-group"></i>
+      <span class="mode-name">多图模式</span>
+      <small>最多 {{ MODE_MAX_IMAGES.multi }} 张主图 · 按页序生成</small>
+    </button>
+  </div>
+
   <!-- 上传拖拽区：仅在未达上限时展示大块；单图传满后自动收起，避免空壳 -->
   <div
     v-if="canAddMore"
@@ -23,9 +47,19 @@
   <!-- 预览区：单图=左图右信息两栏；多图=网格 + 拖拽 -->
   <div v-if="images.length" class="preview-area" :class="{ 'preview-area--locked': isSubmitting }">
     <!-- ── 单图 hero：左侧手机壳包裹设计稿 + 右侧信息/操作 ── -->
-    <div v-if="images.length === 1" class="hero-panel">
+    <div v-if="mode === 'single'" class="hero-panel">
       <!-- 左：复用 mobile.vue 手机壳（裸机模式），屏内用插槽传入设计稿原图 -->
       <div class="hero-figure" @click="openAnno(0)">
+        <!-- 未标注时：鼠标移入主图，显示蒙层 + 提示；标注后不再显示 -->
+        <div
+          v-if="!images[0].uploading && !images[0].uploadError && !images[0].annotations?.length"
+          class="figure-mask"
+        >
+          <span class="figure-tip">
+            <i class="fa-regular fa-pen-to-square"></i>
+            点击图片可以标注
+          </span>
+        </div>
         <MobilePreview bare :screen-height="'auto'">
           <div class="img-frame" :style="{ aspectRatio: frameRatio(images[0]) }">
             <img :src="images[0].preview" alt="设计稿" draggable="false" />
@@ -65,36 +99,36 @@
           </span>
         </div>
 
-        <!-- 区域标注 -->
-        <div class="anno-card">
+        <!-- 附图素材：单图模式嵌入右栏，标记可作为真实资源的图形，标注时框选引用 -->
+        <AssetTray v-if="mode === 'single'" embedded />
+
+        <!-- 区域标注：有标签时才显示 -->
+        <div v-if="images[0].annotations?.length" class="anno-card">
           <div class="anno-card-head">
             <span class="anno-card-title">区域标注</span>
-            <span v-if="images[0].annotations?.length" class="anno-card-count"><b>{{ annoTopCount(images[0]) }}</b> 个</span>
+            <span class="anno-card-count"><b>{{ annoTopCount(images[0]) }}</b> 个</span>
           </div>
 
-          <div v-if="images[0].uploading" class="anno-empty">
-            <i class="fas fa-spinner fa-spin"></i><span>上传中，完成后可标注</span>
-          </div>
-          <div v-else-if="images[0].uploadError" class="anno-empty error">
-            <i class="fas fa-circle-exclamation"></i><span>上传失败，暂不可标注</span>
-          </div>
-          <div v-else-if="images[0].annotations?.length" class="anno-list">
+          <div class="anno-list">
             <div class="anno-chips">
-              <span v-for="a in topAnnos(images[0])" :key="a.id" class="anno-chip"><em>{{ a.label }}</em></span>
+              <button
+                v-for="a in topAnnos(images[0])"
+                :key="a.id"
+                class="anno-chip"
+                title="点击定位该区域"
+                @click="openAnnoAt(a)"
+              >
+                <em>{{ a.label }}</em>
+              </button>
             </div>
             <button class="anno-edit" @click="openAnno(0)"><i class="fa-regular fa-pen-to-square"></i> 编辑标注区域</button>
           </div>
-          <button v-else class="anno-add" @click="openAnno(0)">
-            <i class="fa-regular fa-square-dashed"></i>
-            <span>点击框选设计稿区域</span>
-            <small>描述越细，AI 理解越准</small>
-          </button>
         </div>
 
         <!-- 底部操作 -->
         <div class="hero-foot">
           <button class="foot-btn" @click="onReplace"><i class="fas fa-rotate"></i> 更换</button>
-          <button class="foot-btn danger" @click="store.clearAll()"><i class="fa-regular fa-trash-can"></i> 删除</button>
+          <button class="foot-btn danger" @click="onDeleteSingle"><i class="fa-regular fa-trash-can"></i> 删除</button>
         </div>
       </aside>
     </div>
@@ -115,7 +149,11 @@
           <div class="card-media">
             <div class="media-scroll">
               <div class="img-frame" :style="{ aspectRatio: frameRatio(img) }">
-                <img :src="img.preview" alt="设计稿" draggable="false" />
+                <!-- 缩略图：同 TasksGrid 用 el-image + 失败占位 -->
+                <el-image v-if="img.preview" :src="img.preview" fit="contain" class="media-img" loading="lazy">
+                  <template #error><div class="media-ph"><i class="fas fa-image"></i></div></template>
+                </el-image>
+                <div v-else class="media-ph"><i class="fas fa-image"></i></div>
                 <span
                   v-for="anno in img.annotations || []"
                   :key="anno.id"
@@ -165,6 +203,11 @@
               <span class="file-name">{{ img.file?.name || '设计稿' }}</span>
               <span class="file-size">{{ img.naturalWidth || '--' }} x {{ img.naturalHeight || '--' }}</span>
             </div>
+            <!-- 本页归属的附图数量（归属在下方素材托盘内可切换） -->
+            <div v-if="assetCountOf(img)" class="anno-summary asset-summary">
+              <i class="fa-solid fa-shapes"></i>
+              附图 {{ assetCountOf(img) }} 张
+            </div>
             <div v-if="img.uploading" class="anno-summary empty">
               <i class="fas fa-spinner fa-spin"></i>
               上传中，完成后可标注
@@ -203,20 +246,22 @@
     </template>
   </div>
 
+  <!-- 附图素材：多图模式每张主图独立归属，托盘内可切换归属页 -->
+  <AssetTray v-if="images.length && mode === 'multi'" />
+
   <!-- 结构编辑器（新：中间画布框选 + 右侧思维导图树 + 描述表单） -->
-  <ProjectEditor ref="projectEditorRef" :analyzing="analyzing" @confirm="onEditorConfirm" @close="onEditorClose" />
+  <ProjectEditor ref="projectEditorRef" @confirm="onEditorConfirm" />
 </template>
 
 <script setup>
-import { ref, computed, onBeforeUnmount } from 'vue'
+import { ref, computed } from 'vue'
 import { storeToRefs } from 'pinia'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import ProjectEditor from '~/components/uiProject/ProjectEditor.client.vue'
+import AssetTray from '~/components/upload/AssetTray.vue'
 import MobilePreview from '~/components/previewTempLate/mobile.vue'
-import { useCodeStore } from '~/stores/code'
+import { useCodeStore, MODE_MAX_IMAGES } from '~/stores/code'
 import { useUiProjectStore } from '~/stores/uiProject'
-import { uiProjectApi } from '~/api/uiProject'
-import { createCancelScope, cancelScopes } from '~/utils/cancel'
 import { useUserStore } from '~/stores/user'
 import { useCommonStore } from '~/stores/common'
 
@@ -227,7 +272,7 @@ const openLoginModal = () => commonStore.setLoginModalVisible(true)
 
 const store = useCodeStore()
 const uiStore = useUiProjectStore()
-const { images, isSubmitting, isMaxReached, isConcurrencyFull, uploadHint } = storeToRefs(store)
+const { images, mode, isSubmitting, isMaxReached, isConcurrencyFull, uploadHint } = storeToRefs(store)
 
 // ── 从 store 派生 ──
 const disabled = computed(() => {
@@ -239,16 +284,28 @@ const canAddMore = computed(() => images.value.length < store.maxImages)
 
 // ── 文件选择 ──
 const fileInput = ref(null)
+// 更换流程待执行项：选完新文件后才真正清理，取消选择则一切保持原样
+const pendingReplace = ref(null)
 
 const onZoneClick = () => {
   if (!isLogin.value) return openLoginModal()
   if (disabled.value) return
+  pendingReplace.value = null // 普通上传不走更换清理
   fileInput.value?.click()
 }
 
 const onFileChange = (e) => {
   const files = Array.from(e.target.files)
-  if (files.length) store.addImages(files)
+  if (files.length) {
+    // 更换主图：新文件已选中，先清旧主图；只有单图确认过「一并清空」才连带清附图
+    const pending = pendingReplace.value
+    if (pending) {
+      if (pending.clearAssets) images.value.forEach((img) => store.clearAssetsOf(img.uploadId))
+      store.clearImages()
+    }
+    store.addImages(files)
+  }
+  pendingReplace.value = null
   if (fileInput.value) fileInput.value.value = ''
 }
 
@@ -259,18 +316,52 @@ const onZoneDrop = (e) => {
   if (files.length) store.addImages(files)
 }
 
-// 单图更换：先清空当前（会取消在途上传），再唤起选择框
-const onReplace = () => {
+// 更换主图：单图先确认附图去留；等真正选中新文件时才执行替换（取消选择则原样保留）
+const onReplace = async () => {
   if (isSubmitting.value) return
-  store.clearAll()
+  const img = images.value[0]
+  // 单图且已有附图：先确认去留；多图整批重选：仅换主图，素材保留并自动归属到新主图
+  let pending = {}
+  if (mode.value === 'single' && img && assetCountOf(img)) {
+    try {
+      await ElMessageBox.confirm(
+        `当前主图有 ${assetCountOf(img)} 张附图素材，是否一并清空？`,
+        '更换主图',
+        { type: 'warning', confirmButtonText: '是，一并清空', cancelButtonText: '否，保留附图' },
+      )
+      pending = { clearAssets: true }
+    } catch {
+      pending = { clearAssets: false }
+    }
+  }
+  pendingReplace.value = pending
   fileInput.value?.click()
+}
+
+// 删除主图（单图）：有附图时先确认是否一并清空；保留则挂空归属，待新主图上传后自动关联
+const onDeleteSingle = async () => {
+  if (isSubmitting.value) return
+  const img = images.value[0]
+  if (!img) return
+  const count = assetCountOf(img)
+  if (count) {
+    try {
+      await ElMessageBox.confirm(
+        `当前主图有 ${count} 张附图素材，是否一并清空？`,
+        '删除主图',
+        { type: 'warning', confirmButtonText: '是，一并清空', cancelButtonText: '否，保留附图' },
+      )
+      store.clearAssetsOf(img.uploadId)
+    } catch {
+      ElMessage.info(`已保留 ${count} 张附图素材，上传新主图后自动关联`)
+    }
+  }
+  store.clearImages()
 }
 
 // ── 结构编辑（新树编辑器入口）──
 const projectEditorRef = ref(null)
 const editingIndex = ref(0)
-// 顶层识别中：编辑器打开后后台调 AI 回填 topRegions，用该状态驱动工具条「识别中」提示
-const analyzing = ref(false)
 
 // 图片未就绪（上传中 / 失败 / 无 COS 地址）时禁止标注
 const isNotReady = (img) => !!img.uploading || !!img.uploadError || !img.cosUrl
@@ -297,43 +388,16 @@ const openAnno = (idx) => {
   const W = img.naturalWidth || img.treeWidth || 0
   const H = img.naturalHeight || img.treeHeight || 0
   if (uiStore.image.url !== url) {
-    // 换图：清旧识别结果，并载入该图此前已确认的树（无则清空），避免串图
-    uiStore.setTopRegions([])
+    // 换图：载入该图此前已确认的树（无则清空），避免串图
     uiStore.loadTree(img.annotationTree || [])
   } else if (!uiStore.hasNodes && img.annotationTree?.length) {
     // 同图但 store 空（如刷新后）：恢复已确认的树继续编辑
     uiStore.loadTree(img.annotationTree)
   }
   uiStore.setImage({ url, width: W, height: H })
+  // 绑定当前主图：编辑器内标注节点可引用其名下附图素材（assetId）
+  uiStore.setAssetScope(img.uploadId || '')
   projectEditorRef.value?.open()
-  // 进入编辑器：顶层描述目录为空时按需调 AI（不阻塞框选，回填后选到同名枚举自动填充）
-  ensureTopRegions(url)
-}
-
-// 顶层区域识别：幂等（已有目录则跳过），失败/未就绪时降级为手动框选填写
-async function ensureTopRegions(imageUrl) {
-  if (!imageUrl) return
-  if (uiStore.topRegions && uiStore.topRegions.length) return
-  // 统一取消作用域：关闭/确认编辑器或组件卸载时可 cancelScopes('region:') 中止未响应的识别请求
-  const scope = createCancelScope(`region:${imageUrl}`)
-  analyzing.value = true
-  try {
-    const res = await uiProjectApi.analyzeRegions(imageUrl, { signal: scope.signal })
-    // 被取消时 request.js 返回 null：静默返回，不误报“识别暂不可用”
-    if (!res || scope.aborted) return
-    if (res.code === 200) {
-      const regions = Array.isArray(res.data) ? res.data : []
-      uiStore.setTopRegions(regions)
-      if (regions.length) {
-        ElMessage.success(`已识别 ${regions.length} 类顶层区域，框选时自动填充描述`)
-      }
-    } else {
-      ElMessage.warning(res.message || '顶层识别暂不可用，可手动框选并填写描述')
-    }
-  } finally {
-    scope.dispose()
-    analyzing.value = false
-  }
 }
 
 // 结构编辑器「确认标注」：把框写回图片（相对坐标供缩略展示）+ 存完整树供下单；随后关闭编辑器
@@ -366,17 +430,6 @@ function onEditorConfirm(tree) {
   ElMessage.success('标注已确认，设置生成参数后点「开始生成」')
 }
 
-// 编辑器关闭（工具条「关闭」/确认后 close）：中止仍在途的顶层识别请求
-// （确认后 close() 也会 emit close，故 onEditorConfirm 无需重复取消）
-function onEditorClose() {
-  cancelScopes('region:')
-}
-
-// 组件卸载（如编辑器开着就离开页面）：一并取消识别请求，避免悬挂浪费带宽
-onBeforeUnmount(() => {
-  cancelScopes('region:')
-})
-
 // 上传失败后重试
 const onRetry = (img) => {
   if (!img.uploadId) return
@@ -384,6 +437,7 @@ const onRetry = (img) => {
 }
 
 // 卡片摘要：只统计/展示顶层区域（子级不重复列出）
+const assetCountOf = (img) => store.assets.filter((a) => a.ownerId === img.uploadId).length
 const annoStyle = (anno) => ({
   left: anno.x * 100 + '%',
   top: anno.y * 100 + '%',
@@ -396,6 +450,12 @@ const annoLabels = (img) => {
   return labels.join('、')
 }
 const annoTopCount = (img) => topAnnos(img).length
+// 点区域标签：打开编辑器并选中该节点（annotation.id 与树 nodeKey 同源）
+const openAnnoAt = (anno) => {
+  if (!anno || isSubmitting.value) return
+  openAnno(0)
+  if (anno.id) uiStore.selectNode(anno.id)
+}
 
 // 单图上传状态 -> 用于右栏状态药丸的样式类 / 文案 / 图标
 const imgState = (img) => (img.uploading ? 'uploading' : img.uploadError ? 'error' : 'ready')
@@ -409,6 +469,33 @@ const dragDisabled = computed(() => images.value.length <= 1)
 </script>
 
 <style scoped>
+/* ── 模式切换 ── */
+.mode-switch { display: flex; gap: 10px; margin-bottom: 14px; }
+.mode-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.3);
+  color: rgba(255, 255, 255, 0.55);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.mode-btn .mode-name { font-size: 13px; font-weight: 600; }
+.mode-btn small { margin-left: auto; font-size: 11px; color: rgba(255, 255, 255, 0.35); }
+.mode-btn:hover:not(:disabled) { border-color: rgba(0, 255, 255, 0.3); color: rgba(255, 255, 255, 0.85); }
+.mode-btn.active {
+  border-color: rgba(0, 255, 255, 0.55);
+  background: rgba(0, 255, 255, 0.06);
+  color: #00ffff;
+  box-shadow: inset 0 0 0 1px rgba(0, 255, 255, 0.15);
+}
+.mode-btn.active small { color: rgba(0, 255, 255, 0.6); }
+.mode-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
 /* ── 上传区 ── */
 .upload-zone {
   border: 2px dashed rgba(0, 255, 255, 0.1);
@@ -490,12 +577,40 @@ const dragDisabled = computed(() => images.value.length <= 1)
 
 /* 左：手机壳居中，高度撑满整栏 */
 .hero-figure {
+  position: relative;
   flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
 }
+/* 未标注时的 hover 蒙层（覆盖图片，提示居中） */
+.figure-mask {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(5, 8, 12, 0.45);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+.hero-figure:hover .figure-mask { opacity: 1; }
+/* 蒙层上的提示文案 */
+.figure-tip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  color: #00ffff;
+  text-shadow: 0 0 12px rgba(0, 255, 255, 0.45);
+}
+.figure-tip i { font-size: 15px; }
 /* 屏内设计稿图与标注框由默认插槽传入，定位相对 MobilePreview 的 .flutter-screen（position:relative） */
 /* 同宽原型：机身定宽、高度随图比例展开（整图完整/无黑边/不变形，标注框按 frame 百分比对齐） */
 .hero-figure .img-frame {
@@ -519,28 +634,44 @@ const dragDisabled = computed(() => images.value.length <= 1)
   padding: 4px;
 }
 
-/* 文件信息卡 */
+/* 文件信息卡：轻 HUD 风格，顶部扫描线 + hover 发光 */
 .meta-card {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 14px;
+  padding: 14px 16px;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: linear-gradient(135deg, rgba(0, 255, 255, 0.055), rgba(10, 14, 23, 0.4) 60%);
+  border: 1px solid rgba(0, 255, 255, 0.14);
+  overflow: hidden;
+  transition: border-color 0.25s, box-shadow 0.25s;
 }
+.meta-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 16px;
+  right: 16px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.45), transparent);
+  opacity: 0.5;
+  pointer-events: none;
+}
+.meta-card:hover { border-color: rgba(0, 255, 255, 0.32); box-shadow: 0 0 22px rgba(0, 255, 255, 0.07); }
 .meta-icon {
   flex-shrink: 0;
-  width: 40px;
-  height: 40px;
+  width: 42px;
+  height: 42px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 11px;
+  border-radius: 12px;
   font-size: 16px;
   color: #00ffff;
-  background: rgba(0, 255, 255, 0.08);
-  border: 1px solid rgba(0, 255, 255, 0.15);
+  background: radial-gradient(circle at 30% 25%, rgba(0, 255, 255, 0.2), rgba(0, 255, 255, 0.04) 70%);
+  border: 1px solid rgba(0, 255, 255, 0.28);
+  box-shadow: inset 0 0 12px rgba(0, 255, 255, 0.08), 0 0 12px rgba(0, 255, 255, 0.1);
 }
 .meta-main { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 .meta-name {
@@ -551,7 +682,13 @@ const dragDisabled = computed(() => images.value.length <= 1)
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.meta-dim { font-size: 12px; color: rgba(255, 255, 255, 0.4); font-variant-numeric: tabular-nums; letter-spacing: .5px; }
+.meta-dim {
+  font-size: 12px;
+  color: rgba(0, 255, 255, 0.42);
+  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.5px;
+}
 .status-pill {
   flex-shrink: 0;
   display: inline-flex;
@@ -563,14 +700,12 @@ const dragDisabled = computed(() => images.value.length <= 1)
   font-weight: 600;
 }
 .status-pill i { font-size: 10px; }
-.status-pill.ready { color: #37e0a0; background: rgba(55, 224, 160, 0.1); border: 1px solid rgba(55, 224, 160, 0.25); }
-.status-pill.uploading { color: #00ffff; background: rgba(0, 255, 255, 0.08); border: 1px solid rgba(0, 255, 255, 0.2); }
-.status-pill.error { color: #ff6b7a; background: rgba(255, 71, 87, 0.1); border: 1px solid rgba(255, 71, 87, 0.28); }
+.status-pill.ready { color: #37e0a0; background: rgba(55, 224, 160, 0.1); border: 1px solid rgba(55, 224, 160, 0.25); box-shadow: 0 0 10px rgba(55, 224, 160, 0.12); }
+.status-pill.uploading { color: #00ffff; background: rgba(0, 255, 255, 0.08); border: 1px solid rgba(0, 255, 255, 0.2); box-shadow: 0 0 10px rgba(0, 255, 255, 0.12); }
+.status-pill.error { color: #ff6b7a; background: rgba(255, 71, 87, 0.1); border: 1px solid rgba(255, 71, 87, 0.28); box-shadow: 0 0 10px rgba(255, 71, 87, 0.15); }
 
-/* 标注面板卡 */
+/* 标注面板卡：仅已标注时展示，高度自适应内容 */
 .anno-card {
-  flex: 1 1 0;
-  min-height: 240px;   /* 不依赖机身高度：右栏顶部对齐时仍自成一块舒适区域，避免 flex:1 塔缩 */
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -583,53 +718,26 @@ const dragDisabled = computed(() => images.value.length <= 1)
 .anno-card-title { font-size: 12px; font-weight: 700; letter-spacing: 1px; color: rgba(0, 255, 255, 0.7); }
 .anno-card-count { font-size: 12px; color: rgba(255, 255, 255, 0.5); }
 .anno-card-count b { color: #00ffff; font-size: 16px; margin-right: 2px; }
-.anno-empty {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.35);
-  text-align: center;
-}
-.anno-empty i { font-size: 20px; }
-.anno-empty.error { color: rgba(255, 107, 122, 0.8); }
-.anno-empty.error i { font-size: 22px; }
-.anno-add {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 12px;
-  border-radius: 10px;
-  cursor: pointer;
-  color: rgba(255, 255, 255, 0.55);
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px dashed rgba(0, 255, 255, 0.28);
-  transition: all 0.2s;
-}
-.anno-add:hover { color: #00ffff; border-color: rgba(0, 255, 255, 0.5); background: rgba(0, 255, 255, 0.06); }
-.anno-add i { font-size: 22px; color: rgba(0, 255, 255, 0.6); }
-.anno-add span { font-size: 13px; font-weight: 600; }
-.anno-add small { font-size: 11px; color: rgba(255, 255, 255, 0.3); }
-.anno-list { flex: 1; display: flex; flex-direction: column; gap: 14px; min-height: 0; }
-.anno-chips { flex: 1; display: flex; flex-wrap: wrap; gap: 8px; align-content: flex-start; overflow-y: auto; }
+/* 标注入口已收敛到图片悬浮 chip（.figure-tip） */
+.anno-list { display: flex; flex-direction: column; gap: 14px; }
+.anno-chips { display: flex; flex-wrap: wrap; gap: 8px; max-height: 132px; overflow-y: auto; }
 .anno-chip {
   display: inline-flex;
   align-items: center;
+  gap: 6px;
   padding: 5px 11px;
   border-radius: 8px;
   font-size: 12px;
   color: rgba(0, 255, 255, 0.9);
   background: rgba(0, 255, 255, 0.08);
   border: 1px solid rgba(0, 255, 255, 0.18);
+  cursor: pointer;
+  transition: all 0.2s;
 }
+.anno-chip:hover { background: rgba(0, 255, 255, 0.16); border-color: rgba(0, 255, 255, 0.45); }
 .anno-chip em { font-style: normal; font-weight: 600; }
 .anno-edit {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -641,10 +749,23 @@ const dragDisabled = computed(() => images.value.length <= 1)
   cursor: pointer;
   color: #04110f;
   background: linear-gradient(135deg, #00ffff, #24d3c4);
-  border: none;
-  transition: filter 0.2s;
+  border: 1px solid rgba(0, 255, 255, 0.45);
+  box-shadow: 0 0 16px rgba(0, 255, 255, 0.18);
+  overflow: hidden;
+  transition: box-shadow 0.2s, filter 0.2s;
 }
-.anno-edit:hover { filter: brightness(1.08); }
+/* hover 扫光 */
+.anno-edit::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, 0.4) 50%, transparent 65%);
+  transform: translateX(-130%);
+  transition: transform 0.55s ease;
+  pointer-events: none;
+}
+.anno-edit:hover { filter: brightness(1.06); box-shadow: 0 0 26px rgba(0, 255, 255, 0.28); }
+.anno-edit:hover::after { transform: translateX(130%); }
 
 /* 底部操作 */
 .hero-foot { display: flex; gap: 10px; }
@@ -718,11 +839,12 @@ const dragDisabled = computed(() => images.value.length <= 1)
   justify-content: center;
   overflow: hidden;
 }
-/* 收缩包裹 img：定高 + aspect-ratio 让宽度按比例推导，整图等比完整显示（两侧留空不裁切不滚动） */
+/* 定高 + aspect-ratio 按图片比例推导宽度：整图完整显示，不裁剪 */
 .img-frame {
   position: relative;
   height: 100%;
   max-width: 100%;
+  margin: 0 auto;
 }
 .img-frame img {
   display: block;
@@ -731,6 +853,22 @@ const dragDisabled = computed(() => images.value.length <= 1)
   object-fit: contain;
   user-select: none;
 }
+/* 多图卡片缩略图：el-image 占满 img-frame，内部图片等比完整显示 */
+.media-img { display: block; width: 100%; height: 100%; }
+.img-frame :deep(.el-image__inner) {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.media-ph {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.media-ph i { font-size: 24px; color: rgba(255, 255, 255, 0.12); }
 
 /* 标注框（缩略展示，不可交互） */
 .anno-box {
@@ -910,6 +1048,7 @@ const dragDisabled = computed(() => images.value.length <= 1)
 .anno-summary i { font-size: 11px; flex-shrink: 0; }
 .anno-summary.empty { color: rgba(255, 255, 255, 0.25); }
 .anno-summary.error { color: rgba(255, 71, 87, 0.75); }
+.anno-summary.asset-summary { color: rgba(55, 224, 141, 0.75); }
 
 /* ── 底部操作与提示 ── */
 .upload-actions {

@@ -1,34 +1,45 @@
 import { commonApi } from '~/api/common'
 import { fileToBase64 } from '~/utils/index.js'
-import { createCancelScope, cancelScope, cancelScopes } from '~/utils/cancel'
+import { createCancelScope, cancelScope } from '~/utils/cancel'
 import { ElMessage } from 'element-plus'
 
+// 附图素材约束：硬上限 10 张，单张 2MB
+export const MAX_ASSETS = 10
+export const ASSET_MAX_BYTES = 2 * 1024 * 1024
+
+// 图片判定：Windows 下部分文件（截图/无扩展名/HEIC）的 MIME 为空，按扩展名兜底，避免多选时被静默丢弃
+const IMAGE_EXT_RE = /\.(png|jpe?g|gif|webp|svg|bmp|avif|heic|heif|ico)$/i
+export const isImageFile = (f) => !!f && (f.type?.startsWith('image/') || IMAGE_EXT_RE.test(f.name || ''))
+
 export const createUploadActions = (ctx) => {
-  const { state, isConcurrencyFull } = ctx
+  const { state, images, assets, isConcurrencyFull } = ctx
 
   // 取消作用域前缀：所有上传请求统一注册为 upload:<uploadId>
   const scopeKey = (uploadId) => `upload:${uploadId}`
 
-  // 每次回调时重新定位，确保拿到的是响应式代理；图片已被移除则返回 undefined
-  const findItem = (uploadId) => state.images.find(i => i.uploadId === uploadId)
+  // 跨桶定位（单图/多图数据独立，切换模式后回调仍能找到原条目）；图片已被移除则返回 undefined
+  const findItem = (uploadId) => {
+    for (const bucket of Object.values(state.modes)) {
+      const it = bucket.images.find(i => i.uploadId === uploadId)
+      if (it) return it
+    }
+    return undefined
+  }
 
   /** 取消单张在途上传 */
   const cancelUpload = (uploadId) => cancelScope(scopeKey(uploadId))
 
-  /** 取消全部在途上传（清空时使用） */
-  const cancelAllUploads = () => cancelScopes('upload:')
-
-  /** File → { preview, width, height } */
+  /** File → { preview, width, height }；读取/解码失败返回 null，绝不挂起（否则后续文件全部无法入列） */
   const fileToPreview = (file) => {
     return new Promise((resolve) => {
       const reader = new FileReader()
+      reader.onerror = () => resolve(null)
       reader.onload = (e) => {
         const dataUrl = e.target.result
         const img = new Image()
-        img.onload = () => {
-          resolve({ preview: dataUrl, width: img.naturalWidth, height: img.naturalHeight })
-          URL.revokeObjectURL(img.src)
-        }
+        // 解码失败也保留 dataURL 预览（部分格式浏览器可显示但取不到尺寸）
+        img.onload = () => resolve({ preview: dataUrl, width: img.naturalWidth, height: img.naturalHeight })
+        img.onerror = () => resolve({ preview: dataUrl, width: 0, height: 0 })
         img.src = dataUrl
       }
       reader.readAsDataURL(file)
@@ -40,24 +51,29 @@ export const createUploadActions = (ctx) => {
     // 并发满时不允许添加
     if (isConcurrencyFull.value) return
 
-    const imageFiles = files.filter(f => f.type.startsWith('image/'))
+    const imageFiles = files.filter(isImageFile)
     if (imageFiles.length === 0) return
 
     // 上限检查
-    if (state.images.length >= state.maxImages) {
+    if (images.value.length >= state.maxImages) {
       ElMessage.warning(`最多上传 ${state.maxImages} 张图片`)
       return
     }
 
-    const remaining = Math.min(state.maxImages - state.images.length, imageFiles.length)
+    const remaining = Math.min(state.maxImages - images.value.length, imageFiles.length)
     const toAdd = imageFiles.slice(0, remaining)
 
     for (const file of toAdd) {
-      const { preview, width, height } = await fileToPreview(file)
+      const meta = await fileToPreview(file)
+      if (!meta) {
+        ElMessage.warning(`「${file.name}」读取失败，已跳过`)
+        continue
+      }
+      const { preview, width, height } = meta
       const uploadId = `u${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
       const scope = createCancelScope(scopeKey(uploadId))
-      state.images.push({
-        uploadId, // 内部上传标识，仅用于异步回调定位
+      images.value.push({
+        uploadId, // 内部上传标识，仅用于异步回调定位；也是附图归属的 stable 外键
         file,
         preview,
         naturalWidth: width,
@@ -71,6 +87,20 @@ export const createUploadActions = (ctx) => {
       })
       // 传 uploadId 而非索引：上传期间删除/清空/重排不会导致错位
       uploadOne(uploadId, file, scope)
+    }
+
+    // 主图变更后同步素材归属，避免悬空：
+    // - 单图：唯一主图，全部素材重绑到新主图（更换/重传后素材跟随）
+    // - 多图：原归属页已被删除的悬空素材自动挂到新上传的第一张
+    if (images.value[0]?.uploadId) {
+      const first = images.value[0].uploadId
+      if (state.mode === 'single') {
+        assets.value.forEach((a) => { a.ownerId = first })
+      } else {
+        assets.value.forEach((a) => {
+          if (!images.value.some((i) => i.uploadId === a.ownerId)) a.ownerId = first
+        })
+      }
     }
   }
 
@@ -122,13 +152,149 @@ export const createUploadActions = (ctx) => {
     uploadOne(uploadId, item.file, scope)
   }
 
-  /** 移除单张 */
+  /** 移除单张主图：其名下附图改绑到剩余第一张，避免产生孤儿素材 */
   const removeImage = (idx) => {
-    const item = state.images[idx]
+    const item = images.value[idx]
+    if (!item) return
     // 先取消在途上传，再移除
-    if (item?.uploadId) cancelUpload(item.uploadId)
-    state.images.splice(idx, 1)
+    if (item.uploadId) cancelUpload(item.uploadId)
+    images.value.splice(idx, 1)
+    const fallback = images.value[0]?.uploadId || ''
+    assets.value.forEach((a) => { if (a.ownerId === item.uploadId) a.ownerId = fallback })
   }
 
-  return { addImages, removeImage, retryUpload, cancelUpload, cancelAllUploads }
+  // ═══ 附图素材（与主图同一上传模块，作用域前缀 asset: 隔离） ═══
+
+  const assetScopeKey = (assetId) => `asset:${assetId}`
+  const findAsset = (assetId) => {
+    for (const bucket of Object.values(state.modes)) {
+      const it = bucket.assets.find(a => a.assetId === assetId)
+      if (it) return it
+    }
+    return undefined
+  }
+
+  /** 取消单张在途附图上传 */
+  const cancelAsset = (assetId) => cancelScope(assetScopeKey(assetId))
+
+  /** 上传单张附图素材 */
+  const uploadAsset = async (assetId, file, scope) => {
+    const isCancelled = () => scope.aborted
+    try {
+      const base64 = await fileToBase64(file)
+      if (isCancelled()) return
+      const res = await commonApi.uploadImage(base64.split(',')[1], file.name, { signal: scope.signal })
+      if (isCancelled()) return
+      if (res && res.code === 200 && res.data?.url) {
+        const asset = findAsset(assetId)
+        if (asset) {
+          asset.cosUrl = res.data.url
+          asset.uploading = false
+        }
+      } else {
+        throw new Error(res?.message || '上传失败')
+      }
+    } catch (e) {
+      if (isCancelled()) return
+      const asset = findAsset(assetId)
+      if (asset) {
+        asset.uploading = false
+        asset.uploadError = e.message || '上传失败'
+      }
+    } finally {
+      scope.dispose()
+    }
+  }
+
+  /** 添加附图：过滤非图 / 超 2MB / 超出上限。ownerId = 所属主图的 uploadId */
+  const addAssets = async (files, ownerId = '') => {
+    const imageFiles = (files || []).filter(isImageFile)
+    if (!imageFiles.length) return
+
+    imageFiles.filter(f => f.size > ASSET_MAX_BYTES).forEach(f =>
+      ElMessage.warning(`「${f.name}」超过 ${Math.round(ASSET_MAX_BYTES / 1024 / 1024)}MB，已跳过`),
+    )
+    const okFiles = imageFiles.filter(f => f.size <= ASSET_MAX_BYTES)
+
+    const room = MAX_ASSETS - assets.value.length
+    if (room <= 0) {
+      ElMessage.warning(`附图最多 ${MAX_ASSETS} 张，请先删除不需要的素材`)
+      return
+    }
+    if (okFiles.length > room) ElMessage.warning(`附图最多 ${MAX_ASSETS} 张，超出部分未添加`)
+
+    for (const file of okFiles.slice(0, room)) {
+      const meta = await fileToPreview(file)
+      if (!meta) {
+        ElMessage.warning(`「${file.name}」读取失败，已跳过`)
+        continue
+      }
+      const { preview, width, height } = meta
+      const assetId = `img${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+      const scope = createCancelScope(assetScopeKey(assetId))
+      assets.value.push({
+        assetId, // 内部标识，标注框通过它引用素材
+        ownerId: ownerId || images.value[0]?.uploadId || '', // 归属主图（多图模式必填，单图自动唯一）
+        file,
+        preview,
+        naturalWidth: width,
+        naturalHeight: height,
+        label: file.name.replace(/\.[^.]+$/, '') || '未命名',
+        size: file.size,
+        mime: file.type,
+        cosUrl: '',
+        uploading: true,
+        uploadError: '',
+      })
+      uploadAsset(assetId, file, scope)
+    }
+  }
+
+  /** 重试单张附图上传 */
+  const retryAsset = (assetId) => {
+    const asset = findAsset(assetId)
+    if (!asset || asset.uploading || !asset.file) return
+    const scope = createCancelScope(assetScopeKey(assetId))
+    asset.uploading = true
+    asset.uploadError = ''
+    uploadAsset(assetId, asset.file, scope)
+  }
+
+  /** 移除单张附图（在途上传先取消） */
+  const removeAsset = (assetId) => {
+    cancelScope(assetScopeKey(assetId))
+    for (const bucket of Object.values(state.modes)) {
+      const idx = bucket.assets.findIndex(a => a.assetId === assetId)
+      if (idx > -1) {
+        bucket.assets.splice(idx, 1)
+        return
+      }
+    }
+  }
+
+  /** 清空指定主图名下的全部附图（取消在途上传；单图更换/删除主图时使用） */
+  const clearAssetsOf = (ownerId) => {
+    if (!ownerId) return
+    for (const bucket of Object.values(state.modes)) {
+      bucket.assets.filter(a => a.ownerId === ownerId).forEach(a => cancelScope(assetScopeKey(a.assetId)))
+      bucket.assets = bucket.assets.filter(a => a.ownerId !== ownerId)
+    }
+  }
+
+  /** 改素材标签（画布引用与 Prompt 清单都用它） */
+  const updateAssetLabel = (assetId, label) => {
+    const asset = findAsset(assetId)
+    if (asset && String(label || '').trim()) asset.label = String(label).trim().slice(0, 30)
+  }
+
+  /** 改素材归属主图（多图模式下切页/拖拽重排后仍以 uploadId 为准） */
+  const setAssetOwner = (assetId, ownerId) => {
+    const asset = findAsset(assetId)
+    if (asset) asset.ownerId = ownerId || ''
+  }
+
+  return {
+    addImages, removeImage, retryUpload, cancelUpload,
+    addAssets, retryAsset, removeAsset, clearAssetsOf, cancelAsset, updateAssetLabel, setAssetOwner,
+  }
 }

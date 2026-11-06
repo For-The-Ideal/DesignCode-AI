@@ -78,6 +78,8 @@ export function createNode({
     summary: '',
     styleHints: '',
     behavior: '',
+    // 引用组：关联的附图素材（上传区 assets 里的 assetId，空串=未关联）
+    assetId: '',
     // 状态组
     status: NODE_STATUS.EMPTY,
     aiFilled: false,
@@ -151,42 +153,6 @@ export function sortSiblingsByPosition(nodes, bandPx = 40) {
   })
   arr.forEach((n, i) => { n.sortIndex = i })
   return arr
-}
-
-// 顶层按 name 精确匹配第一次 AI 返回的 region（不做模糊语义匹配）
-export function matchTopRegion(name, topRegions) {
-  if (!Array.isArray(topRegions)) return null
-  return topRegions.find((r) => r && r.name === name) || null
-}
-
-/**
- * 用匹配到的顶层 region 自动填充节点描述。
- * - 命中：填 summary/styleHints/behavior；layoutHint 合法则 → layout（来源 ai）；状态 ai_draft。
- * - region 为空或 layoutHint 非法：排列方式不替用户做主，清成未选中（重选类型时不残留上一次的建议）。
- */
-export function applyRegionToNode(node, region) {
-  if (!region) {
-    node.layout = ''
-    node.layoutSource = ''
-    node.status = NODE_STATUS.EMPTY
-    node.aiFilled = false
-    return node
-  }
-  node.summary = region.summary || ''
-  node.styleHints = region.styleHints || ''
-  node.behavior = region.behavior || ''
-  if (region.layoutHint && LAYOUT_VALUES.includes(region.layoutHint)) {
-    node.layout = region.layoutHint
-    node.layoutSource = LAYOUT_SOURCE.AI
-  } else if (node.layoutSource !== LAYOUT_SOURCE.MANUAL) {
-    // AI 没给（或换了个没给的类型）就回到未选中，但不覆盖用户手动选过的
-    node.layout = ''
-    node.layoutSource = ''
-  }
-  const hasDesc = !!(node.summary || node.styleHints)
-  node.status = hasDesc ? NODE_STATUS.AI_DRAFT : NODE_STATUS.EMPTY
-  node.aiFilled = hasDesc
-  return node
 }
 
 // 用户改过任意描述字段 → 视为已确认，AI 初稿标记清除

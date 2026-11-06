@@ -13,7 +13,6 @@
         :showDetail="false"
         :collapsible="false"
         @navigate="switchTask"
-        @blocked="handleBlocked"
       />
     </AppSidebar>
     
@@ -49,9 +48,25 @@
             <div class="pv-card">
              
               <div class="pv-body">
+                <!-- 生成中 / 排队中：走预览模板内置的生成动画（html 为空即 loading 态） -->
+                <PreviewTemplate
+                  v-if="isLive"
+                  html=""
+                  :showBottomNav="task.platform === 'mobile'"
+                />
+                <!-- 失败：失败占位样式 -->
+                <div v-else-if="isFailed" class="pv-failed">
+                  <div class="fail-ring"><i class="fas fa-triangle-exclamation"></i></div>
+                  <p class="fail-title">任务生成失败</p>
+                  <p class="fail-desc">生成过程中出现异常，该任务没有可用的预览与代码</p>
+                  <span class="fail-meta" v-if="typeof task.progress === 'number'">失败前进度 {{ task.progress }}%</span>
+                  <button class="fail-btn" @click="goBack">
+                    <i class="fas fa-rotate-left"></i> 返回列表重新生成
+                  </button>
+                </div>
                 <!-- Flutter：有构建预览 URL 时走 iframe 真机预览 -->
                 <iframe
-                  v-if="task.framework === 'Flutter' && taskDetail?.iframeUrl"
+                  v-else-if="task.framework === 'Flutter' && taskDetail?.iframeUrl"
                   :src="taskDetail.iframeUrl"
                   class="pv-iframe"
                   frameborder="0"
@@ -82,9 +97,9 @@
                   @copy="copy"
                   height="100%"
                 />
-                <div v-else class="code-empty">
-                  <i class="fas fa-code"></i>
-                  <span>暂无代码数据</span>
+                <div v-else class="code-empty" :class="{ 'code-empty--failed': isFailed }">
+                  <i class="fas" :class="isLive ? 'fa-spinner fa-spin' : isFailed ? 'fa-triangle-exclamation' : 'fa-code'"></i>
+                  <span>{{ isLive ? '代码生成中，完成后自动展示' : isFailed ? '任务失败，未生成代码' : '暂无代码数据' }}</span>
                 </div>
               </div>
             </div>
@@ -97,15 +112,16 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { storeToRefs } from 'pinia'
 import AppSidebar from '~/components/layout/AppSidebar.vue'
 import { useMenuListStore } from '~/stores/menuList'
+import { useUserStore } from '~/stores/user'
 import TasksSidebar from '~/components/tasks/TasksSidebar.vue'
 import CodeEditor from '~/components/code/CodeEditor.vue'
 import PreviewTemplate from '~/components/previewTempLate/index.vue'
 import { taskApi } from '~/api/task'
-import { ElMessage } from 'element-plus'
 
 // 复用同一页面实例（按参数切换而非重建），避免换任务时整页 remount 闪烁
 definePageMeta({ key: false })
@@ -116,12 +132,6 @@ const sidebarOpen = ref(true)
 const sidebarExpandedId = ref(null)
 
 const switchTask = (id) => router.push(`/detail/${id}`)
-
-// 排队中/失败：不可进入，仅提示
-const handleBlocked = (task) => {
-  if (task.status === 'failed') ElMessage.warning('任务生成失败，无法查看详情')
-  else if (task.status === 'pending') ElMessage.info('任务正在排队中，暂不可查看详情')
-}
 
 // ═══ 导航 ═══
 const menuStore = useMenuListStore()
@@ -147,6 +157,10 @@ const task = ref(null)         // 当前任务概要（驱动预览/代码渲染
 const taskDetail = ref(null)   // 生成结果（code + preview + iframeUrl）
 const taskList = ref([])       // 侧栏任务列表
 const loading = ref(false)
+
+// ═══ 状态派生：生成中/排队中 → 生成动画；失败 → 失败样式 ═══
+const isLive = computed(() => ['running', 'pending'].includes(task.value?.status))
+const isFailed = computed(() => task.value?.status === 'failed')
 
 // 拉取任务列表（侧栏）
 async function fetchTaskList() {
@@ -182,6 +196,18 @@ async function loadTask(id) {
 
 // 1) watch 路由参数变化：同步侧栏展开项 + 加载新任务（实例复用后统一走此处，不再另设 onBeforeRouteUpdate 以免重复请求）
 watch(() => route.params.id, (id) => { sidebarExpandedId.value = id; loadTask(id) })
+
+// ═══ 生成中跟随用户级 SSE：进度实时同步，完成后自动拉取生成结果 ═══
+const userStore = useUserStore()
+const { taskProgress } = storeToRefs(userStore)
+watch(taskProgress, (map) => {
+  const live = map?.[route.params.id]
+  if (!live || !task.value) return
+  if (typeof live.progress === 'number') task.value.progress = live.progress
+  if (live.status) task.value.status = live.status
+  // 状态推进到完成且尚未拿到结果时重新拉取（失败无需结果）
+  if (live.status === 'success' && !taskDetail.value) loadTask(route.params.id)
+}, { immediate: true })
 
 const copy = () => {
   if (!taskDetail.value?.code) return
@@ -471,6 +497,56 @@ onMounted(() => {
 }
 .pv-empty i { font-size: 28px; }
 .pv-empty span { font-size: 12px; color: rgba(255,255,255,0.15); }
+
+/* ═══ 生成失败占位 ═══ */
+.pv-failed {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 28px;
+  text-align: center;
+}
+.fail-ring {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  color: #ff5a6c;
+  background: rgba(255, 90, 108, 0.1);
+  border: 1px solid rgba(255, 90, 108, 0.35);
+  animation: failPulse 2.4s ease-in-out infinite;
+}
+@keyframes failPulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(255, 90, 108, 0.18); }
+  50%      { box-shadow: 0 0 34px rgba(255, 90, 108, 0.32); }
+}
+.fail-title { margin: 6px 0 0; font-size: 17px; font-weight: 700; color: #ff8f9c; }
+.fail-desc { margin: 0; font-size: 12px; color: rgba(255,255,255,0.35); line-height: 1.7; }
+.fail-meta { font-size: 11px; color: rgba(255, 90, 108, 0.6); font-family: 'Fira Code', monospace; }
+.fail-btn {
+  margin-top: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 18px;
+  border: 1px solid rgba(255, 90, 108, 0.35);
+  border-radius: 8px;
+  background: rgba(255, 90, 108, 0.08);
+  color: #ff8f9c;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+.fail-btn:hover { background: rgba(255, 90, 108, 0.16); border-color: rgba(255, 90, 108, 0.55); }
+.code-empty--failed i { color: rgba(255, 90, 108, 0.4); }
+.code-empty--failed span { color: rgba(255, 90, 108, 0.55); }
 
 /* Flutter iframe 真机预览：撑满预览容器 */
 .pv-iframe {

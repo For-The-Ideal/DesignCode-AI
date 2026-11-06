@@ -4,11 +4,18 @@ import { createUploadActions } from './upload'
 import { createTaskActions } from './task'
 import { useUserStore } from '~/stores/user'
 
+// 各模式主图上限：单图 = 1，多图 = 8（页序上限）
+export const MODE_MAX_IMAGES = { single: 1, multi: 8 }
+
 export const useCodeStore = defineStore('code', () => {
   const state = reactive({
-    // ── 上传 ──
-    images: [],
-    maxImages: 1,
+    // ── 上传 ──（单图/多图各自独立数据桶：切换模式互不影响，不串图）
+    modes: {
+      single: { images: [], assets: [] },
+      multi: { images: [], assets: [] },
+    },
+    mode: 'single', // single 单主图 | multi 多主图（页序）
+    maxImages: MODE_MAX_IMAGES.single,
 
     // ── 配置 ──
     config: {
@@ -28,6 +35,10 @@ export const useCodeStore = defineStore('code', () => {
 
   // ═══ Getters ═══
 
+  // 当前模式的主图 / 附图：组件与动作统一读写这两份，切换模式即切换数据源
+  const images = computed(() => state.modes[state.mode].images)
+  const assets = computed(() => state.modes[state.mode].assets)
+
   // 服务端实际并发数（从 userStore 读取，跨页面共享）
   const runningCount = computed(() => {
     const userStore = useUserStore()
@@ -39,10 +50,10 @@ export const useCodeStore = defineStore('code', () => {
   const isConcurrencyFull = computed(() => runningCount.value >= state.maxConcurrent)
 
   // 是否已达上传上限
-  const isMaxReached = computed(() => state.images.length >= state.maxImages)
+  const isMaxReached = computed(() => images.value.length >= state.maxImages)
 
   // 是否所有图片已上传
-  const allUploaded = computed(() => state.images.length > 0 && state.images.every(img => !!img.cosUrl))
+  const allUploaded = computed(() => images.value.length > 0 && images.value.every(img => !!img.cosUrl))
 
   const uploadHint = computed(() => {
     const userStore = useUserStore()
@@ -55,32 +66,54 @@ export const useCodeStore = defineStore('code', () => {
 
   // ═══ Actions ═══
 
-  const ctx = { state, runningCount, isConcurrencyFull, maxConcurrent: state.maxConcurrent }
+  const ctx = { state, images, assets, runningCount, isConcurrencyFull, maxConcurrent: state.maxConcurrent }
 
   const uploadModule = createUploadActions(ctx)
   const taskModule = createTaskActions(ctx)
 
+  // 模式切换：单图 ↔ 多图。两套数据独立保存，切换只改数据源，不动已上传内容
+  const setMode = (mode) => {
+    if (mode === state.mode || !MODE_MAX_IMAGES[mode] || state.isSubmitting) return
+    state.mode = mode
+    state.maxImages = MODE_MAX_IMAGES[mode]
+  }
+
   const actions = {
     ...uploadModule,
     ...taskModule,
+    setMode,
   }
 
-  // 清除所有
+  // 仅清空当前模式的主图（保留附图素材）：更换/删除主图时用，附件不随主图丢失
+  const clearImages = () => {
+    if (state.isSubmitting) return
+    const bucket = state.modes[state.mode]
+    bucket.images.forEach((img) => { if (img.uploadId) uploadModule.cancelUpload(img.uploadId) })
+    bucket.images.splice(0)
+  }
+
+  // 清除当前模式的主图 + 附图素材（另一模式的数据不受影响）
   const clearAll = () => {
     if (state.isSubmitting) return
-    // 取消所有在途上传，避免清空后仍有请求在后台跑
-    uploadModule.cancelAllUploads()
-    state.images = []
+    const bucket = state.modes[state.mode]
+    bucket.images.forEach((img) => { if (img.uploadId) uploadModule.cancelUpload(img.uploadId) })
+    bucket.assets.forEach((a) => { if (a.assetId) uploadModule.cancelAsset(a.assetId) })
+    bucket.images.splice(0)
+    bucket.assets.splice(0)
     state.isSubmitting = false
   }
 
   return {
     ...toRefs(state),
+    images,
+    assets,
     runningCount,
     isConcurrencyFull,
     isMaxReached,
     allUploaded,
     uploadHint,
+    setMode,
+    clearImages,
     clearAll,
     ...actions,
   }

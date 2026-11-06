@@ -25,8 +25,8 @@ export const useUiProjectStore = defineStore('uiProject', () => {
     },
     // 原图信息（COS 地址 + 像素宽高；宽高用于相对<->像素换算与位置软提示）
     image: { url: '', width: 0, height: 0 },
-    // 第一次顶层 AI 返回（后端已规范化），供框选顶层时按 name 匹配自动填充
-    topRegions: [],
+    // 当前编辑主图的 uploadId：用于过滤归属该图的附图素材（标注引用素材）
+    assetScopeId: '',
     // nodeKey -> node
     nodes: {},
     selectedNodeKey: null,
@@ -96,7 +96,6 @@ export const useUiProjectStore = defineStore('uiProject', () => {
     if (payload.target) state.target = payload.target
     if (payload.globalConfig) Object.assign(state.globalConfig, payload.globalConfig)
     if (payload.image) Object.assign(state.image, payload.image)
-    state.topRegions = Array.isArray(payload.topRegions) ? payload.topRegions : []
     state.nodes = {}
     ;(payload.nodes || []).forEach((n) => { state.nodes[n.nodeKey] = n })
     state.selectedNodeKey = null
@@ -106,7 +105,6 @@ export const useUiProjectStore = defineStore('uiProject', () => {
 
   function reset() {
     state.projectId = ''
-    state.topRegions = []
     state.nodes = {}
     state.selectedNodeKey = null
     state.pendingParentKey = null
@@ -135,8 +133,9 @@ export const useUiProjectStore = defineStore('uiProject', () => {
     Object.assign(state.image, image)
   }
 
-  function setTopRegions(regions) {
-    state.topRegions = Array.isArray(regions) ? regions : []
+  // 打开编辑器时绑定当前主图（uploadId）：素材引用只能选该主图名下的附图
+  function setAssetScope(uploadId) {
+    state.assetScopeId = uploadId || ''
   }
 
   function selectNode(key) {
@@ -148,8 +147,10 @@ export const useUiProjectStore = defineStore('uiProject', () => {
   }
 
   // 新框落点检测：返回重叠冲突 + 建议父节点 + 位置软提示（不改动数据）
-  function detectNewBox(bbox, { excludeKey } = {}) {
-    const { conflicts, suggestedParentKey } = uiTree.detectAgainstNodes(bbox, nodeList.value, { excludeKey })
+  // topOnly：只与顶层区域类型比对（子级框在父级内的包含关系不参与提醒）
+  function detectNewBox(bbox, { excludeKey, topOnly = false } = {}) {
+    const nodes = topOnly ? nodeList.value.filter((n) => !n.parentId) : nodeList.value
+    const { conflicts, suggestedParentKey } = uiTree.detectAgainstNodes(bbox, nodes, { excludeKey })
     const hints = suggestedParentKey ? [] : uiTree.positionHint(state.nodes[excludeKey]?.name || '', bbox, state.image)
     return { conflicts, suggestedParentKey, positionHints: hints }
   }
@@ -170,7 +171,7 @@ export const useUiProjectStore = defineStore('uiProject', () => {
     return node
   }
 
-  // 给顶层占位节点指派类型：匹配 topRegions 自动填充，返回位置软提示（供上层弹提示）
+  // 给顶层占位节点指派类型，返回位置软提示（供上层弹提示）
   function assignTopName(key, name) {
     const node = state.nodes[key]
     if (!node || node.parentId || !name) return { ok: false, hints: [] }
@@ -179,11 +180,6 @@ export const useUiProjectStore = defineStore('uiProject', () => {
       (n) => !n.parentId && n.name === name && n.nodeKey !== key,
     ).length
     node.name = name
-    const region = uiTree.matchTopRegion(name, state.topRegions)
-    uiTree.applyRegionToNode(node, region)
-    if (node.variantIndex > 0 && region && node.summary) {
-      node.summary = `与第 ${node.variantIndex + 1} 块同属 ${name}，请细化分工：` + node.summary
-    }
     relayoutRoots()
     return { ok: true, hints: uiTree.positionHint(name, node.bbox, state.image) }
   }
@@ -198,12 +194,6 @@ export const useUiProjectStore = defineStore('uiProject', () => {
     })
     // 同枚举多块：记序号，用于展示 name-2 等
     node.variantIndex = enumUsage.value[name] || 0
-    // 按 name 精确匹配顶层 AI 区域自动填充
-    const region = uiTree.matchTopRegion(name, state.topRegions)
-    uiTree.applyRegionToNode(node, region)
-    if (node.variantIndex > 0 && region && node.summary) {
-      node.summary = `与第 ${node.variantIndex + 1} 块同属 ${name}，请细化分工：` + node.summary
-    }
     state.nodes[node.nodeKey] = node
     relayoutRoots()
     state.selectedNodeKey = node.nodeKey
@@ -274,7 +264,7 @@ export const useUiProjectStore = defineStore('uiProject', () => {
   function updateNode(key, patch = {}) {
     const node = state.nodes[key]
     if (!node) return
-    const descKeys = ['summary', 'styleHints', 'behavior', 'name']
+    const descKeys = ['summary', 'styleHints', 'behavior', 'name', 'assetId']
     let touchedDesc = false
     Object.entries(patch).forEach(([k, v]) => {
       if (k === 'layout') { uiTree.setManualLayout(node, v); return }
@@ -305,7 +295,7 @@ export const useUiProjectStore = defineStore('uiProject', () => {
     loadProject,
     reset,
     setImage,
-    setTopRegions,
+    setAssetScope,
     selectNode,
     setPendingParent,
     detectNewBox,

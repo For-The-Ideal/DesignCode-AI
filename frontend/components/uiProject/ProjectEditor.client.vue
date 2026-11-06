@@ -24,6 +24,10 @@
           </div>
           <div class="tb-right">
             <span class="tb-count">节点 {{ store.nodeList.length }} · 待补 {{ store.unconfirmedNodes.length }}</span>
+            <button class="tb-btn" :class="{ 'tb-btn--loading': aiLoading }" :disabled="!store.hasNodes || aiLoading" @click="aiDescribe">
+              <i class="fas" :class="aiLoading ? 'fa-spinner fa-spin' : 'fa-magic'"></i>
+              {{ aiLoading ? '生成中…' : 'AI 描述' }}
+            </button>
             <button class="tb-btn tb-btn--primary" :disabled="!store.hasNodes" @click="onGenerate">确认标注</button>
             <button class="tb-btn" @click="close">关闭</button>
           </div>
@@ -42,17 +46,22 @@
               <NodeInspector />
             </div>
           </div>
-
-          <!-- AI 顶层识别未响应时的整页 loading（遮挡主体区，工具条仍可关闭） -->
-          <div v-if="analyzing" class="ed-loading">
-            <div class="loading-card">
-              <i class="fas fa-spinner fa-spin loading-icon"></i>
-              <span class="loading-title">AI 正在识别图片布局…</span>
-              <span class="loading-sub">识别完成后框选顶层将自动填充描述，稍候即可开始</span>
-            </div>
-          </div>
         </div>
       </div>
+
+      <!-- AI 整页描述生成中：全屏 loading，遮罩整个编辑器避免误操作 -->
+      <transition name="ai-fade">
+        <div v-if="aiLoading" class="ai-page-loading">
+          <div class="ai-loading-box">
+            <div class="ai-orbit">
+              <span class="ai-orbit-ring"></span>
+              <span class="ai-orbit-core"><i class="fas fa-magic"></i></span>
+            </div>
+            <p class="ai-loading-text">AI 正在生成整页区域描述…</p>
+            <p class="ai-loading-sub">共 {{ store.nodeList.length }} 个区域，生成后自动回填</p>
+          </div>
+        </div>
+      </transition>
 
       <!-- 顶层类型改由右侧 NodeInspector 内联胶囊选择，不再在图上弹层 -->
     </div>
@@ -66,17 +75,17 @@ import AnnotationCanvas from './AnnotationCanvas.client.vue'
 import HierarchyTree from './HierarchyTree.client.vue'
 import NodeInspector from './NodeInspector.client.vue'
 import { useUiProjectStore } from '~/stores/uiProject'
+import { useCodeStore } from '~/stores/code'
+import { useRegionDescribe } from '~/composables/useRegionDescribe'
 
 const store = useUiProjectStore()
-
-defineProps({
-  // 顶层识别中：由上层（UploadZone）驱动，仅用于工具条提示，不阻塞框选
-  analyzing: { type: Boolean, default: false },
-})
+const codeStore = useCodeStore()
+// AI 描述是整页操作（一次生成所有区域描述并全部回填），放在顶部工具栏
+const { aiLoading, aiDescribe } = useRegionDescribe()
 
 // 「确认标注」通过后上抛已组装的树；由上层写回图片缩略标注并关闭编辑器。
 // 真正的下单（创建任务/扣积分/SSE）由 ConfigPanel「开始生成」另行触发，编辑器不碰网络。
-// close：编辑器关闭（工具条「关闭」或确认后 close）时上抛，供上层中止仍在途的识别请求。
+// close：编辑器关闭（工具条「关闭」或确认后 close）时上抛。
 const emit = defineEmits(['confirm', 'close'])
 
 const visible = ref(false)
@@ -157,20 +166,23 @@ function onDrawn(bbox) {
   if (mode.value === 'child') {
     createChild(bbox)
   } else {
-    // draw 模式：先建占位顶层节点并选中，类型由右侧面板内联选择（不在图上弹层）
-    store.addTopPlaceholder(bbox)
+    // draw 模式：只在顶层区域类型之间做重叠提醒（子级框在父级内属正常包含，不提示）
+    const det = store.detectNewBox(bbox, { topOnly: true })
+    applyConflicts(det, () => {
+      // 先建占位顶层节点并选中，类型由右侧面板内联选择（不在图上弹层）
+      store.addTopPlaceholder(bbox)
+    })
   }
 }
 
 // ═══ 子级：直接创建并挂父（保持 child 模式，可连续标注多个子区域）═══
+// 子级与父级是包含关系，不做重叠提醒（避免把父节点当冲突）
 function createChild(bbox) {
   const res = store.addChildNode({ bbox, parentKey: pendingParentKey.value })
-  applyConflicts({ conflicts: res.conflicts }, () => {
-    if (res.suggestedParentKey && res.node.parentId === res.suggestedParentKey) {
-      const p = store.nodes[res.suggestedParentKey]
-      ElMessage.info(`已自动挂到「${p?.name || '未命名'}」下，可继续框选或点“退出”`)
-    }
-  })
+  if (res.suggestedParentKey && res.node.parentId === res.suggestedParentKey) {
+    const p = store.nodes[res.suggestedParentKey]
+    ElMessage.info(`已自动挂到「${p?.name || '未命名'}」下，可继续框选或点“退出”`)
+  }
 }
 
 // 重叠处理：high 拦截给保留/取消，soft 仅提示
@@ -190,29 +202,70 @@ function applyConflicts(det, proceed) {
   proceed()
 }
 
-// ═══ 确认标注：只负责「校验未标注 + 上抛已确认树」，不提交 ═══
+// ═══ 确认标注：允许带待补保存，不提交 ═══
+// 待补（未选类型 / AI 初稿 / 描述为空）不拦截：先存进度，进度卡会标黄；
+// 真正的完整性校验在「开始生成」时执行（未选类型的区域不能进生成）。
 function onGenerate() {
-  // 硬拦：顶层框还没选类型（无 name）——无法判断区域身份，不能进生成
-  const noType = store.nodeList.filter((n) => !n.parentId && !n.name)
-  if (noType.length) {
-    ElMessage.warning(`有 ${noType.length} 个顶层区域还没选类型，请先在右侧点选`)
-    store.selectNode(noType[0].nodeKey) // 自动定位第一个未完成项
+  // 子级必须有区域名：缺名会在层级结构里出现「未命名」内容，不符合数据结构
+  const unnamed = store.nodeList.filter((n) => n.parentId && !n.name)
+  if (unnamed.length) {
+    // 按父级分组提示：xxx 一层缺少几个区域名
+    const groups = new Map()
+    unnamed.forEach((n) => {
+      const pk = store.nodes[n.parentId]?.name || '未命名区域'
+      groups.set(pk, (groups.get(pk) || 0) + 1)
+    })
+    const text = [...groups.entries()]
+      .slice(0, 3)
+      .map(([name, count]) => `「${name}」一层缺少 ${count} 个区域名`)
+      .join('；')
+    // 选中第一个缺名子级，右栏直接补名
+    store.selectNode(unnamed[0].nodeKey)
+    ElMessage.warning(`${text}${groups.size > 3 ? ' 等' : ''}，层级结构会出现「未命名」内容，请补齐后再确认`)
     return
   }
-  const tree = store.buildSubmitTree()
-  // 软提示：仍有「待补全 / AI 初稿未确认」的节点（不拦截，结构完整即可生成）
   const pending = store.unconfirmedNodes
-  if (pending.length) {
-    ElMessageBox.confirm(
-      `还有 ${pending.length} 个区域未填描述或为 AI 初稿，可直接确认（生成时按结构 + 已有描述处理）。是否确认标注？`,
-      '确认标注',
-      { confirmButtonText: '确认标注', cancelButtonText: '返回检查', type: 'warning' },
-    )
-      .then(() => emit('confirm', tree))
-      .catch(() => {})
-  } else {
-    emit('confirm', tree)
+  const noType = pending.filter((n) => !n.parentId && !n.name)
+  const tree = store.buildSubmitTree()
+  if (!pending.length) {
+    offerCleanAssets(tree)
+    return
   }
+  const extra = noType.length ? `，其中 ${noType.length} 个还没选类型` : ''
+  ElMessageBox.confirm(
+    `还有 ${pending.length} 个区域描述未完善${extra}，可先保存稍后继续；开始生成前需要全部补齐。`,
+    '确认标注',
+    { confirmButtonText: '确认保存', cancelButtonText: '返回检查', type: 'warning' },
+  )
+    .then(() => offerCleanAssets(tree))
+    .catch(() => {})
+}
+
+// 确认前提醒：当前主图名下没有被任何区域引用的附图可一键清空（清空后素材列表自动同步）；
+// 点「继续」→ 清空未用附图并完成确认；点「取消」→ 什么都不动（不清理、不确认）。
+async function offerCleanAssets(tree) {
+  const scopeId = store.assetScopeId
+  const used = new Set(store.nodeList.map((n) => n.assetId).filter(Boolean))
+  const unused = scopeId
+    ? codeStore.assets.filter((a) => a.ownerId === scopeId && !used.has(a.assetId))
+    : []
+  // 没有未使用附图：直接完成确认
+  if (!unused.length) {
+    emit('confirm', tree)
+    return
+  }
+  try {
+    await ElMessageBox.confirm(
+      `当前主图有 ${unused.length} 张附图未被任何区域使用，继续将清空这些附图，取消则不做任何操作。`,
+      '未使用的附图',
+      { confirmButtonText: '继续', cancelButtonText: '取消', type: 'warning' },
+    )
+  } catch {
+    // 取消：保持原样，不清理素材、不完成确认
+    return
+  }
+  unused.forEach((a) => codeStore.removeAsset(a.assetId))
+  emit('confirm', tree)
 }
 </script>
 
@@ -280,6 +333,76 @@ function onGenerate() {
 .tb-btn--primary { background: linear-gradient(135deg, #00ffff, #ff00ff); color: #fff; border: none; }
 .tb-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
+/* AI 描述 loading：图标旋转 + 扫光，禁用态不置灰以保留动画可见性 */
+.tb-btn.tb-btn--loading:disabled {
+  position: relative;
+  overflow: hidden;
+  opacity: 1;
+  cursor: progress;
+  border-color: rgba(0, 255, 255, 0.7);
+  color: #00ffff;
+}
+.tb-btn--loading::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 20%, rgba(0, 255, 255, 0.25) 50%, transparent 80%);
+  transform: translateX(-100%);
+  animation: tb-sweep 1.1s linear infinite;
+  pointer-events: none;
+}
+@keyframes tb-sweep { to { transform: translateX(100%); } }
+
+/* ═══ AI 整页生成 loading：全屏遮罩 + 旋转光环 ═══ */
+.ai-page-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(5, 6, 12, 0.6);
+  backdrop-filter: blur(3px);
+}
+.ai-loading-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 32px 48px;
+  border-radius: 16px;
+  background: rgba(10, 14, 22, 0.85);
+  border: 1px solid rgba(0, 255, 255, 0.25);
+  box-shadow: 0 0 40px rgba(0, 255, 255, 0.12);
+}
+.ai-orbit { position: relative; width: 64px; height: 64px; }
+.ai-orbit-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 255, 255, 0.15);
+  border-top-color: #00ffff;
+  animation: ai-spin 0.9s linear infinite;
+}
+.ai-orbit-core {
+  position: absolute;
+  inset: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(0, 255, 255, 0.1);
+  color: #00ffff;
+  font-size: 18px;
+  animation: ai-pulse 1.4s ease-in-out infinite;
+}
+.ai-loading-text { margin: 0; font-size: 15px; font-weight: 600; color: rgba(255, 255, 255, 0.9); }
+.ai-loading-sub { margin: 0; font-size: 12px; color: rgba(0, 255, 255, 0.6); }
+@keyframes ai-spin { to { transform: rotate(360deg); } }
+@keyframes ai-pulse { 0%, 100% { transform: scale(1); opacity: 0.85; } 50% { transform: scale(1.08); opacity: 1; } }
+.ai-fade-enter-active, .ai-fade-leave-active { transition: opacity 0.2s ease; }
+.ai-fade-enter-from, .ai-fade-leave-to { opacity: 0; }
+
 .ed-body { flex: 1; display: flex; min-height: 0; position: relative; }
 .ed-canvas { flex: 1; min-width: 0; padding: 16px; }
 .ed-side {
@@ -292,32 +415,6 @@ function onGenerate() {
 }
 .side-tree { flex: 1; min-height: 0; overflow: hidden; }
 .side-insp { flex: 0 0 auto; }
-
-/* 顶层识别 loading 遮罩：覆盖整个主体区（画布+树+表单） */
-.ed-loading {
-  position: absolute;
-  inset: 0;
-  z-index: 20;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(5, 6, 12, 0.55);
-  backdrop-filter: blur(2px);
-}
-.loading-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  padding: 26px 34px;
-  border-radius: 14px;
-  background: rgba(12, 14, 22, 0.92);
-  border: 1px solid rgba(0, 255, 255, 0.28);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
-}
-.loading-icon { font-size: 30px; color: #00ffff; }
-.loading-title { font-size: 15px; font-weight: 600; color: rgba(255, 255, 255, 0.88); }
-.loading-sub { font-size: 12px; color: rgba(255, 255, 255, 0.42); text-align: center; }
 </style>
 
 <style>

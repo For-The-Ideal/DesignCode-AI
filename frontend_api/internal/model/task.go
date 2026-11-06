@@ -20,14 +20,26 @@ const (
 	TaskStatusFailed  TaskStatus = "failed"
 )
 
+// AttachedAsset 主图归属的附图素材（真实素材：Logo/图标/插画/照片）
+// 树节点通过 assetId 引用，生成时直接使用对应图片而不再由 AI 重绘。
+type AttachedAsset struct {
+	AssetID   string `json:"asset_id"`
+	URL       string `json:"url"`
+	Label     string `json:"label"`
+	Width     int    `json:"width,omitempty"`
+	Height    int    `json:"height,omitempty"`
+	SortOrder int    `json:"sort_order"`
+}
+
 // ImageItem 上传图片项
 type ImageItem struct {
-	URL       string   `json:"url"`
-	Title     string   `json:"title,omitempty"`  // 每图简短标题（列表/详情回显用，如文件名去扩展名）
-	Tree      []UINode `json:"tree,omitempty"`   // 结构编辑器确认的嵌套树（做法 B：有则优先据此生成，跳过 Vision）
-	Width     int      `json:"width,omitempty"`  // 原图像素宽（供 DSL canvas 坐标换算）
-	Height    int      `json:"height,omitempty"` // 原图像素高
-	SortOrder int      `json:"sort_order"`       // 排序，1-N（多图页序，生成时按其升序消费）
+	URL            string          `json:"url"`
+	Title          string          `json:"title,omitempty"`           // 每图简短标题（列表/详情回显用，如文件名去扩展名）
+	Tree           []UINode        `json:"tree,omitempty"`            // 结构编辑器确认的嵌套树（做法 B：有则优先据此生成，跳过 Vision）
+	AttachedAssets []AttachedAsset `json:"attached_assets,omitempty"` // 该主图名下的附图素材（节点 assetId 引用）
+	Width          int             `json:"width,omitempty"`           // 原图像素宽（供 DSL canvas 坐标换算）
+	Height         int             `json:"height,omitempty"`          // 原图像素高
+	SortOrder      int             `json:"sort_order"`                // 排序，1-N（多图页序，生成时按其升序消费）
 }
 
 // TaskStep 任务执行步骤记录

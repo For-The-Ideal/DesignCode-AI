@@ -124,11 +124,10 @@ const props = defineProps({
   showTitle: { type: Boolean, default: true },
 })
 
-const emit = defineEmits(['update:expandedId', 'navigate', 'blocked'])
+const emit = defineEmits(['update:expandedId', 'navigate'])
 
-// 条目点击：排队中/失败仅提示不可进入；其余展开该项并通知切换详情
+// 条目点击：展开该项并通知切换详情（失败/排队中也可进入，详情页内展示对应状态）
 const onItemClick = (task) => {
-  if (task.status === 'pending' || task.status === 'failed') { emit('blocked', task); return }
   emit('update:expandedId', task.id)
   emit('navigate', task.id)
 }

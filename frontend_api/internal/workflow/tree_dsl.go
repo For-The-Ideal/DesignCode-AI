@@ -92,6 +92,10 @@ func nodeToComponent(n model.UINode) map[string]any {
 	if n.Behavior != "" {
 		comp["behavior"] = n.Behavior
 	}
+	// 关联附图素材：生成方能从所属图片的 attached_assets 里按 assetId 取到可用图片
+	if n.AssetID != "" {
+		comp["assetId"] = n.AssetID
+	}
 	if len(n.Children) > 0 {
 		kids := make([]map[string]any, 0, len(n.Children))
 		for _, c := range n.Children {

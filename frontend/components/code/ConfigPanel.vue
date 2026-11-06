@@ -108,6 +108,7 @@
 <script setup>
 import { computed, watch, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { useCodeStore } from '~/stores/code'
 import { useUserStore } from '~/stores/user'
 import { useCommonStore } from '~/stores/common'
@@ -133,10 +134,36 @@ const toggleOption = (val) => {
   store.config.options = opts
 }
 
+// 上传完成但未被任何标注区域引用的附图（所有图片的标注树都算）
+const collectUnusedAssets = () => {
+  const used = new Set()
+  const walk = (nodes) => (nodes || []).forEach((n) => {
+    if (n.assetId) used.add(n.assetId)
+    walk(n.children)
+  })
+  images.value.forEach((img) => walk(img.annotationTree))
+  return store.assets.filter((a) => !a.uploading && !a.uploadError && a.cosUrl && !used.has(a.assetId))
+}
+
 const onGenerate = debounce(250, async () => {
   if (!userStore.isLogin) {
     commonStore.setLoginModalVisible(true)
     return
+  }
+  // 已上传但未被任何区域使用的附图：提示一键清空；取消则什么都不动（不清理、不生成）
+  const unused = collectUnusedAssets()
+  if (unused.length) {
+    try {
+      await ElMessageBox.confirm(
+        `有 ${unused.length} 张附图已上传但未被任何标注区域使用，继续将清空这些附图后开始生成，取消则不做任何操作。`,
+        '未使用的附图',
+        { confirmButtonText: '继续', cancelButtonText: '取消', type: 'warning' },
+      )
+    } catch {
+      return
+    }
+    unused.forEach((a) => store.removeAsset(a.assetId))
+    ElMessage.success(`已清空 ${unused.length} 张未使用的附图`)
   }
   await store.createTask()
 })

@@ -36,9 +36,10 @@
       </div>
     </div>
 
+    <!-- 模式提示：固定在画布底部留白区（左下），不再悬浮遮挡图片 -->
     <div class="mode-banner">
       <i class="fas" :class="mode === 'select' ? 'fa-mouse-pointer' : 'fa-crosshairs'"></i>
-      {{ bannerText }}
+      <span class="banner-text">{{ bannerText }}</span>
       <button v-if="mode === 'child'" class="mode-cancel" @click="emit('cancelMode')">退出子级</button>
     </div>
 
@@ -53,6 +54,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
+import { ElMessage } from 'element-plus'
 import { useUiProjectStore } from '~/stores/uiProject'
 
 const store = useUiProjectStore()
@@ -206,12 +208,35 @@ function boxStyle(bbox) {
   }
 }
 
-// 客户端坐标 -> 原图像素点（含夹取）
+// 子级框选的父级边界（原图像素）：仅 child 模式且父节点存在时限制，其余模式不限制
+function parentBBox() {
+  if (props.mode !== 'child' || !store.pendingParentKey) return null
+  return store.nodes[store.pendingParentKey]?.bbox || null
+}
+
+// 父级显示名：优先区域类型/名称（如 banner），未命名回退「父级」
+function parentLabel() {
+  if (!store.pendingParentKey) return '父级'
+  return store.nodes[store.pendingParentKey]?.name || '父级'
+}
+
+// 客户端坐标 -> 原图像素点（含夹取）；子级模式下同时夹到父级 bbox，out 标记原始点是否越界
 function toPixel(e) {
   const rect = frameRef.value.getBoundingClientRect()
   const rx = Math.min(Math.max((e.clientX - rect.left) / rect.width, 0), 1)
   const ry = Math.min(Math.max((e.clientY - rect.top) / rect.height, 0), 1)
-  return { px: rx * store.image.width, py: ry * store.image.height }
+  let px = rx * store.image.width
+  let py = ry * store.image.height
+  let out = false
+  const pb = parentBBox()
+  if (pb) {
+    const cx = Math.min(Math.max(px, pb.x), pb.x + pb.w)
+    const cy = Math.min(Math.max(py, pb.y), pb.y + pb.h)
+    out = cx !== px || cy !== py
+    px = cx
+    py = cy
+  }
+  return { px, py, out }
 }
 
 function label(n) {
@@ -242,7 +267,12 @@ function onFrameDown(e) {
   if (props.mode === 'select') return // 编辑模式不画新框（交由拖动/缩放）
   e.preventDefault() // 阻止浏览器对图片的原生拖拽（避免出现拖整张图的鬼影）
   // draw/child 下空白处按下即画新框（已有框 pointer-events:none，不拦截）
-  const { px, py } = toPixel(e)
+  const { px, py, out } = toPixel(e)
+  // 子级框选：起点在父级 bbox 之外时直接拦截并给出明确提醒
+  if (out) {
+    ElMessage.warning(`子区域超出了「${parentLabel()}」区域边界，请重新框选`)
+    return
+  }
   interaction = { mode: 'draw', start: { px, py } }
   drawingBox.value = { x: px, y: py, w: 0, h: 0 }
   bindWindow()
@@ -300,13 +330,26 @@ function onPointerMove(e) {
   }
 }
 
-function onPointerUp() {
+function onPointerUp(e) {
   unbindWindow()
   if (!interaction) return
 
   if (interaction.mode === 'draw') {
     const box = drawingBox.value
     drawingBox.value = null
+    // 子级框选：松手点或最终框超出父级 bbox 均拒绝提交，并提示具体区域类型（含 0.5px 容差）
+    const pb = parentBBox()
+    if (pb) {
+      const endOut = e && e.type !== 'pointercancel' ? toPixel(e).out : false
+      const EPS = 0.5
+      const boxOut = !!box && (box.x < pb.x - EPS || box.y < pb.y - EPS
+        || box.x + box.w > pb.x + pb.w + EPS || box.y + box.h > pb.y + pb.h + EPS)
+      if (endOut || boxOut) {
+        ElMessage.warning(`子区域超出了「${parentLabel()}」区域边界，请重新框选`)
+        interaction = null
+        return
+      }
+    }
     // 忽略误点（宽高 < 原图 1%）
     if (box && box.w > store.image.width * 0.01 && box.h > store.image.height * 0.01) {
       emit('drawn', { ...box })
@@ -325,10 +368,10 @@ function onPointerUp() {
   border-radius: 12px;
   overflow: hidden;
 }
-/* 视口：fit 时铺满不滚动；放大后 overflow:auto 出滚动条做平移。子项 margin:auto 实现「小则居中、大则可滚到四边」 */
+/* 视口：底部留出提示条/缩放条的高度，fit 时铺满不滚动；放大后 overflow:auto 出滚动条做平移。子项 margin:auto 实现「小则居中、大则可滚到四边」 */
 .canvas-scroll {
   position: absolute;
-  inset: 14px;
+  inset: 14px 14px 60px;
   display: flex;
   overflow: auto;
 }
@@ -358,17 +401,17 @@ function onPointerUp() {
 
 .node-box {
   position: absolute;
-  border: 2px solid rgba(0, 255, 255, 0.8);
-  background: rgba(0, 255, 255, 0.06);
+  border: 2px solid rgba(0, 150, 170, 1);
+  background: rgba(0, 150, 170, 0.08);
   box-sizing: border-box;
   cursor: move;
   /* 深色外描边：白底/浅色设计稿上也能看清边框（不影响原有语义配色） */
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.55);
 }
-.node-box--empty { border-color: rgba(255, 71, 87, 0.8); background: rgba(255, 71, 87, 0.06); }
-.node-box--ai_draft { border-color: rgba(255, 207, 77, 0.85); background: rgba(255, 207, 77, 0.08); }
-.node-box--confirmed { border-color: rgba(55, 224, 141, 0.85); background: rgba(55, 224, 141, 0.08); }
-.node-box--pending { border-color: rgba(255, 255, 255, 0.45); }
+.node-box--empty { border-color: rgba(215, 45, 60, 1); background: rgba(215, 45, 60, 0.08); }
+.node-box--ai_draft { border-color: rgba(190, 130, 0, 1); background: rgba(190, 130, 0, 0.1); }
+.node-box--confirmed { border-color: rgba(15, 145, 85, 1); background: rgba(15, 145, 85, 0.1); }
+.node-box--pending { border-color: rgba(100, 110, 125, 1); }
 .node-box--active {
   border-color: #ff00ff !important;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.55), 0 0 0 3px rgba(255, 0, 255, 0.35), 0 0 14px rgba(255, 0, 255, 0.3);
@@ -416,19 +459,27 @@ function onPointerUp() {
 
 .mode-banner {
   position: absolute;
-  top: 12px;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 16px;
+  bottom: 14px;
+  z-index: 5;
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 12px;
-  border-radius: 20px;
-  background: rgba(0, 0, 0, 0.7);
-  border: 1px solid rgba(0, 255, 255, 0.35);
+  height: 36px; /* 与右下角缩放条同高同底，保持同一水平线 */
+  max-width: calc(100% - 160px); /* 右侧给缩放条留位 */
+  padding: 0 14px;
+  box-sizing: border-box;
+  border-radius: 18px;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(0, 255, 255, 0.25);
   color: #00ffff;
   font-size: 12px;
-  z-index: 5;
+}
+/* 文本过长时省略，不撑破底部单行布局 */
+.banner-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .mode-cancel {
   margin-left: 4px;
@@ -444,7 +495,7 @@ function onPointerUp() {
 .zoom-bar {
   position: absolute;
   right: 16px;
-  bottom: 16px;
+  bottom: 14px;
   z-index: 6;
   display: flex;
   align-items: center;
