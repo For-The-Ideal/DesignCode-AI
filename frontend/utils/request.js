@@ -66,11 +66,18 @@ class HttpRequest {
         const req = useRequestHeaders();
         const { _route } = useNuxtApp();
         const isDesign = _route?.query?.design === 'show';
+        // CSRF（Double Submit Cookie）：浏览器从 cookie 读 token 放入请求头；
+        // SSR 内部请求无 document，由服务端中间件放行（无 Sec-Fetch-Mode）
+        const csrfToken =
+          typeof document !== 'undefined'
+            ? decodeURIComponent((document.cookie.match(/(?:^|;\s*)csrf-token=([^;]*)/) || [])[1] || '')
+            : '';
 
         const fetchOptions = {
           method: 'post',
           headers: {
             ...req,
+            ...(csrfToken ? { 'x-csrf-token': csrfToken } : {}),
             ...(isCookie && req.cookie ? { cookie: req.cookie } : {}),
             ...(isDesign ? { design: true } : {}),
           },

@@ -44,6 +44,8 @@ export default defineNuxtConfig({
   runtimeConfig: {
     // 私有配置 (仅服务端可访问)
     apiSecret: "",
+    // CSRF token 签名密钥：部署时用 NUXT_CSRF_SECRET 覆盖；未配置时回退内置默认值
+    csrfSecret: "",
     // 公开配置 (客户端和服务端都可访问)
     public: {
       apiBase: "",

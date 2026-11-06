@@ -24,6 +24,8 @@ export const getData = async (options = {}) => {
             method,
             headers: {
                 ...(isCookie && cookie ? { cookie } : {}),
+                // CSRF：透传客户端校验头（Go 侧对浏览器直连请求做 Double Submit 校验时使用）
+                ...(req['x-csrf-token'] ? { 'x-csrf-token': req['x-csrf-token'] } : {}),
             },
             baseURL: '', // 关键！
             timeout: 60e3, // 默认超时60秒

@@ -116,6 +116,8 @@ func Run() {
 	r := gin.Default()
 	r.SetTrustedProxies(nil)
 	r.Use(middleware.CORSMiddleware())
+	// CSRF：Double Submit Cookie 校验（浏览器写请求），覆盖 Nginx 直连 /api/ 的绕过路径
+	r.Use(middleware.CSRFMiddleware())
 
 	// 11. 初始化路由
 	routes.InitV1Routes(r, taskHandler, sseHandler, uploadHandler, authHandler, userHandler, adminHandler, membershipHandler, uiProjectHandler, configHandler)

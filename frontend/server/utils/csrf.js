@@ -12,7 +12,8 @@
  *
  * 在 server/ 目录下自动导入，直接使用：
  *   generateCsrfToken()
- *   validateCsrfToken(event)
+ *   verifyCsrfToken(token)
+ *   setCsrfCookie(event, token) / getCsrfCookieToken(event) / getCsrfHeaderToken(event)
  */
 
 import { randomBytes, createHmac } from 'node:crypto'
@@ -81,11 +82,13 @@ export function verifyCsrfToken(token) {
 
 /**
  * 设置 CSRF Cookie
+ * 注意：按实际请求协议判断 secure，不能只看 NODE_ENV——
+ * 项目生产为 HTTP 部署，强制 Secure 会导致浏览器丢弃 cookie，写请求全部 403。
  */
 export function setCsrfCookie(event, token) {
   setCookie(event, CSRF_COOKIE_NAME, token, {
     httpOnly: false,
-    secure: process.env.NODE_ENV === 'production',
+    secure: getRequestProtocol(event) === 'https',
     sameSite: 'lax',
     path: '/',
     maxAge: COOKIE_MAX_AGE,
