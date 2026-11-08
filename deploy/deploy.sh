@@ -71,6 +71,25 @@ wait_http() {
   return 1
 }
 
+# 等“端口真正的监听者”就是本单元的主进程：
+# Type=simple 启动瞬间就算 active，端口若被野进程占着，主进程稍后才 bind 失败退出，
+# 只看 is-active 会把失败误判成成功（旧进程还占着端口对外回 200）
+wait_port_owner() {
+  local u="$1" port="$2" i=0 main pid
+  while [ $i -lt 30 ]; do
+    main=$(systemctl show -p MainPID --value "$u" 2>/dev/null)
+    pid=$(ss -tlnp 2>/dev/null | grep ":$port " | grep -o 'pid=[0-9]*' | head -1 | cut -d= -f2)
+    if [ -n "$main" ] && [ "$main" != "0" ] && [ -n "$pid" ] && [ "$pid" = "$main" ]; then
+      return 0
+    fi
+    i=$((i + 1))
+    sleep 1
+  done
+  echo "  !!! $u 没能接管端口 $port：监听者 pid=${pid:-无}，单元 MainPID=${main:-0}"
+  journalctl -u "$u" -n 8 --no-pager 2>/dev/null | sed 's/^/    /'
+  return 1
+}
+
 install_node() {
   local want="v$NODE_VERSION"
   if [ -x "$NODE_HOME/bin/node" ] && [ "$("$NODE_HOME/bin/node" -v 2>/dev/null)" = "$want" ]; then
@@ -189,6 +208,15 @@ OK=1
 for u in $UNITS; do
   if wait_active "$u"; then
     printf '  %-22s active\n' "$u"
+    case "$u" in
+      designcode-api)      PT=8888 ;;
+      designcode-frontend) PT=3000 ;;
+      *)                   PT="" ;;
+    esac
+    # active 不代表端口是自己的：8888 被旧进程占着时新进程会 bind 失败后自动重启
+    if [ -n "$PT" ] && ! wait_port_owner "$u" "$PT"; then
+      OK=0
+    fi
   else
     printf '  %-22s %s（60s 未就绪）\n' "$u" "$(systemctl is-active "$u" 2>/dev/null)"
     echo "  !!! $u 不是 active：journalctl -u $u -n 60 --no-pager"
