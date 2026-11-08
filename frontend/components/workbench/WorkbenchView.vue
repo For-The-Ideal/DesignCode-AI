@@ -128,6 +128,14 @@ function onDropFiles(files) {
   codeStore.addImages(files)
 }
 
+// 载入树后默认选中第一个顶层区域：
+// 从详情页「重新生成」恢复时右侧直接可编辑，不再停在「选中区域后可编辑描述」空态
+function selectFirstTop() {
+  if (uiStore.selectedNodeKey || !uiStore.hasNodes) return
+  const first = uiStore.nodeList.find((n) => !n.parentId)
+  if (first) uiStore.selectNode(first.nodeKey)
+}
+
 // ═══ 会话初始化：图片就绪即载入画布/树；切模式时「先写回旧图 → 再载入新图」 ═══
 // 单图 / 多图是两套独立数据：旧模式的编辑必须先落盘，新模式的树再从自己的图上恢复；
 // 目标模式还没图时清空右栏，不残留上一模式的结构。
@@ -159,8 +167,10 @@ watch(
       exitMode()
       uiStore.loadTree(img.annotationTree || [])
       uiStore.setAssetScope(img.uploadId || '')
+      selectFirstTop()
     } else if (!uiStore.hasNodes && img.annotationTree?.length) {
       uiStore.loadTree(img.annotationTree)
+      selectFirstTop()
     }
     // 尺寸未变就不重复写入：避免同一张图因预览→远程地址等变化被重置缩放（画布闪烁）；
     // uploadId 一并同步，保证 saveToImage 始终写回正在编辑的那一页

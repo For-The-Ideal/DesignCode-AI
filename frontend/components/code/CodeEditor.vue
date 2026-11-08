@@ -6,12 +6,23 @@
         <div class="dot dot-yellow"></div>
         <div class="dot dot-green"></div>
       </div>
-      <div class="editor-title">{{ language }}</div>
+      <div class="editor-title">{{ editorLabel }}</div>
       <div class="editor-actions">
-        <button class="editor-btn" @click="copy" title="复制代码">
-          <i class="fas fa-copy"></i>
-          <span>复制</span>
+        <button
+          class="editor-btn"
+          :class="{ 'is-copied': copied }"
+          :title="copied ? '已复制' : '复制代码'"
+          @click="copy"
+        >
+          <i class="fas" :class="copied ? 'fa-check' : 'fa-copy'"></i>
+          <span>{{ copied ? '已复制' : '复制' }}</span>
         </button>
+        <!-- 复制成功提示：按钮左侧冒出，不挤动布局 -->
+        <Transition name="copy-tip">
+          <span v-if="copied" class="copy-tip">
+            <i class="fas fa-circle-check"></i> 已复制到剪贴板
+          </span>
+        </Transition>
       </div>
     </div>
 
@@ -34,12 +45,14 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue'
 
 // ========== Props（与原 Monaco 版保持一致，替换不影响调用方） ==========
 const props = defineProps({
   modelValue: { type: String, default: '' },
   language: { type: String, default: 'dart' },
+  // 头部展示的语言名：缺省回退 language（如 Vue3 生成物高亮标识为 html，标题应显示 Vue3）
+  label: { type: String, default: '' },
   readonly: { type: Boolean, default: false },
   lineNumbers: { type: Boolean, default: true },
   wordWrap: { type: Boolean, default: true },
@@ -56,6 +69,7 @@ const emit = defineEmits(['update:modelValue', 'change', 'copy', 'format'])
 const bodyRef = ref(null)
 
 const pxHeight = computed(() => (typeof props.height === 'number' ? `${props.height}px` : props.height))
+const editorLabel = computed(() => props.label || props.language)
 const lines = computed(() => (props.modelValue || '').split('\n'))
 const hasContent = computed(() => (props.modelValue || '').length > 0)
 
@@ -103,16 +117,49 @@ watch(
 )
 
 // ========== 复制代码 ==========
+// 按钮反馈：复制成功短暂显示“已复制”
+const copied = ref(false)
+let copyTimer = null
+
+// 非安全上下文（http）下 navigator.clipboard 不可用，回退 textarea + execCommand
+function legacyCopy(text) {
+  try {
+    const ta = document.createElement('textarea')
+    ta.value = text
+    ta.setAttribute('readonly', '')
+    ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0'
+    document.body.appendChild(ta)
+    ta.select()
+    ta.setSelectionRange(0, text.length)
+    const ok = document.execCommand('copy')
+    document.body.removeChild(ta)
+    return ok
+  } catch {
+    return false
+  }
+}
+
 const copy = async () => {
   const code = props.modelValue
   if (!code) return
+  let ok = false
   try {
-    await navigator.clipboard.writeText(code)
-    emit('copy', code)
-  } catch (err) {
-    console.error('复制失败:', err)
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(code)
+      ok = true
+    }
+  } catch {
+    ok = false
   }
+  if (!ok) ok = legacyCopy(code)
+  if (!ok) return
+  copied.value = true
+  if (copyTimer) clearTimeout(copyTimer)
+  copyTimer = setTimeout(() => { copied.value = false }, 1600)
+  emit('copy', code)
 }
+
+onBeforeUnmount(() => { if (copyTimer) clearTimeout(copyTimer) })
 
 // ========== 只读展示：格式化无意义，保留接口兼容 ==========
 const format = () => emit('format')
@@ -182,7 +229,33 @@ defineExpose({
   display: flex;
   gap: 6px;
   flex-shrink: 0;
+  position: relative;
 }
+
+/* 复制成功气泡：定位在按钮左侧，不改变头部高度 */
+.copy-tip {
+  position: absolute;
+  right: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(52, 211, 153, 0.12);
+  border: 1px solid rgba(52, 211, 153, 0.35);
+  color: #34d399;
+  font-size: 11px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 4;
+}
+.copy-tip i { font-size: 10px; }
+.copy-tip-enter-active,
+.copy-tip-leave-active { transition: opacity 0.18s ease, transform 0.18s ease; }
+.copy-tip-enter-from,
+.copy-tip-leave-to { opacity: 0; transform: translate(4px, -50%); }
 
 .editor-btn {
   display: flex;
@@ -204,6 +277,11 @@ defineExpose({
   background: rgba(0, 255, 255, 0.1);
   border-color: rgba(0, 255, 255, 0.3);
   color: #00ffff;
+}
+.editor-btn.is-copied {
+  background: rgba(52, 211, 153, 0.1);
+  border-color: rgba(52, 211, 153, 0.4);
+  color: #34d399;
 }
 
 /* ═══ 代码主体 ═══ */

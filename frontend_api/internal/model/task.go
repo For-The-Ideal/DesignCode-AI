@@ -170,35 +170,44 @@ func (t *Task) NormalizePages() {
 //	can_sse       - 是否可以连接 SSE（true=运行中可连，false=已结束无需连）
 //	result        - 生成结果（仅 success 时有值）
 //	images        - 上传的图片列表（刷新后回显用）
+//	options       - 生成选项（回填工作台配置）
+//	advanced      - 高级选项（回填工作台配置）
+//	component_lib - 使用的组件库（回填工作台配置）
 type TaskStatusResponse struct {
-	TaskID      string      `json:"task_id"`
-	Target      string      `json:"target"`
-	Platform    string      `json:"platform"`
-	Status      TaskStatus  `json:"status"`
-	Progress    int         `json:"progress"`
-	CurrentStep string      `json:"current_step"`
-	CanSSE      bool        `json:"can_sse"`
-	Images      []ImageItem `json:"images"`
-	PageLinks   []PageLink  `json:"page_links"` // 页面跳转边（详情页回显页面关系）
-	TaskSteps   []TaskStep  `json:"task_steps"` // 执行步骤记录
-	Result      *Result     `json:"result,omitempty"`
+	TaskID       string      `json:"task_id"`
+	Target       string      `json:"target"`
+	Platform     string      `json:"platform"`
+	Status       TaskStatus  `json:"status"`
+	Progress     int         `json:"progress"`
+	CurrentStep  string      `json:"current_step"`
+	CanSSE       bool        `json:"can_sse"`
+	Images       []ImageItem `json:"images"`
+	PageLinks    []PageLink  `json:"page_links"` // 页面跳转边（详情页回显页面关系）
+	Options      []string    `json:"options"`    // 生成选项（重新生成时回填）
+	Advanced     []string    `json:"advanced"`   // 高级选项（重新生成时回填）
+	ComponentLib string      `json:"component_lib"`
+	TaskSteps    []TaskStep  `json:"task_steps"` // 执行步骤记录
+	Result       *Result     `json:"result,omitempty"`
 }
 
 // ToTaskStatusResponse 将 Task 转换为对外响应
 func (t *Task) ToTaskStatusResponse(result *Result) *TaskStatusResponse {
 	canSSE := t.Status == TaskStatusPending || t.Status == TaskStatusRunning
 	return &TaskStatusResponse{
-		TaskID:      t.ID,
-		Target:      t.Target,
-		Platform:    t.Platform,
-		Status:      t.Status,
-		Progress:    t.Progress,
-		CurrentStep: t.CurrentStep,
-		CanSSE:      canSSE,
-		Images:      t.Images,
-		PageLinks:   t.PageLinks,
-		TaskSteps:   t.TaskSteps,
-		Result:      result,
+		TaskID:       t.ID,
+		Target:       t.Target,
+		Platform:     t.Platform,
+		Status:       t.Status,
+		Progress:     t.Progress,
+		CurrentStep:  t.CurrentStep,
+		CanSSE:       canSSE,
+		Images:       t.Images,
+		PageLinks:    t.PageLinks,
+		Options:      t.Options,
+		Advanced:     t.Advanced,
+		ComponentLib: t.ComponentLib,
+		TaskSteps:    t.TaskSteps,
+		Result:       result,
 	}
 }
 
@@ -232,14 +241,17 @@ type TaskListItem struct {
 	Options      []string        `json:"options"`
 	Advanced     []string        `json:"advanced"`
 	ComponentLib string          `json:"component_lib"`
+	TreeNodes    int             `json:"tree_nodes"` // 结构树节点总数（0=未用结构树，生成时走视觉解析）
 	CreatedAt    string          `json:"created_at"`
 }
 
-// ToTaskListItem 将 Task 转为列表项（图片瘦身为 url+title，剥离 tree）
+// ToTaskListItem 将 Task 转为列表项（图片瘦身为 url+title，剥离 tree，只留节点数摘要）
 func (t *Task) ToTaskListItem() TaskListItem {
 	imgs := make([]ListItemImage, 0, len(t.Images))
+	treeNodes := 0
 	for _, im := range t.Images {
 		imgs = append(imgs, ListItemImage{URL: im.URL, Title: im.Title})
+		treeNodes += CountNodes(im.Tree)
 	}
 	return TaskListItem{
 		ID:           t.ID,
@@ -251,6 +263,7 @@ func (t *Task) ToTaskListItem() TaskListItem {
 		Options:      t.Options,
 		Advanced:     t.Advanced,
 		ComponentLib: t.ComponentLib,
+		TreeNodes:    treeNodes,
 		CreatedAt:    t.CreatedAt.Format("2006-01-02 15:04"),
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"frontend_api/internal/model"
 	"frontend_api/internal/quality"
@@ -522,6 +523,12 @@ func (w *GenerateUIWorkflow) Fail(task *model.Task, err error) {
 }
 
 func (w *GenerateUIWorkflow) handleError(task *model.Task, err error) {
+	// 任务级超时（worker 的 context.WithTimeout）会在各 skill 错误里以
+	// context deadline exceeded 形式冒出，统一换成用户能读懂的文案。
+	if errors.Is(err, context.DeadlineExceeded) {
+		err = fmt.Errorf("任务执行超时，已自动中断（可减少页数或稍后重试）")
+	}
+
 	// 先复核任务现状：任务可能已被另一个执行者成功完成（例如启动时的残留清理
 	// 误判后旧进程继续跑完），此时不能把 success 覆盖成 failed，也不再向
 	// 前端推 failed——否则表现为“生成中突然失败，回来又莫名其妙成功”。

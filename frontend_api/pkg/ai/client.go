@@ -23,6 +23,25 @@ import (
 type Client interface {
 	// Chat 发送对话请求，返回 AI 响应的文本内容
 	Chat(ctx context.Context, messages []Message, opts ...Option) (string, error)
+	// ChatWithMeta 与 Chat 相同，但额外返回结束原因与用量，
+	// 供生成流程判断输出是否被 max_tokens 截断（finish_reason=length）
+	ChatWithMeta(ctx context.Context, messages []Message, opts ...Option) (Result, error)
+}
+
+// Result 单次对话的结果
+//
+//	Content          - 响应正文
+//	FinishReason     - stop | length | ...（length 表示被 max_tokens 截断）
+//	CompletionTokens - 本次输出消耗的 token 数
+type Result struct {
+	Content          string
+	FinishReason     string
+	CompletionTokens int
+}
+
+// Truncated 输出是否因 max_tokens 上限被截断
+func (r Result) Truncated() bool {
+	return r.FinishReason == "length"
 }
 
 // Message 对话消息
@@ -76,7 +95,11 @@ type chatResponse struct {
 		Message struct {
 			Content string `json:"content"`
 		} `json:"message"`
+		FinishReason string `json:"finish_reason"`
 	} `json:"choices"`
+	Usage *struct {
+		CompletionTokens int `json:"completion_tokens"`
+	} `json:"usage,omitempty"`
 	Error *struct {
 		Message string `json:"message"`
 		Type    string `json:"type"`
@@ -162,8 +185,14 @@ var deepSeekError = map[int]string{
 	503: "服务器负载过高，请稍后重试",
 }
 
-// Chat 发送对话请求；限流/临时故障时按 maxRetries 做指数退避重试
+// Chat 发送对话请求，只返回响应正文
 func (c *chatClient) Chat(ctx context.Context, messages []Message, opts ...Option) (string, error) {
+	res, err := c.ChatWithMeta(ctx, messages, opts...)
+	return res.Content, err
+}
+
+// ChatWithMeta 发送对话请求并返回结束原因；限流/临时故障时按 maxRetries 做指数退避重试
+func (c *chatClient) ChatWithMeta(ctx context.Context, messages []Message, opts ...Option) (Result, error) {
 	reqBody := chatRequest{
 		Model:    c.model,
 		Messages: messages,
@@ -175,7 +204,7 @@ func (c *chatClient) Chat(ctx context.Context, messages []Message, opts ...Optio
 
 	body, err := json.Marshal(reqBody)
 	if err != nil {
-		return "", fmt.Errorf("ai: 序列化请求失败: %w", err)
+		return Result{}, fmt.Errorf("ai: 序列化请求失败: %w", err)
 	}
 
 	var lastErr error
@@ -190,28 +219,28 @@ func (c *chatClient) Chat(ctx context.Context, messages []Message, opts ...Optio
 			log.Printf("[AI] %s 第 %d/%d 次重试，等待 %s", c.model, attempt, c.maxRetries, delay)
 			select {
 			case <-ctx.Done():
-				return "", ctx.Err()
+				return Result{}, ctx.Err()
 			case <-time.After(delay):
 			}
 		}
 
-		content, retryable, retryAfter, err := c.doChat(ctx, body)
+		res, retryable, retryAfter, err := c.doChat(ctx, body)
 		if err == nil {
-			return content, nil
+			return res, nil
 		}
 		lastErr, serverWait = err, retryAfter
 		if !retryable {
-			return "", err
+			return Result{}, err
 		}
 	}
-	return "", lastErr
+	return Result{}, lastErr
 }
 
 // doChat 单次请求；retryable 表示该错误是否值得重试，retryAfter 为服务端建议等待时间
-func (c *chatClient) doChat(ctx context.Context, body []byte) (content string, retryable bool, retryAfter time.Duration, err error) {
+func (c *chatClient) doChat(ctx context.Context, body []byte) (res Result, retryable bool, retryAfter time.Duration, err error) {
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, c.endpoint, bytes.NewReader(body))
 	if err != nil {
-		return "", false, 0, fmt.Errorf("ai: 创建请求失败: %w", err)
+		return Result{}, false, 0, fmt.Errorf("ai: 创建请求失败: %w", err)
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("Authorization", "Bearer "+c.apiKey)
@@ -220,15 +249,15 @@ func (c *chatClient) doChat(ctx context.Context, body []byte) (content string, r
 	if err != nil {
 		// 上下文取消/超时不再重试
 		if ctx.Err() != nil {
-			return "", false, 0, ctx.Err()
+			return Result{}, false, 0, ctx.Err()
 		}
-		return "", true, 0, fmt.Errorf("ai: 请求失败: %w", err)
+		return Result{}, true, 0, fmt.Errorf("ai: 请求失败: %w", err)
 	}
 	defer resp.Body.Close()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", true, 0, fmt.Errorf("ai: 读取响应失败: %w", err)
+		return Result{}, true, 0, fmt.Errorf("ai: 读取响应失败: %w", err)
 	}
 
 	if resp.StatusCode != http.StatusOK {
@@ -247,23 +276,33 @@ func (c *chatClient) doChat(ctx context.Context, body []byte) (content string, r
 				wait = time.Duration(secs) * time.Second
 			}
 		}
-		return "", retry, wait, fmt.Errorf("ai: %s, body=%s", errDesc, string(respBody))
+		return Result{}, retry, wait, fmt.Errorf("ai: %s, body=%s", errDesc, string(respBody))
 	}
 
 	var chatResp chatResponse
 	if err := json.Unmarshal(respBody, &chatResp); err != nil {
-		return "", false, 0, fmt.Errorf("ai: 解析响应失败: %w", err)
+		return Result{}, false, 0, fmt.Errorf("ai: 解析响应失败: %w", err)
 	}
 
 	if chatResp.Error != nil {
-		return "", false, 0, fmt.Errorf("ai: API 错误: %s", chatResp.Error.Message)
+		return Result{}, false, 0, fmt.Errorf("ai: API 错误: %s", chatResp.Error.Message)
 	}
 
 	if len(chatResp.Choices) == 0 {
-		return "", false, 0, fmt.Errorf("ai: 响应中无 choices 字段")
+		return Result{}, false, 0, fmt.Errorf("ai: 响应中无 choices 字段")
 	}
 
-	return chatResp.Choices[0].Message.Content, false, 0, nil
+	choice := chatResp.Choices[0]
+	res = Result{Content: choice.Message.Content, FinishReason: choice.FinishReason}
+	if chatResp.Usage != nil {
+		res.CompletionTokens = chatResp.Usage.CompletionTokens
+	}
+	// 截断是可诊断问题：finish_reason=length 时内容必然不完整，先留痕便于排查
+	if res.Truncated() {
+		log.Printf("[AI] %s 输出被截断（finish_reason=length, completion_tokens=%d）", c.model, res.CompletionTokens)
+	}
+
+	return res, false, 0, nil
 }
 
 // SelectClient 按能力从配置中选取第一个启用的模型并创建客户端

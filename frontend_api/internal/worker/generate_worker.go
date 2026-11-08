@@ -21,6 +21,11 @@ import (
 //  职责：消费任务队列，驱动 GenerateUIWorkflow
 // ═══════════════════════════════════════════════
 
+// taskTimeout 任务级总超时：防止 AI 长时间挂起或反复重试让任务无限运行
+// （单 worker 串行消费，一个任务卡死会堵住队列里所有任务）。
+// 30 分钟按 5 页 × 每页多次 AI 调用的最坏量级估算，正常任务远小于该值。
+const taskTimeout = 30 * time.Minute
+
 // GenerateWorker 生成 worker
 type GenerateWorker struct {
 	queue    queue.Queue
@@ -111,9 +116,14 @@ func (w *GenerateWorker) processTask(ctx context.Context, taskID string) {
 		}
 	}()
 
-	// 执行工作流
+	// 执行工作流（任务级超时）：超时后 ctx 级联取消正在进行的 AI 请求，
+	// Execute 内部会走 handleError 完成退积分/落库/SSE，这里不重复 Fail。
+	// 心跳 goroutine 仍基于进程 ctx，不受任务超时影响。
+	taskCtx, cancel := context.WithTimeout(ctx, taskTimeout)
+	defer cancel()
+
 	start := time.Now()
-	if err := w.workflow.Execute(ctx, task); err != nil {
+	if err := w.workflow.Execute(taskCtx, task); err != nil {
 		w.log.Errorf("[Worker] 工作流执行失败: %s, err=%v", taskID, err)
 	}
 	// 堆内存观测：用于评估 worker 扩容空间（峰值取整任务期间的 After 值，受 GC 时机影响）

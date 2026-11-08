@@ -34,3 +34,13 @@ type UINode struct {
 	BBox         BBox     `json:"bbox"`
 	Children     []UINode `json:"children"`
 }
+
+// CountNodes 递归统计树节点总数（含自身）。
+// 列表接口不回整棵树，只用这个摘要值标识任务是否按结构化数据生成。
+func CountNodes(nodes []UINode) int {
+	n := 0
+	for i := range nodes {
+		n += 1 + CountNodes(nodes[i].Children)
+	}
+	return n
+}

@@ -9,52 +9,55 @@
         :class="'st-' + row.status"
         @click="openDetail(row)"
       >
-        <!-- 手机壳缩略图：多图任务用叠层阴影表示“一叠页”，右上角标页数 -->
-        <div class="t-thumb" :class="{ 't-thumb--multi': imgCount(row) > 1 }">
-          <el-image v-if="row.images?.[0]?.url" :src="row.images[0].url" fit="cover" class="thumb-img" loading="lazy">
-            <template #error><div class="thumb-ph"><i class="fas fa-image"></i></div></template>
-          </el-image>
-          <div v-else class="thumb-ph"><i class="fas fa-image"></i></div>
-          <span v-if="imgCount(row) > 1" class="thumb-count">{{ imgCount(row) }}页</span>
+        <!-- 上部：手机壳缩略图 + 概览信息 -->
+        <div class="t-top">
+          <!-- 缩略图：多图任务用叠层阴影表示“一叠页”，右上角标页数 -->
+          <div class="t-thumb" :class="{ 't-thumb--multi': imgCount(row) > 1 }">
+            <el-image v-if="row.images?.[0]?.url" :src="row.images[0].url" fit="cover" class="thumb-img" loading="lazy">
+              <template #error><div class="thumb-ph"><i class="fas fa-image"></i></div></template>
+            </el-image>
+            <div v-else class="thumb-ph"><i class="fas fa-image"></i></div>
+            <span v-if="imgCount(row) > 1" class="thumb-count">{{ imgCount(row) }}页</span>
+          </div>
+
+          <!-- 信息列：标题+状态 / 框架 / 选项标签 / 平台 -->
+          <div class="t-body">
+            <div class="t-head">
+              <div class="t-title-wrap">
+                <span class="t-dot" :title="statusLabel(row.status)"></span>
+                <h3 class="t-name" :title="taskName(row)">{{ taskName(row) }}</h3>
+              </div>
+              <span class="st-pill" :class="'sp-' + row.status">{{ statusLabel(row.status) }}</span>
+            </div>
+
+            <!-- 框架 chip -->
+            <span class="fw-chip">{{ row.framework }}</span>
+
+            <!-- 其他生成选项标签（逐项拆分，label 来自配置字典） -->
+            <div class="t-tags" v-if="configStore.loaded && rowTags(row).length">
+              <span class="fw-chip" v-for="(tag, i) in rowTags(row)" :key="i">{{ tag }}</span>
+            </div>
+
+            <!-- 平台 -->
+            <div class="t-meta">
+              <i :class="platformIcon(row.platform)"></i>
+              <span>{{ platformLabel(row.platform) }}</span>
+            </div>
+          </div>
         </div>
 
-        <!-- 信息区 -->
-        <div class="t-body">
-          <!-- 标题行：状态点 + 名称 + 框架药丸 -->
-          <div class="t-head">
-            <div class="t-title-wrap">
-              <span class="t-dot" :title="statusLabel(row.status)"></span>
-              <h3 class="t-name" :title="taskName(row)">{{ taskName(row) }}</h3>
-            </div>
-            <span class="st-pill" :class="'sp-' + row.status">{{ statusLabel(row.status) }}</span>
-          </div>
+        <!-- 时间 · 当前步骤 -->
+        <div class="t-submeta">
+          <span class="m-time">{{ row.created_at }}</span>
+          <span class="p-step">{{ row.status === 'running' && row.current_step ? stepLabel(row.current_step) : '' }}</span>
+        </div>
 
-          <!-- 框架 chip -->
-          <span class="fw-chip">{{ row.framework }}</span>
-
-          <!-- 其他生成选项标签（逐项拆分，label 来自配置字典） -->
-          <div class="t-tags" v-if="configStore.loaded && rowTags(row).length">
-            <span class="t-tag" v-for="(tag, i) in rowTags(row)" :key="i">{{ tag }}</span>
-          </div>
-
-          <!-- 平台 · 时间 -->
-          <div class="t-meta">
-            <i :class="platformIcon(row.platform)"></i>
-            <span>{{ platformLabel(row.platform) }}</span>
-            <span class="dot-sep">·</span>
-            <span class="m-time">{{ row.created_at }}</span>
-          </div>
-
-          <!-- 进度 -->
+        <!-- 底部：进度 + 操作 -->
+        <div class="t-foot">
           <div class="t-prog" :class="'pb-' + row.status">
             <div class="pbar"><span class="pbar-fill" :style="{ width: row.progress + '%' }"></span></div>
-            <div class="prow">
-              <span class="p-step">{{ row.status === 'running' && row.current_step ? stepLabel(row.current_step) : '' }}</span>
-              <span class="p-num">{{ row.progress }}%</span>
-            </div>
+            <span class="p-num">{{ row.progress }}%</span>
           </div>
-
-          <!-- 操作 -->
           <div class="t-acts" @click.stop>
             <button class="icon-btn" title="查看详情" @click="openDetail(row)">
               <i class="fas fa-arrow-up-right-from-square"></i>
@@ -158,23 +161,25 @@ const platformIcon  = (p) => configStore.platformIcon(p)
 
 .tasks-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);   /* 一行固定 4 个 */
-  gap: 14px;
+  /* minmax(0, 1fr)：列宽严格等分，卡片内长文本不会把列撑宽 */
+  grid-template-columns: repeat(5, minmax(0, 1fr));   /* 一行固定 5 个 */
+  gap: 12px;
   padding-bottom: 8px;
 }
 
 /* 窄屏时逐级减少每行列数，保证卡片不被压变形 */
-@media (max-width: 1180px) { .tasks-grid { grid-template-columns: repeat(3, 1fr); } }
-@media (max-width: 820px)  { .tasks-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 560px)  { .tasks-grid { grid-template-columns: 1fr; } }
+@media (max-width: 1280px) { .tasks-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (max-width: 1024px) { .tasks-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 820px)  { .tasks-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px)  { .tasks-grid { grid-template-columns: minmax(0, 1fr); } }
 
-/* ═══ 卡片（横版）═══ */
+/* ═══ 卡片（竖版：上部缩略图 + 概览，下部时间与进度）═══ */
 .t-card {
   display: flex;
-  align-items: stretch;
-  gap: 12px;
+  flex-direction: column;
+  gap: 10px;
   padding: 12px;
-  border-radius: 16px;
+  border-radius: 14px;
   border: 1px solid rgba(0, 255, 255, 0.08);
   background: rgba(10, 14, 23, 0.65);
   backdrop-filter: blur(12px);
@@ -191,17 +196,19 @@ const platformIcon  = (p) => configStore.platformIcon(p)
   box-shadow: 0 0 22px rgba(34, 211, 238, 0.10);
 }
 
-/* ═══ 手机壳缩略图 ═══ */
+/* ═══ 上部：手机壳缩略图 + 信息列 ═══ */
+.t-top { display: flex; align-items: flex-start; gap: 10px; }
+
 .t-thumb {
   position: relative;
   flex-shrink: 0;
-  width: 84px;
+  width: 150px;
   aspect-ratio: 9 / 16;   /* 固定手机屏比例，所有缩略图尺寸完全一致 */
-  align-self: flex-start;
-  border-radius: 12px;
-  border: 2px solid rgba(148, 163, 184, 0.22);
+  border-radius: 10px;
+  border: 2px solid rgba(226, 232, 240, 0.45);
   background: #0b1020;
   overflow: hidden;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45);
 }
 .thumb-img { width: 100%; height: 100%; display: block; }
 .t-thumb :deep(.el-image__inner) {
@@ -211,7 +218,7 @@ const platformIcon  = (p) => configStore.platformIcon(p)
   width: 100%; height: 100%;
   display: flex; align-items: center; justify-content: center;
 }
-.thumb-ph i { font-size: 24px; color: rgba(255, 255, 255, 0.12); }
+.thumb-ph i { font-size: 30px; color: rgba(255, 255, 255, 0.12); }
 
 /* 多图：用层叠阴影表现“一叠页”（阴影不受 overflow:hidden 影响） */
 .t-thumb--multi {
@@ -219,7 +226,8 @@ const platformIcon  = (p) => configStore.platformIcon(p)
     3px 3px 0 0 rgba(11, 16, 32, 0.95),
     3px 3px 0 1px rgba(148, 163, 184, 0.28),
     6px 6px 0 0 rgba(11, 16, 32, 0.95),
-    6px 6px 0 1px rgba(148, 163, 184, 0.14);
+    6px 6px 0 1px rgba(148, 163, 184, 0.14),
+    0 6px 16px rgba(0, 0, 0, 0.45);
 }
 .thumb-count {
   position: absolute;
@@ -235,67 +243,64 @@ const platformIcon  = (p) => configStore.platformIcon(p)
   box-shadow: 0 2px 8px rgba(6, 182, 212, 0.35);
 }
 
-/* ═══ 信息区 ═══ */
+/* ═══ 信息列 ═══ */
 .t-body {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
-.t-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-.t-title-wrap { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.t-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; background: #64748b; }
+.t-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; }
+.t-title-wrap { display: flex; align-items: center; gap: 7px; min-width: 0; flex: 1; }
+.t-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: #64748b; }
 .st-success .t-dot { background: #34d399; box-shadow: 0 0 8px rgba(52, 211, 153, 0.6); }
 .st-running .t-dot { background: #22d3ee; box-shadow: 0 0 8px rgba(34, 211, 238, 0.6); animation: blink 1.2s infinite; }
 .st-pending .t-dot { background: #60a5fa; }
 .st-failed .t-dot { background: #f87171; }
 
 .t-name {
-  margin: 0; font-size: 16px; font-weight: 800; color: #ffffff;
+  margin: 0; font-size: 14px; font-weight: 800; color: #ffffff;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
 /* 状态药丸（右上）：按状态配色 */
 .st-pill {
   flex-shrink: 0;
-  font-size: 12px; font-weight: 700;
-  padding: 4px 12px; border-radius: 999px;
+  font-size: 11px; font-weight: 700;
+  padding: 2px 8px; border-radius: 999px;
   border: 1px solid transparent;
+  white-space: nowrap;
 }
 .sp-success { color: #34d399; background: rgba(52, 211, 153, 0.16); border-color: rgba(52, 211, 153, 0.4); }
 .sp-running { color: #22d3ee; background: rgba(34, 211, 238, 0.16); border-color: rgba(34, 211, 238, 0.4); }
 .sp-pending { color: #60a5fa; background: rgba(96, 165, 250, 0.16); border-color: rgba(96, 165, 250, 0.4); }
 .sp-failed  { color: #f87171; background: rgba(248, 113, 113, 0.16); border-color: rgba(248, 113, 113, 0.4); }
-/* 框架 chip（标题下） */
+/* 框架 chip */
 .fw-chip {
   align-self: flex-start;
-  font-size: 11px; font-weight: 600; color: #bfdbfe;
-  padding: 3px 10px; border-radius: 8px;
+  font-size: 10px; font-weight: 600; color: #bfdbfe;
+  padding: 2px 8px; border-radius: 6px;
   background: rgba(59, 130, 246, 0.16);
   border: 1px solid rgba(59, 130, 246, 0.32);
 }
 
 /* 其他生成选项标签 */
 .t-tags { display: flex; flex-wrap: wrap; gap: 6px; }
-.t-tag {
-  font-size: 11px; color: #94a3b8;
-  padding: 2px 8px; border-radius: 6px;
-  background: rgba(148, 163, 184, 0.10);
-  border: 1px solid rgba(148, 163, 184, 0.16);
-}
 
-/* 平台 · 时间 */
-.t-meta { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #93c5fd; }
+/* 平台 */
+.t-meta { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #93c5fd; }
 .t-meta i { font-size: 12px; opacity: 0.85; }
-.dot-sep { color: #475569; }
-.m-time { color: #94a3b8; font-family: 'Fira Code', monospace; font-size: 12px; }
+
+/* 时间 · 当前步骤 */
+.t-submeta { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 2px; }
+.m-time { color: #94a3b8; font-family: 'Fira Code', monospace; font-size: 12px; white-space: nowrap; }
 
 /* ═══ 进度 ═══ */
-.t-prog { display: flex; flex-direction: column; gap: 6px; }
+.t-prog { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
 .pbar {
-  height: 8px; border-radius: 999px;
+  flex: 1; height: 8px; border-radius: 999px;
   background: rgba(148, 163, 184, 0.14);
   overflow: hidden;
 }
@@ -313,16 +318,19 @@ const platformIcon  = (p) => configStore.platformIcon(p)
   transform: translateX(-100%);
   animation: shimmer 1.4s infinite;
 }
-.prow { display: flex; align-items: center; justify-content: space-between; }
-.p-step { font-size: 12px; color: #22d3ee; opacity: 0.9; }
-.p-num { font-size: 13px; font-weight: 800; color: #e2e8f0; font-variant-numeric: tabular-nums; }
+.p-step {
+  font-size: 11px; color: #22d3ee; opacity: 0.9;
+  min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.p-num { font-size: 14px; font-weight: 800; color: #e2e8f0; font-variant-numeric: tabular-nums; flex-shrink: 0; }
 
-/* ═══ 操作（右下圆形按钮）═══ */
-.t-acts { display: flex; justify-content: flex-end; gap: 10px; margin-top: auto; padding-top: 6px; }
+/* ═══ 底部：进度条 + 操作按钮 ═══ */
+.t-foot { display: flex; align-items: center; gap: 10px; margin-top: auto; }
+.t-acts { display: flex; gap: 8px; flex-shrink: 0; }
 .icon-btn {
-  width: 34px; height: 34px; border-radius: 50%;
+  width: 32px; height: 32px; border-radius: 50%;
   display: inline-flex; align-items: center; justify-content: center;
-  cursor: pointer; font-size: 14px;
+  cursor: pointer; font-size: 13px;
   border: 1px solid rgba(148, 163, 184, 0.25);
   background: rgba(148, 163, 184, 0.08);
   color: #cbd5e1;

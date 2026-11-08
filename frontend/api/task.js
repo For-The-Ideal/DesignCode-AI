@@ -3,11 +3,14 @@ import httpRequest from "~/utils/request";
 export const taskApi = {
 
   // 查询单个任务
-  async getTaskById(taskId, server = true) {
+  // cancelDuplicate=false：允许与其它组件（如详情页）并发请求同一任务，
+  // 否则 request.js 的同键去重会把先发的一条 abort 掉（被取消方拿到 null）
+  async getTaskById(taskId, server = true, cancelDuplicate = true) {
     let options = {
       url: `/api/v1/task/${taskId}`,
       method: "get",
       server,
+      cancelDuplicate,
     };
     let result = await httpRequest.post(options);
     return result;

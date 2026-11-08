@@ -92,6 +92,50 @@ func TestScanComponentLibMissing(t *testing.T) {
 	}
 }
 
+// Vant 4 名称含 “ant”，不能被当成 Ant Design 误报（R5 回归）
+func TestScanVantComponentLib(t *testing.T) {
+	code := strings.ReplaceAll(cleanVue, "el-card", "van-card")
+	r := Scan(code, "vue3", testDSL, "Vant 4")
+	if hasIssue(r, RuleComponentLib) {
+		t.Fatalf("Vant 4 不应误判为 Ant Design: %v", r.Issues)
+	}
+}
+
+func TestScanVantMissing(t *testing.T) {
+	code := strings.ReplaceAll(cleanVue, "el-card", "my-card")
+	r := Scan(code, "vue3", testDSL, "Vant 4")
+	if !hasIssue(r, RuleComponentLib) {
+		t.Fatalf("未使用 van- 组件应报 R5: %v", r.Issues)
+	}
+}
+
+// React Vant 同样含 “ant”，且代码中无 van- 前缀，应通过（引用 react-vant 即可）
+func TestScanReactVantComponentLib(t *testing.T) {
+	code := cleanVue + `\nimport { Button } from 'react-vant';`
+	r := Scan(code, "react", testDSL, "React Vant")
+	if hasIssue(r, RuleComponentLib) {
+		t.Fatalf("React Vant 不应误报: %v", r.Issues)
+	}
+}
+
+// Flutter Element / Material UI (MUI) 不应被 element / material 分支误伤
+func TestScanNoFalsePositiveOnOtherLibs(t *testing.T) {
+	flutterCode := `import 'package:flutter/material.dart';
+class Page extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return const Container(child: Text('示例文本，保证代码长度超过完整性下限'));
+  }
+}`
+	if hasIssue(Scan(flutterCode, "flutter", testDSL, "Flutter Element"), RuleComponentLib) {
+		t.Fatal("Flutter Element 不应被 Element Plus 分支误判")
+	}
+	reactCode := cleanVue + `\nimport { Button } from '@mui/material';`
+	if hasIssue(Scan(reactCode, "react", testDSL, "Material UI (MUI)"), RuleComponentLib) {
+		t.Fatal("Material UI (MUI) 不应被 Material.dart 分支误判")
+	}
+}
+
 func TestScanFlutterColorLiteral(t *testing.T) {
 	code := `import 'package:flutter/material.dart';
 class Page extends StatelessWidget {

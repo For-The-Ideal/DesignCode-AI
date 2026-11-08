@@ -73,12 +73,12 @@
         </div>
       </div>
 
-      <div class="file-actions">
-        <!-- 一张都没上传时禁用：上传入口只保留画布空态那一处，避免两个入口 -->
-        <button class="act-btn" :disabled="isSubmitting || !images.length || images.length >= maxImages" @click="pickMore">
+      <!-- 整块随 v-if 隐藏，已保证有图；仅需处理提交中与页数达上限 -->
+      <div class="file-actions" v-if="images.length">
+        <button class="act-btn" :disabled="isSubmitting || images.length >= maxImages" @click="pickMore">
           <i class="fas fa-plus"></i> 添加页面
         </button>
-        <button class="act-btn act-btn--danger" :disabled="isSubmitting || !currentImage" @click="onDeletePage">
+        <button class="act-btn act-btn--danger" :disabled="isSubmitting" @click="onDeletePage">
           <i class="fa-regular fa-trash-can"></i> 删除当前页
         </button>
       </div>

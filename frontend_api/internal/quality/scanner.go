@@ -218,7 +218,9 @@ func isNeutral(hex string) bool {
 	return hex[1] == hex[3] && hex[3] == hex[5] && hex[2] == hex[4] && hex[4] == hex[6]
 }
 
-// checkComponentLib 检查任务指定的组件库是否真的被使用
+// checkComponentLib 检查任务指定的组件库是否真的被使用。
+// 判定顺序有意义：组件库名之间可能互相包含（如 “Vant 4” 含 “ant”、
+// “Material UI (MUI)” 含 “material”），必须先剔除子串误命中再按库检查。
 func checkComponentLib(code, componentLib string) string {
 	lib := strings.ToLower(strings.TrimSpace(componentLib))
 	if lib == "" {
@@ -226,7 +228,13 @@ func checkComponentLib(code, componentLib string) string {
 	}
 	lower := strings.ToLower(code)
 	switch {
-	case strings.Contains(lib, "element"):
+	case strings.Contains(lib, "vant"):
+		// Vant / React Vant：名称含 “ant”，必须在 Ant Design 分支之前判定
+		if !strings.Contains(lower, "van-") && !strings.Contains(lower, "vant") {
+			return "指定 Vant，但代码中未使用（无 van- 组件/引用）"
+		}
+	case strings.Contains(lib, "element") && !strings.Contains(lib, "flutter"):
+		// Flutter Element 没有 el- 前缀，不参与该检查
 		if !strings.Contains(lower, "el-") && !strings.Contains(lower, "element-plus") {
 			return "指定 Element Plus，但代码中未使用（无 el- 组件/引用）"
 		}
@@ -234,7 +242,8 @@ func checkComponentLib(code, componentLib string) string {
 		if !strings.Contains(lower, "ant-") && !strings.Contains(lower, "antd") {
 			return "指定 Ant Design，但代码中未使用（无 ant- 组件/引用）"
 		}
-	case strings.Contains(lib, "material"):
+	case strings.Contains(lib, "material") && !strings.Contains(lib, "ui"):
+		// Flutter Material Design；“Material UI (MUI)” 是 React 库，不查 material.dart
 		if !strings.Contains(lower, "material.dart") {
 			return "指定 Material，但代码未引用 material.dart"
 		}

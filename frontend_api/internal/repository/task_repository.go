@@ -187,6 +187,21 @@ func (r *TaskRepository) CountByUserID(userID uint) (*model.TaskCountResponse, e
 	return resp, nil
 }
 
+// ListStaleRunning 查询心跳超时的 running 任务（运行期看门狗用）。
+// 条件与 ResetInterruptedTasks 的 running 分支一致；不包含 pending——
+// 服务运行中 pending 仍在内存队列里等待执行，不能当残留清理。
+func (r *TaskRepository) ListStaleRunning() ([]model.Task, error) {
+	db := mysql.GetDB()
+	if db == nil {
+		return nil, nil
+	}
+	cut := time.Now().Add(-staleHeartbeat)
+	var tasks []model.Task
+	err := db.Where("status = ? AND (heartbeat_at IS NULL OR heartbeat_at < ?)", model.TaskStatusRunning, cut).
+		Find(&tasks).Error
+	return tasks, err
+}
+
 // ResetInterruptedTasks 服务启动时恢复残留任务，并退还预扣积分。
 //
 // 只清理确定已中断的任务：

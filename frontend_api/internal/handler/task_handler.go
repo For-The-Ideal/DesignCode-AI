@@ -83,9 +83,10 @@ func crockfordBase32(id [16]byte) string {
 //
 //	示例：{"target":"flutter","platform":"mobile","images":[{"url":"https://...","tree":[...],"width":2732,"height":1534,"sort_order":1,"page_id":"p1","page_name":"商品列表","is_entry":true}],"page_links":[{"from_page_id":"p1","to_page_id":"p2","trigger":"node_click"}]}
 type CreateTaskRequest struct {
-	Target       string            `json:"target" binding:"required"`
-	Platform     string            `json:"platform" binding:"required"`
-	Images       []model.ImageItem `json:"images" binding:"required,min=1,max=8"`
+	Target   string `json:"target" binding:"required"`
+	Platform string `json:"platform" binding:"required"`
+	// max=5 与前端 MODE_MAX_IMAGES.multi 对齐：多图一次最多 5 页
+	Images       []model.ImageItem `json:"images" binding:"required,min=1,max=5"`
 	PageLinks    []model.PageLink  `json:"page_links"`
 	Options      []string          `json:"options"`
 	Advanced     []string          `json:"advanced"`

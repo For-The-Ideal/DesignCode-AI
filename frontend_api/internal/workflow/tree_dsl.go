@@ -171,6 +171,9 @@ func mapElementType(component string) (string, bool) {
 		return "carousel", true
 	case "form":
 		return "form", true
+	case "upload":
+		// 上传控件：已选图片预览 + 添加槽 + 配额文案；与顶层区域 upload（整体区块）区分
+		return "upload", true
 	case "title", "text":
 		return "text", true
 	case "image":

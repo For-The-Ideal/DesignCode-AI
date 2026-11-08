@@ -24,6 +24,54 @@
           <i class="fas fa-arrow-left"></i>
           <span>返回列表</span>
         </button>
+
+        <!-- 右侧操作：重新生成 + 质量检查 -->
+        <div class="top-actions">
+          <!-- 重新生成：把任务详情回填到工作台（图片/树/素材/页面关系/配置）再跳转 -->
+          <button v-if="canRegenerate" class="btn-regen" type="button" @click="regenerate">
+            <i class="fas fa-rotate-right"></i>
+            <span>重新生成</span>
+          </button>
+
+          <!-- 质量检查：收进顶栏，点开看明细（不再挤在预览下方） -->
+          <div v-if="currentQuality" class="qc-wrap">
+            <button
+              class="qc-chip"
+              :class="`qc-chip--${currentQuality.status}`"
+              type="button"
+              @click="qcOpen = !qcOpen"
+            >
+              <i class="fas qc-icon" :class="qcIcon"></i>
+              <span class="qc-title">质量检查</span>
+              <span class="qc-badge">{{ qcLabel }}</span>
+              <span class="qc-count">{{ currentQuality.passed }}/{{ currentQuality.total }}</span>
+              <i class="fas qc-arrow" :class="qcOpen ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+            </button>
+
+            <!-- 透明遮罩：点页面空白处关闭浮层 -->
+            <div v-if="qcOpen" class="qc-backdrop" @click="qcOpen = false"></div>
+            <Transition name="qc-fade">
+              <div v-if="qcOpen" class="qc-pop" :class="`qc-pop--${currentQuality.status}`">
+                <div class="qc-pop-head">
+                  <span class="qc-pop-title">质量检查</span>
+                  <span class="qc-pop-count">{{ currentQuality.passed }}/{{ currentQuality.total }} 项通过</span>
+                </div>
+                <div v-if="!currentQuality.issues?.length" class="qc-ok">
+                  <i class="fas fa-circle-check"></i> 所有规则均通过
+                </div>
+                <div
+                  v-for="(issue, i) in currentQuality.issues"
+                  :key="i"
+                  class="qc-item"
+                  :class="`qc-item--${issue.severity}`"
+                >
+                  <span class="qc-rule">{{ issue.rule }}</span>
+                  <span class="qc-detail">{{ issue.detail }}</span>
+                </div>
+              </div>
+            </Transition>
+          </div>
+        </div>
       </div>
 
       <!-- ═══ 未找到（仅非加载中且确实无数据时） ═══ -->
@@ -99,35 +147,6 @@
                 </div>
               </div>
             </div>
-
-            <!-- 质量检查：确定性规则扫描结果（不展示百分制分数） -->
-            <div
-              v-if="currentQuality"
-              class="qc-card"
-              :class="`qc-card--${currentQuality.status}`"
-            >
-              <button class="qc-head" type="button" @click="qcOpen = !qcOpen">
-                <i class="fas qc-icon" :class="qcIcon"></i>
-                <span class="qc-title">质量检查</span>
-                <span class="qc-badge">{{ qcLabel }}</span>
-                <span class="qc-count">{{ currentQuality.passed }}/{{ currentQuality.total }} 项通过</span>
-                <i class="fas qc-arrow" :class="qcOpen ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
-              </button>
-              <div v-if="qcOpen" class="qc-body">
-                <div v-if="!currentQuality.issues?.length" class="qc-ok">
-                  <i class="fas fa-circle-check"></i> 所有规则均通过
-                </div>
-                <div
-                  v-for="(issue, i) in currentQuality.issues"
-                  :key="i"
-                  class="qc-item"
-                  :class="`qc-item--${issue.severity}`"
-                >
-                  <span class="qc-rule">{{ issue.rule }}</span>
-                  <span class="qc-detail">{{ issue.detail }}</span>
-                </div>
-              </div>
-            </div>
           </div>
           <div class="content-right">
             <div class="code-card">
@@ -155,6 +174,7 @@
                       <CodeEditor
                         :modelValue="p.code"
                         :language="codeLang(task.framework)"
+                        :label="task.framework"
                         :readonly="true"
                         height="100%"
                       />
@@ -165,8 +185,8 @@
                   v-else-if="taskDetail"
                   :modelValue="taskDetail.code"
                   :language="codeLang(task.framework)"
+                  :label="task.framework"
                   :readonly="true"
-                  @copy="copy"
                   height="100%"
                 />
                 <div v-else class="code-empty" :class="{ 'code-empty--failed': isFailed }">
@@ -194,6 +214,8 @@ import TasksSidebar from '~/components/tasks/TasksSidebar.vue'
 import CodeEditor from '~/components/code/CodeEditor.vue'
 import PreviewTemplate from '~/components/previewTempLate/index.vue'
 import { taskApi } from '~/api/task'
+import { ElMessageBox } from 'element-plus'
+import { useCodeStore } from '~/stores/code'
 
 // 复用同一页面实例（按参数切换而非重建），避免换任务时整页 remount 闪烁
 definePageMeta({ key: false })
@@ -247,16 +269,28 @@ async function loadTask(id, silent = false) {
   if (!silent) loading.value = true
   try {
     const res = await taskApi.getTaskById(id)
-    const d = res?.code === 200 ? res.data : null
-    if (!d) { task.value = null; taskDetail.value = null; return }
+    // 请求期间又切了任务：丢弃旧响应，避免覆盖新任务（表现为“任务不存在”）
+    if (id !== route.params.id) return
+    // 被同键去重取消（request.js 对 abort 的 Promise resolve(null)）：保留当前页面
+    if (!res) return
+    // 只有服务端明确 404 才判定任务不存在；其它错误不清空已展示内容
+    if (res.code === 404) { task.value = null; taskDetail.value = null; return }
+    const d = res.code === 200 ? res.data : null
+    if (!d) return
     task.value = {
       id: d.task_id,
+      target: d.target,
       framework: FW_LABEL[d.target] || d.target,
       platform: d.platform,
       status: d.status,
       progress: d.progress,
       currentStep: d.current_step,
       images: d.images || [],
+      // 重新生成回填：页面关系 + 生成配置（图片/树已在 images 中）
+      page_links: d.page_links || [],
+      options: d.options || [],
+      advanced: d.advanced || [],
+      component_lib: d.component_lib || '',
     }
     const r = d.result
     // 失败：不挂载空产物（否则右栏会出现空编辑器），只保留原因供失败卡片展示
@@ -282,10 +316,7 @@ async function loadTask(id, silent = false) {
     }
     activePage.value = 0
   } catch {
-    if (!silent) {
-      task.value = null
-      taskDetail.value = null
-    }
+    // 网络异常：不清空已展示的任务，避免误判“任务不存在”
   } finally {
     if (!silent) loading.value = false
   }
@@ -333,11 +364,33 @@ const currentQuality = computed(() => {
 const qcLabel = computed(() => ({ pass: '通过', warning: '有告警', fail: '未通过' }[currentQuality.value?.status] || ''))
 const qcIcon = computed(() => ({ pass: 'fa-circle-check', warning: 'fa-triangle-exclamation', fail: 'fa-circle-xmark' }[currentQuality.value?.status] || 'fa-shield-halved'))
 const lineCount = (code) => (code || '').split('\n').length
-const copyPage = (code) => { if (code) navigator.clipboard.writeText(code) }
+// 复制文本：优先 Clipboard API，非安全上下文（http）回退 execCommand
+async function writeClipboard(text) {
+  if (!text) return
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text)
+      return
+    }
+  } catch {}
+  try {
+    const ta = document.createElement('textarea')
+    ta.value = text
+    ta.setAttribute('readonly', '')
+    ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0'
+    document.body.appendChild(ta)
+    ta.select()
+    ta.setSelectionRange(0, text.length)
+    document.execCommand('copy')
+    document.body.removeChild(ta)
+  } catch {}
+}
+const copyPage = (code) => writeClipboard(code)
 
 // 1) watch 路由参数变化：同步侧栏展开项 + 加载新任务（实例复用后统一走此处，不再另设 onBeforeRouteUpdate 以免重复请求）
 watch(() => route.params.id, (id) => {
   resetFailCheck()
+  qcOpen.value = false
   sidebarExpandedId.value = id
   loadTask(id)
 })
@@ -359,9 +412,31 @@ watch(taskProgress, (map) => {
   if (live.status === 'failed') scheduleFailCheck()
 }, { immediate: true })
 
-const copy = () => {
-  if (!taskDetail.value?.code) return
-  navigator.clipboard.writeText(taskDetail.value.code)
+// ═══ 重新生成：任务详情回填工作台后跳转单图/多图 ═══
+// 恢复会整桶替换目标模式的数据，工作台已有未提交内容时需要用户确认
+const codeStore = useCodeStore()
+const canRegenerate = computed(() => !!task.value?.images?.length && !isLive.value)
+
+async function regenerate() {
+  const t = task.value
+  if (!t?.images?.length) return
+  const mode = t.images.length > 1 ? 'multi' : 'single'
+  const existing = codeStore.modes[mode]
+  const dirty = existing.images.length || existing.assets.length || existing.pageLinks.length
+  if (dirty) {
+    try {
+      await ElMessageBox.confirm(
+        `「${mode === 'multi' ? '多图' : '单图'}」工作台还有未提交的内容，重新生成会用本任务的图片与结构覆盖它。`,
+        '覆盖当前编辑',
+        { confirmButtonText: '覆盖并继续', cancelButtonText: '取消', type: 'warning' },
+      )
+    } catch {
+      return
+    }
+  }
+  const restored = codeStore.restoreFromTask(t)
+  if (!restored) return
+  router.push({ path: '/code', query: { mode: restored } })
 }
 
 const downloadCode = () => {
@@ -408,7 +483,13 @@ onMounted(() => {
 .detail-main::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 2px; }
 
 /* ═══ 顶部返回 ═══ */
-.top-bar { padding: 14px 0 8px; }
+.top-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 0 8px;
+  flex-shrink: 0;
+}
 .btn-back {
   display: inline-flex;
   align-items: center;
@@ -427,6 +508,32 @@ onMounted(() => {
   border-color: rgba(0,255,255,0.2);
   color: #e2e8f0;
   background: rgba(255,255,255,0.02);
+}
+
+.top-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.btn-regen {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  background: rgba(0, 255, 255, 0.06);
+  color: #7ff3f3;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+.btn-regen:hover {
+  background: rgba(0, 255, 255, 0.12);
+  border-color: rgba(0, 255, 255, 0.4);
+  color: #d8ffff;
 }
 
 /* ═══ 信息卡片 ═══ */
@@ -638,56 +745,95 @@ onMounted(() => {
   overflow: hidden;
 }
 
-/* ═══ 质量检查（确定性规则扫描结果） ═══ */
-.qc-card {
-  flex-shrink: 0;
-  margin-top: 12px;
-  background: rgba(15, 22, 32, 0.6);
-  border: 1px solid rgba(255,255,255,0.04);
-  border-radius: 12px;
-  overflow: hidden;
+/* ═══ 质量检查：顶栏胶囊 + 浮层明细（不占预览区高度） ═══ */
+.qc-wrap {
+  position: relative;
+  margin-left: 0;
+  z-index: 30;
 }
-.qc-card--pass { border-color: rgba(52, 211, 153, 0.18); }
-.qc-card--warning { border-color: rgba(251, 191, 36, 0.2); }
-.qc-card--fail { border-color: rgba(248, 113, 113, 0.22); }
-.qc-head {
-  display: flex;
+.qc-chip {
+  /* 高于透明遮罩：胶囊本身仍可点击/悬浮，点一下同样收起浮层 */
+  position: relative;
+  z-index: 22;
+  display: inline-flex;
   align-items: center;
   gap: 8px;
-  width: 100%;
-  padding: 10px 14px;
-  background: transparent;
-  border: none;
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(15, 22, 32, 0.6);
   color: rgba(255,255,255,0.55);
   font-size: 12px;
   font-family: inherit;
   cursor: pointer;
+  transition: all 0.18s;
 }
-.qc-head i { font-size: 13px; }
-.qc-card--pass .qc-icon { color: #34d399; }
-.qc-card--warning .qc-icon { color: #fbbf24; }
-.qc-card--fail .qc-icon { color: #f87171; }
+.qc-chip:hover { border-color: rgba(0,255,255,0.2); color: #e2e8f0; }
+.qc-chip i { font-size: 13px; }
+.qc-chip--pass { border-color: rgba(52, 211, 153, 0.2); }
+.qc-chip--warning { border-color: rgba(251, 191, 36, 0.22); }
+.qc-chip--fail { border-color: rgba(248, 113, 113, 0.24); }
+.qc-chip--pass .qc-icon { color: #34d399; }
+.qc-chip--warning .qc-icon { color: #fbbf24; }
+.qc-chip--fail .qc-icon { color: #f87171; }
 .qc-title { font-weight: 600; }
 .qc-badge {
   padding: 1px 7px;
   border-radius: 999px;
   font-size: 10px;
 }
-.qc-card--pass .qc-badge { background: rgba(52, 211, 153, 0.12); color: #34d399; }
-.qc-card--warning .qc-badge { background: rgba(251, 191, 36, 0.12); color: #fbbf24; }
-.qc-card--fail .qc-badge { background: rgba(248, 113, 113, 0.14); color: #f87171; }
+.qc-chip--pass .qc-badge { background: rgba(52, 211, 153, 0.12); color: #34d399; }
+.qc-chip--warning .qc-badge { background: rgba(251, 191, 36, 0.12); color: #fbbf24; }
+.qc-chip--fail .qc-badge { background: rgba(248, 113, 113, 0.14); color: #f87171; }
 .qc-count {
-  margin-left: auto;
   color: rgba(255,255,255,0.3);
   font-size: 11px;
+  font-variant-numeric: tabular-nums;
 }
 .qc-arrow { color: rgba(255,255,255,0.25); font-size: 10px; }
-.qc-body {
-  padding: 0 14px 12px;
+
+/* 透明遮罩：点页面空白处关闭浮层（浮层 z-index 高于遮罩） */
+.qc-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+}
+.qc-pop {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 21;
+  width: 400px;
+  max-width: 90vw;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 12px 14px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 7px;
+  background: rgba(13, 19, 28, 0.98);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 12px;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.55);
 }
+.qc-pop--pass { border-color: rgba(52, 211, 153, 0.18); }
+.qc-pop--warning { border-color: rgba(251, 191, 36, 0.2); }
+.qc-pop--fail { border-color: rgba(248, 113, 113, 0.22); }
+.qc-pop::-webkit-scrollbar { width: 4px; }
+.qc-pop::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+.qc-pop-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 7px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.qc-pop-title { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.7); }
+.qc-pop-count { margin-left: auto; font-size: 11px; color: rgba(255,255,255,0.3); }
+.qc-fade-enter-active,
+.qc-fade-leave-active { transition: opacity 0.16s ease, transform 0.16s ease; }
+.qc-fade-enter-from,
+.qc-fade-leave-to { opacity: 0; transform: translateY(-4px); }
 .qc-ok {
   display: flex;
   align-items: center;

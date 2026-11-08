@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"frontend_api/config"
 	"frontend_api/internal/handler"
 	"frontend_api/internal/model"
@@ -11,6 +12,7 @@ import (
 	"frontend_api/internal/skills/vision"
 	"frontend_api/internal/sse"
 	"frontend_api/internal/worker"
+	"frontend_api/internal/workflow"
 	"frontend_api/middleware"
 	"frontend_api/pkg/ai"
 	"frontend_api/pkg/cos"
@@ -76,6 +78,12 @@ func Run() {
 		appLog.Errorf("[App] 初始化会员套餐失败: %v", err)
 	}
 
+	// 4.0.2 首页演示模板首次启动灌入默认数据（幂等；同时修复代码为空的历史脏行）
+	templateRepo := repository.NewTemplateRepository()
+	if err := templateRepo.SeedDefault(); err != nil {
+		appLog.Errorf("[App] 初始化预置模板失败: %v", err)
+	}
+
 	// 4.1 残留任务清理不在此处执行：此时端口尚未确认可用，systemd 的循环重启
 	// （端口被旧进程占用 → bind 失败 → 重启）会反复触发清理，把另一个进程
 	// 正在执行的任务误判为失败。见第 13 步：先占端口，成功后再清理。
@@ -111,6 +119,11 @@ func Run() {
 		go w.Run(ctx)
 		appLog.Infof("[App] 已启动生成 worker #%d/%d", i, workerCount)
 	}
+
+	// 8.1 运行期看门狗：worker 心跳丢失（进程异常死亡）时无人收尾，任务会永远
+	//     停在 running。启动清理只覆盖重启场景，这里每分钟补一次运行期兜底。
+	watchdogFlow := workflow.NewGenerateUIWorkflow(visionSkill, codeToHtmlSkill, taskRepo, resultRepo, sseManager)
+	go runStaleTaskWatchdog(ctx, watchdogFlow, appLog)
 
 	// 9. 创建 Handlers
 	taskHandler := handler.NewTaskHandler(taskRepo, resultRepo, q, sseManager)
@@ -188,4 +201,24 @@ func Run() {
 	}
 
 	log.Println("服务已退出")
+}
+
+// staleWatchInterval 看门狗扫描间隔。判定阈值是 repository 内的 staleHeartbeat（3 分钟），
+// worker 执行期间每 20 秒刷新心跳，正常任务不会被误判。
+const staleWatchInterval = time.Minute
+
+// runStaleTaskWatchdog 周期性清理心跳超时的 running 任务（与启动清理互补）。
+func runStaleTaskWatchdog(ctx context.Context, flow *workflow.GenerateUIWorkflow, log *logger.Logger) {
+	ticker := time.NewTicker(staleWatchInterval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			if n := flow.ReapStaleTasks(); n > 0 {
+				log.Warn(fmt.Sprintf("[App] 看门狗已结束 %d 个心跳超时任务", n))
+			}
+		}
+	}
 }

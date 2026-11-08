@@ -6,7 +6,7 @@
       <HeroSection @getStarted="scrollToSecond" @watchDemo="playDemo" />
 
       <!-- 第二屏 -->
-      <!-- <SSEGenerator ref="secondScreenRef" /> -->
+      <SSEGenerator ref="secondScreenRef" />
 
       <!-- 第三屏 -->
       <DiagnosticBubbles ref="thirdScreenRef" />

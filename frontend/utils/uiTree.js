@@ -55,8 +55,9 @@ export function regionLabel(name) {
 // 元素类型枚举（≥2 级节点用）：只描述「这块框是什么组件」，与顶层区域类型（在哪一块）分离。
 // 值是全链路数据（提交 / 后端 DSL type 映射），只能保持英文；界面显示一律走 elementLabel()。
 // 顺序即选择器展示顺序：容器型在前（可继续下钻），叶子型在后。
+// upload 归容器型：上传区内部还包含已选图片预览与添加槽，允许继续下钻。
 export const ELEMENT_CONTAINER_TYPES = [
-  'group', 'card', 'list', 'listItem', 'grid', 'tabs', 'tab', 'swiper', 'form',
+  'group', 'card', 'list', 'listItem', 'grid', 'tabs', 'tab', 'swiper', 'form', 'upload',
 ]
 export const ELEMENT_LEAF_TYPES = [
   'title', 'text', 'image', 'icon', 'button', 'link', 'input', 'select',
@@ -75,6 +76,7 @@ export const ELEMENT_TYPE_LABELS = {
   tab: '选项卡',
   swiper: '轮播',
   form: '表单',
+  upload: '上传',
   title: '标题',
   text: '文本',
   image: '图片',
@@ -102,6 +104,7 @@ export const ELEMENT_TYPE_TIPS = {
   tab: '单个选项卡',
   swiper: '轮播/横滑容器',
   form: '表单容器（输入项集合）',
+  upload: '图片/文件上传区（已选预览 + 添加槽 + 配额提示）',
   title: '标题文字',
   text: '正文/说明文字',
   image: '图片/插画/照片',

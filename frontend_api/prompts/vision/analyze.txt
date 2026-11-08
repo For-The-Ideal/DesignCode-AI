@@ -45,12 +45,17 @@
 }
 
 【type 枚举值】（必须从以下选择）
-image | input | password | button | text | icon | card | navbar | tabbar | list | grid | carousel | form | avatar | badge | divider | container | modal | checkbox | radio
+image | input | password | button | text | icon | card | navbar | tabbar | list | grid | carousel | form | upload | avatar | badge | divider | container | modal | checkbox | radio
 
 【层级嵌套规则】（防误判）
 - 只有存在明确“包含关系”的父子组件（如卡片内的文字、导航栏里的按钮）才放入 children。
 - 同级平铺的组件（如多个卡片）不准互相嵌套，必须平铺在 components 数组根层级。
 - 若组件是纯占位/空白区，type 统一填 "container"。
+
+【upload 判定】（重要）
+- 图片/文件选择区（含已选缩略图、加号或虚线添加槽、「最多N张」之类的配额文案）整块只能填一个 upload，不准拆成 image + button 多个节点。
+- upload 内部若要下钻，children 只放已选缩略图与添加槽等具体元素，不要再嵌套 upload。
+- 单张静态展示图（无添加入口、无配额文案）仍填 image。
 
 【模糊值处理策略】（防幻觉）
 - 图片中文字若模糊不清，text 字段填空字符串 ""，不要编造内容。

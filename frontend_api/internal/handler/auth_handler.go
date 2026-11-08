@@ -53,11 +53,6 @@ type CaptchaResponse struct {
 	CaptchaImage string `json:"captcha_image"`
 }
 
-// TemplateRequest 模板请求参数
-type TemplateRequest struct {
-	Template int `form:"template" json:"template"`
-}
-
 // ForgotPasswordRequest 忘记密码请求参数
 type ForgotPasswordRequest struct {
 	Email         string `json:"email" binding:"required"`
@@ -323,29 +318,6 @@ func (h *AuthHandler) ResetPassword(c *gin.Context) {
 	}
 
 	utils.Success(c, gin.H{}, "密码重置成功，请重新登录")
-}
-
-// Template 获取模板数据
-// GET /api/template?template=1
-func (h *AuthHandler) Template(c *gin.Context) {
-	var req TemplateRequest
-	if err := c.ShouldBindQuery(&req); err != nil {
-		utils.BadRequest(c, "参数解析失败: "+err.Error())
-		return
-	}
-
-	if req.Template == 0 {
-		utils.BadRequest(c, "缺少必要参数: template")
-		return
-	}
-
-	// 从 mockdata 获取
-	templateID := req.Template
-
-	// 直接引用 mockdata（保持兼容）
-	_ = templateID
-
-	utils.Error(c, 404, "模板获取功能已迁移，请使用 POST /api/v1/task/create")
 }
 
 // Helper: 从请求中提取 user_id（由 AuthMiddleware 注入）

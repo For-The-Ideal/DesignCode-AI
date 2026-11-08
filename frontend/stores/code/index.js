@@ -3,6 +3,7 @@ import { reactive, computed, toRefs } from 'vue'
 import { createUploadActions } from './upload'
 import { createTaskActions } from './task'
 import { createRelationActions } from './relation'
+import { createRestoreActions } from './restore'
 import { useUserStore } from '~/stores/user'
 
 // 各模式主图上限：单图 = 1，多图 = 5（页序上限；与任务级并发 2 无关，
@@ -86,13 +87,14 @@ export const useCodeStore = defineStore('code', () => {
 
   // ═══ Actions ═══
 
-  const ctx = { state, images, assets, pageLinks, runningCount, isConcurrencyFull, maxConcurrent: state.maxConcurrent }
+  const ctx = { state, images, assets, pageLinks, runningCount, isConcurrencyFull, maxConcurrent: state.maxConcurrent, modeMax: MODE_MAX_IMAGES }
 
   const uploadModule = createUploadActions(ctx)
   const relationModule = createRelationActions(ctx)
   // 关系动作挂到 ctx，供 task 提交时先迁移旧 parentPageId 数据
   Object.assign(ctx, relationModule)
   const taskModule = createTaskActions(ctx)
+  const restoreModule = createRestoreActions(ctx)
 
   // 模式切换：单图 ↔ 多图。两套数据独立保存，切换只改数据源，不动已上传内容
   const setMode = (mode) => {
@@ -144,6 +146,7 @@ export const useCodeStore = defineStore('code', () => {
     ...uploadModule,
     ...relationModule,
     ...taskModule,
+    ...restoreModule,
     setMode,
   }
 

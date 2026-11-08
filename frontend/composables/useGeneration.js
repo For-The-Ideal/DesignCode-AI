@@ -1,6 +1,7 @@
 import { reactive, ref, watch, onUnmounted } from 'vue'
 import { useSSE } from './useSSE'
 import { useStreamRenderer } from './useStreamRenderer'
+import { commonApi } from '~/api/common'
 import { taskApi } from '~/api/task'
 
 /**
@@ -182,7 +183,7 @@ export function useGeneration () {
     if (!dataLoaded) {
       try {
         const { data } = await commonApi.getTemplate({ id: id })
-        if (data.id) {
+        if (data?.id) {
           template.id = data.id
           templatePreviewCode = data.preview_code || ''
           template.previewCode = templatePreviewCode
@@ -191,8 +192,9 @@ export function useGeneration () {
           }
           dataLoaded = true
         }
-      } catch {
-        // 接口不可用时静默降级
+      } catch (err) {
+        // 接口不可用时静默降级（不阻塞首页其他内容），仅控制台留痕便于排查
+        console.warn('[useGeneration] 模板加载失败:', err)
       }
     } else if (renderer.isPaused.value) {
       renderer.resume()

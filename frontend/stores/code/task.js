@@ -108,8 +108,8 @@ export const createTaskActions = (ctx) => {
       component_lib: state.config.options.includes('component') ? state.config.componentLib : '',
       images: images.value.map((img, i) => ({
         url: img.cosUrl,
-        // 每图简短标题：优先文件名去扩展名，回退顶层区域名（供列表/详情回显，不需携带整棵 tree）
-        title: (img.file?.name || '').replace(/\.[^.]+$/, '') || img.annotationTree?.[0]?.name || undefined,
+        // 每图简短标题：优先文件名去扩展名，回退页面名（恢复的任务无本地文件），再回退顶层区域名
+        title: (img.file?.name || '').replace(/\.[^.]+$/, '') || img.pageName || img.annotationTree?.[0]?.name || undefined,
         // 结构编辑器确认后的树（含坐标/描述/层级），后端据此跳过 Vision 直接生成
         tree: img.annotationTree || undefined,
         // 该主图归属的附图素材（按上传先后编号；标注框通过 asset_id 引用）

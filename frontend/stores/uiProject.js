@@ -133,19 +133,21 @@ export const useUiProjectStore = defineStore('uiProject', () => {
   }
 
   // 从已确认的嵌套树恢复扁平节点（重开编辑器继续编辑 / 刷新后恢复用）
+  // 后端回传的嵌套树不含 parentId/sortIndex，必须按 children 重新推导：
+  // 扁平 map 只认 parentId，缺失时层级树被拉平，再次提交会把子级全丢。
   function loadTree(tree) {
     state.nodes = {}
-    const walk = (list) => {
-      (list || []).forEach((n) => {
+    const walk = (list, parentId) => {
+      (list || []).forEach((n, i) => {
         const kids = n.children || []
-        const node = { ...n }
+        const node = { ...n, parentId: parentId || null, sortIndex: n.sortIndex ?? i }
         delete node.children
-        node.childrenIds = n.childrenIds || kids.map((k) => k.nodeKey)
+        node.childrenIds = kids.length ? kids.map((k) => k.nodeKey) : (n.childrenIds || [])
         state.nodes[node.nodeKey] = node
-        walk(kids)
+        walk(kids, node.nodeKey)
       })
     }
-    walk(Array.isArray(tree) ? tree : Object.values(tree || {}))
+    walk(Array.isArray(tree) ? tree : Object.values(tree || {}), null)
     // 自愈：父级不存在的孤儿升为顶层，否则层级树会丢掉第一层（只剩一个悬空子级）
     repairOrphans()
     // 旧树没存 layout（或后端回传的精简数据没有）：按子框位置补齐各层排列方式

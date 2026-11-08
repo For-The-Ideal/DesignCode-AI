@@ -1,7 +1,8 @@
 ## 框架：Vue 3 + TypeScript
 
-- 单文件组件（SFC）：<template> + <script setup lang="ts"> + <style scoped>，缺一不可。
+- 单文件组件（SFC）：<template> + <script setup lang="ts"> + <style scoped>，缺一不可；三段必须全部输出完并闭合，禁止中途截断。
 - 状态用 ref/reactive；禁止解构 reactive 对象；props 用 defineProps 类型声明并给默认值。
+- 模板引用脚本变量必须写 {{ }} 插值（如 {{ props.title }}），禁止写成裸文本 props.title；无数据来源时直接写静态示例文案，不要造 inviteCount 这类假字段。
 - v-for 必须绑定唯一 key；v-if 与 v-for 不混用在同一元素。
 - 指定组件库时使用对应组件（如 Element Plus 用 el- 前缀）；未指定时用原生元素 + scoped 样式。
 - 样式只写在本组件 <style scoped> 内，禁止全局选择器和外部样式表。
