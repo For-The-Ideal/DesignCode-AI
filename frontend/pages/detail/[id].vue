@@ -205,10 +205,8 @@ const switchTask = (id) => router.push(`/detail/${id}`)
 
 // ═══ 导航 ═══
 const menuStore = useMenuListStore()
-const navItems = menuStore.navItems.map(item => ({
-  ...item,
-  active: route.path === item.to,
-}))
+// 当前路径在 setup 里取，交给 store getter 算 active（getter 里不能 useRouter）
+const navItems = computed(() => menuStore.navItemsWithActive(route.path))
 
 const handleNavClick = (item) => {
   if (item.active) return

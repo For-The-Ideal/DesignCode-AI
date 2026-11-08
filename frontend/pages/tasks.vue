@@ -4,7 +4,7 @@
       v-model="sidebarOpen"
       brand="任务中心"
       expandedWidth="225px"
-      :navItems="menuStore.navItemsWithActive"
+      :navItems="navItems"
       @navClick="handleNavClick"
     >
       <TasksStatusOverview :statusList="statusList" />
@@ -67,6 +67,8 @@ const statusList = computed(() =>
 )
 // ═══ 导航 ═══
 const menuStore = useMenuListStore()
+// 当前路径在 setup 里取，交给 store getter 算 active（getter 里不能 useRouter）
+const navItems = computed(() => menuStore.navItemsWithActive(route.path))
 const handleNavClick = (item) => {
   if (item.active) return
   router.push(item.to)
