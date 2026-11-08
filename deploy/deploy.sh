@@ -34,6 +34,43 @@ done
 
 step() { echo; echo "===== $* ====="; }
 
+# 等 MySQL 真正开始监听：起库后 InnoDB 恢复可能要几十秒，固定 sleep 不可靠
+wait_mysql() {
+  local i=0
+  while [ $i -lt 30 ]; do
+    ss -tlnp 2>/dev/null | grep -q ':3306 ' && return 0
+    i=$((i + 1))
+    sleep 2
+  done
+  return 1
+}
+
+# 等 systemd 单元进入 active：activating 是启动中/自动重启，不是失败
+wait_active() {
+  local u="$1" i=0
+  while [ $i -lt 30 ]; do
+    [ "$(systemctl is-active "$u" 2>/dev/null)" = "active" ] && return 0
+    i=$((i + 1))
+    sleep 2
+  done
+  return 1
+}
+
+# 等接口返回 200：systemd active 不等于端口已就绪（后端还要跑 AutoMigrate / 种子数据）
+# 输出最后一次状态码；成功返回 0
+wait_http() {
+  local i=0 code=000
+  while [ $i -lt 30 ]; do
+    code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "$1" 2>/dev/null)
+    [ -n "$code" ] || code=000
+    [ "$code" = "200" ] && { echo "$code"; return 0; }
+    i=$((i + 1))
+    sleep 2
+  done
+  echo "$code"
+  return 1
+}
+
 install_node() {
   local want="v$NODE_VERSION"
   if [ -x "$NODE_HOME/bin/node" ] && [ "$("$NODE_HOME/bin/node" -v 2>/dev/null)" = "$want" ]; then
@@ -124,8 +161,12 @@ if [ "$MODE" != "backend" ]; then
   npm run build
   rc=$?
   systemctl start mysqld 2>/dev/null || true
-  sleep 3
-  ss -tlnp | grep -q ':3306 ' && echo "  MySQL 3306 正常" || echo "  !!! MySQL 未监听 3306"
+  # 库没就绪就重启后端会让它 crash-loop（表现就是一直 activating），先等 3306
+  if wait_mysql; then
+    echo "  MySQL 3306 正常"
+  else
+    echo "  !!! MySQL 60s 内未监听 3306"
+  fi
   [ $rc -eq 0 ] || { echo "!!! 前端构建失败 rc=$rc"; exit $rc; }
   ls -lh .output/server/index.mjs
 else
@@ -138,30 +179,45 @@ case "$MODE" in
   frontend) UNITS="designcode-frontend" ;;
   *)        UNITS="designcode-api designcode-frontend" ;;
 esac
+# 清掉历史失败计数：连续崩溃过的单元可能被 StartLimit 锁在 failed，restart 会被拒
+systemctl reset-failed $UNITS 2>/dev/null || true
 systemctl restart $UNITS
-sleep 4
 
 OK=1
-for u in designcode-api designcode-frontend; do
-  printf '  %-22s %s\n' "$u" "$(systemctl is-active "$u")"
-done
+# 等目标单元真正 active 再判：Type=simple 启动瞬间是 activating，
+# 后端还要连库、AutoMigrate、灌种子数据、恢复残留任务，固定 sleep 4 会误报
 for u in $UNITS; do
-  [ "$(systemctl is-active "$u")" = "active" ] || { echo "  !!! $u 不是 active"; OK=0; }
+  if wait_active "$u"; then
+    printf '  %-22s active\n' "$u"
+  else
+    printf '  %-22s %s（60s 未就绪）\n' "$u" "$(systemctl is-active "$u" 2>/dev/null)"
+    echo "  !!! $u 不是 active：journalctl -u $u -n 60 --no-pager"
+    # 端口若被非本单元的进程占着，新进程会一直起不来，这里直接把占用者打出来
+    case "$u" in
+      designcode-api)      ss -tlnp 2>/dev/null | grep ':8888 ' ;;
+      designcode-frontend) ss -tlnp 2>/dev/null | grep ':3000 ' ;;
+    esac
+    OK=0
+  fi
+done
+# 非本次重启的单元只看状态，不阻塞（例如 --frontend 时后端可能本来就没起）
+for u in designcode-api designcode-frontend; do
+  case " $UNITS " in
+    *" $u "*) ;;
+    *) printf '  %-22s %s\n' "$u" "$(systemctl is-active "$u")" ;;
+  esac
 done
 
 if [ "$MODE" != "frontend" ]; then
-  c=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8888/api/v1/config/options)
+  c=$(wait_http http://127.0.0.1:8888/api/v1/config/options) || OK=0
   echo "  backend  :$c"
-  [ "$c" = "200" ] || OK=0
 fi
 if [ "$MODE" != "backend" ]; then
-  c=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3000)
+  c=$(wait_http http://127.0.0.1:3000) || OK=0
   echo "  frontend :$c"
-  [ "$c" = "200" ] || OK=0
 fi
-c=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1/)
+c=$(wait_http http://127.0.0.1/) || OK=0
 echo "  gateway  :$c"
-[ "$c" = "200" ] || OK=0
 
 if nginx -T 2>/dev/null | grep -q 'proxy_pass http://127.0.0.1:8888'; then
   echo '  api 路由 :已配置 -> 8888'
