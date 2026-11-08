@@ -92,6 +92,25 @@ func (w *GenerateWorker) processTask(ctx context.Context, taskID string) {
 	}
 	task = loaded
 
+	// 执行期间周期刷新心跳：服务启动时的残留清理只处理心跳超时的 running 任务，
+	// 这样另一个进程（旧实例/野进程）不会把本进程正在跑的任务误判为失败。
+	hbCtx, hbCancel := context.WithCancel(ctx)
+	defer hbCancel()
+	go func() {
+		ticker := time.NewTicker(20 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-hbCtx.Done():
+				return
+			case <-ticker.C:
+				if err := w.taskRepo.TouchHeartbeat(taskID); err != nil {
+					w.log.Errorf("[Worker] 心跳刷新失败: %s, err=%v", taskID, err)
+				}
+			}
+		}
+	}()
+
 	// 执行工作流
 	start := time.Now()
 	if err := w.workflow.Execute(ctx, task); err != nil {

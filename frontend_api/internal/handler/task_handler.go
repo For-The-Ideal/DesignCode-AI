@@ -370,9 +370,11 @@ func (h *TaskHandler) GetTask(c *gin.Context) {
 		return
 	}
 
-	// 查询关联结果
+	// 查询关联结果：success 需要完整产物；failed 也带上 error_msg，
+	// 前端失败卡片据此展示真实原因（重启中断 / key 失效 / AI 超时），
+	// 而不是只有一句“失败前进度 N%”。
 	var result *model.Result
-	if task.Status == model.TaskStatusSuccess {
+	if task.Status == model.TaskStatusSuccess || task.Status == model.TaskStatusFailed {
 		r, err := h.resultRepo.GetByTaskID(task.ID)
 		if err == nil {
 			result = r

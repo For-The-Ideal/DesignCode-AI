@@ -20,7 +20,7 @@ import (
 
 // 顶层区域枚举（与前端 utils/uiTree.js TOP_REGION_ENUM 严格一致）
 var topRegionEnum = map[string]bool{
-	"header": true, "search": true, "banner": true, "main": true, "sidebar": true,
+	"header": true, "search": true, "banner": true, "main": true, "upload": true, "sidebar": true,
 	"footer": true, "tabbar": true, "modal": true, "floating": true, "other": true,
 }
 

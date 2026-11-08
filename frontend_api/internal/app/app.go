@@ -18,6 +18,7 @@ import (
 	"frontend_api/pkg/mysql"
 	"frontend_api/routes"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -75,13 +76,9 @@ func Run() {
 		appLog.Errorf("[App] 初始化会员套餐失败: %v", err)
 	}
 
-	// 4.1 恢复残留任务（服务重启后清理）：pending 已丢在内存队列、running 被中断，
-	// 统一置 failed 并退还预扣积分
-	if n, err := taskRepo.ResetInterruptedTasks(); err != nil {
-		appLog.Errorf("[App] 恢复残留任务失败: %v", err)
-	} else if n > 0 {
-		appLog.Infof("[App] 已清理 %d 个中断任务（pending/running）并退还预扣积分", n)
-	}
+	// 4.1 残留任务清理不在此处执行：此时端口尚未确认可用，systemd 的循环重启
+	// （端口被旧进程占用 → bind 失败 → 重启）会反复触发清理，把另一个进程
+	// 正在执行的任务误判为失败。见第 13 步：先占端口，成功后再清理。
 
 	// 5. 创建内存队列
 	q := queue.NewInMemoryQueue()
@@ -145,16 +142,30 @@ func Run() {
 		Handler: r,
 	}
 
-	// 13. 信号监听（优雅关闭）
+	// 13. 先占用端口，成功后再清理残留任务：
+	//     端口被占时直接退出、完全不碰任务表——否则 systemd 的循环重启会在
+	//     每次启动都执行一次清理，把另一个进程正在跑的任务误判为失败。
+	//     清理条件也只包含 pending 和心跳超时的 running，仍在执行的运行中任务不受影响。
+	ln, err := net.Listen("tcp", addr)
+	if err != nil {
+		log.Fatalf("Server 启动失败: %v", err)
+	}
+	if n, err := taskRepo.ResetInterruptedTasks(); err != nil {
+		appLog.Errorf("[App] 恢复残留任务失败: %v", err)
+	} else if n > 0 {
+		appLog.Infof("[App] 已清理 %d 个中断任务（pending/心跳超时）并退还预扣积分", n)
+	}
+
+	// 14. 信号监听（优雅关闭）
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
-	// 启动 HTTP 服务（非阻塞）
+	// 15. 启动 HTTP 服务（非阻塞，复用已占用的 listener）
 	go func() {
 		appLog.Infof("Server starting on %s", addr)
 		log.Printf("Server starting on %s", addr)
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Server 启动失败: %v", err)
+		if err := srv.Serve(ln); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Server 运行失败: %v", err)
 		}
 	}()
 

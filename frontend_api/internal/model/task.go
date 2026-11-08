@@ -96,8 +96,11 @@ type Task struct {
 	CurrentStep    string      `json:"current_step"`                                        // 当前执行步骤
 	TaskSteps      []TaskStep  `json:"task_steps" gorm:"column:task_steps;serializer:json"` // 执行步骤记录
 	UserID         uint        `json:"user_id" gorm:"index"`                                // 列表/统计按用户过滤，加索引避免全表扫
-	CreatedAt      time.Time   `json:"created_at"`
-	UpdatedAt      time.Time   `json:"updated_at"`
+	// 执行者心跳：worker 执行期间周期性刷新。服务启动时的残留清理只处理心跳超时的
+	// running 任务，避免把另一个进程正在执行的任务误判为失败（旧进程仍会写回 success）。
+	HeartbeatAt *time.Time `json:"heartbeat_at,omitempty" gorm:"index"`
+	CreatedAt   time.Time  `json:"created_at"`
+	UpdatedAt   time.Time  `json:"updated_at"`
 }
 
 // NormalizePages 入库前补齐页面身份并按页序排列：

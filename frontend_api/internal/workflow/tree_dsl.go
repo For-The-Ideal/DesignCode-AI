@@ -208,7 +208,7 @@ func mapRegionType(name string) string {
 		return "image"
 	case "modal":
 		return "modal"
-	default: // sidebar/main/floating/other/空 及子节点
+	default: // sidebar/main/upload/floating/other/空 及子节点（upload 是容器：上传控件 + 已传预览）
 		return "container"
 	}
 }

@@ -14,7 +14,7 @@
 // 界面上要显示中文时一律走 regionLabel()，不要改这里的值。
 // 顺序即类型按钮的展示顺序（上→中→下→浮层→其他，便于快速找到）。
 export const TOP_REGION_ENUM = [
-  'header', 'search', 'banner', 'main', 'sidebar', 'footer', 'tabbar', 'modal', 'floating', 'other',
+  'header', 'search', 'banner', 'main', 'upload', 'sidebar', 'footer', 'tabbar', 'modal', 'floating', 'other',
 ]
 
 // 枚举 → 界面短标签（2-3 字，供类型按钮、标题、提示文案使用）
@@ -23,6 +23,7 @@ export const TOP_REGION_LABELS = {
   search: '搜索栏',
   banner: '横幅',
   main: '主内容',
+  upload: '上传',
   sidebar: '侧边栏',
   footer: '底部栏',
   tabbar: '标签栏',
@@ -37,6 +38,7 @@ export const TOP_REGION_TIPS = {
   search: '搜索入口/搜索框区域（含顶部搜索条）',
   banner: '首屏大图轮播/运营横幅',
   main: '主体内容区（列表/卡片/表单）',
+  upload: '图片/文件上传区（选图、拖拽、多图预览）',
   sidebar: '侧边抽屉或竖向导航',
   footer: '底部操作条/版权栏（不含 Tab 导航）',
   tabbar: '底部 Tab 导航栏（主页面切换）',

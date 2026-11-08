@@ -29,13 +29,16 @@ func (r *ResultRepository) Create(result *model.Result) error {
 }
 
 // GetByTaskID 根据任务 ID 获取结果
+//
+// 同一任务可能因重试/重复执行产生多条记录（失败一条、成功一条），
+// 统一取最新一条，避免 successfully 的任务拿到历史的 failed 空产物。
 func (r *ResultRepository) GetByTaskID(taskID string) (*model.Result, error) {
 	db := mysql.GetDB()
 	if db == nil {
 		return nil, nil
 	}
 	var result model.Result
-	err := db.Where("task_id = ?", taskID).First(&result).Error
+	err := db.Where("task_id = ?", taskID).Order("id DESC").First(&result).Error
 	if err != nil {
 		return nil, err
 	}

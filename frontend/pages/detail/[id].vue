@@ -71,8 +71,10 @@
                 <div v-else-if="isFailed" class="pv-failed">
                   <div class="fail-ring"><i class="fas fa-triangle-exclamation"></i></div>
                   <p class="fail-title">任务生成失败</p>
-                  <p class="fail-desc">生成过程中出现异常，该任务没有可用的预览与代码</p>
-                  <span class="fail-meta" v-if="typeof task.progress === 'number'">失败前进度 {{ task.progress }}%</span>
+                  <p class="fail-desc">{{ failReason || '生成过程中出现异常，该任务没有可用的预览与代码' }}</p>
+                  <span class="fail-meta" v-if="typeof task.progress === 'number'">
+                    失败前进度 {{ task.progress }}%<template v-if="task.currentStep"> · {{ task.currentStep }}</template>
+                  </span>
                   <button class="fail-btn" @click="goBack">
                     <i class="fas fa-rotate-left"></i> 返回列表重新生成
                   </button>
@@ -226,6 +228,7 @@ const taskDetail = ref(null)   // 生成结果（code + preview + iframeUrl + �
 const activePage = ref(0)      // 多页模式当前页下标（左页签 / 右折叠共用）
 const taskList = ref([])       // 侧栏任务列表
 const loading = ref(false)
+const failReason = ref('')     // 失败原因（results.error_msg；后端在 failed 时一并返回）
 
 // ═══ 状态派生：生成中/排队中 → 生成动画；失败 → 失败样式 ═══
 const isLive = computed(() => ['running', 'pending'].includes(task.value?.status))
@@ -238,9 +241,10 @@ async function fetchTaskList() {
 }
 
 // 拉取单个任务详情：GET /api/v1/task/:id → TaskStatusResponse
-async function loadTask(id) {
+// silent=true：失败复核用的静默刷新，不触发切换遮罩，请求失败也不清空当前页
+async function loadTask(id, silent = false) {
   if (!id) { task.value = null; taskDetail.value = null; return }
-  loading.value = true
+  if (!silent) loading.value = true
   try {
     const res = await taskApi.getTaskById(id)
     const d = res?.code === 200 ? res.data : null
@@ -251,28 +255,65 @@ async function loadTask(id) {
       platform: d.platform,
       status: d.status,
       progress: d.progress,
+      currentStep: d.current_step,
       images: d.images || [],
     }
     const r = d.result
-    taskDetail.value = r
-      ? {
-          code: r.code,
-          preview: r.preview,
-          iframeUrl: r.iframe_url,
-          // 多页产物：pages 为空/长度 1 时自动走原有单编辑器逻辑
-          pages: r.pages || [],
-          appPreview: r.app_preview || '',
-          navMap: r.nav_map || [],
-          qualityReport: r.quality_report || null,
-        }
-      : null
+    // 失败：不挂载空产物（否则右栏会出现空编辑器），只保留原因供失败卡片展示
+    if (d.status === 'failed') {
+      taskDetail.value = null
+      failReason.value = r?.error_msg || ''
+      // 首次拉取就遇到 failed 也要复核：任务可能仍由另一个执行者跑着
+      if (!silent) scheduleFailCheck()
+    } else {
+      failReason.value = ''
+      taskDetail.value = r
+        ? {
+            code: r.code,
+            preview: r.preview,
+            iframeUrl: r.iframe_url,
+            // 多页产物：pages 为空/长度 1 时自动走原有单编辑器逻辑
+            pages: r.pages || [],
+            appPreview: r.app_preview || '',
+            navMap: r.nav_map || [],
+            qualityReport: r.quality_report || null,
+          }
+        : null
+    }
     activePage.value = 0
   } catch {
-    task.value = null
-    taskDetail.value = null
+    if (!silent) {
+      task.value = null
+      taskDetail.value = null
+    }
   } finally {
-    loading.value = false
+    if (!silent) loading.value = false
   }
+}
+
+// ═══ 失败状态复核 ═══
+// SSE / 接口可能携带竞态写入的 failed（如另一个实例启动时的残留清理错过），
+// 而任务实际仍由执行者跑着并会写回 success。失败不直接采信：
+// 延迟 2 秒回查 DB，连续 2 次仍为 failed 才渲染失败卡片，避免“生成中突然失败”。
+const FAIL_CHECK_DELAY = 2000
+const FAIL_CHECK_TIMES = 2
+let failTimer = null
+let failChecks = 0
+
+function scheduleFailCheck () {
+  if (failTimer || failChecks >= FAIL_CHECK_TIMES) return
+  failTimer = setTimeout(async () => {
+    failTimer = null
+    failChecks++
+    await loadTask(route.params.id, true)
+    if (isFailed.value && failChecks < FAIL_CHECK_TIMES) scheduleFailCheck()
+  }, FAIL_CHECK_DELAY)
+}
+
+function resetFailCheck () {
+  if (failTimer) clearTimeout(failTimer)
+  failTimer = null
+  failChecks = 0
 }
 
 // ═══ 多页：左页签预览 / 右折叠代码双向联动 ═══
@@ -295,7 +336,11 @@ const lineCount = (code) => (code || '').split('\n').length
 const copyPage = (code) => { if (code) navigator.clipboard.writeText(code) }
 
 // 1) watch 路由参数变化：同步侧栏展开项 + 加载新任务（实例复用后统一走此处，不再另设 onBeforeRouteUpdate 以免重复请求）
-watch(() => route.params.id, (id) => { sidebarExpandedId.value = id; loadTask(id) })
+watch(() => route.params.id, (id) => {
+  resetFailCheck()
+  sidebarExpandedId.value = id
+  loadTask(id)
+})
 
 // ═══ 生成中跟随用户级 SSE：进度实时同步，完成后自动拉取生成结果 ═══
 const userStore = useUserStore()
@@ -304,9 +349,14 @@ watch(taskProgress, (map) => {
   const live = map?.[route.params.id]
   if (!live || !task.value) return
   if (typeof live.progress === 'number') task.value.progress = live.progress
-  if (live.status) task.value.status = live.status
-  // 状态推进到完成且尚未拿到结果时重新拉取（失败无需结果）
-  if (live.status === 'success' && !taskDetail.value) loadTask(route.params.id)
+  if (live.status && live.status !== 'failed') {
+    resetFailCheck()
+    task.value.status = live.status
+    // 状态推进到完成且尚未拿到结果时重新拉取（失败无需结果）
+    if (live.status === 'success' && !taskDetail.value) loadTask(route.params.id)
+  }
+  // failed 不直接采信：回查 DB，仍失败才展示
+  if (live.status === 'failed') scheduleFailCheck()
 }, { immediate: true })
 
 const copy = () => {

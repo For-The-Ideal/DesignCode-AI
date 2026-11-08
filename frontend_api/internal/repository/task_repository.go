@@ -4,6 +4,7 @@ import (
 	"frontend_api/internal/model"
 	"frontend_api/pkg/mysql"
 	"log"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -44,13 +45,32 @@ func (r *TaskRepository) GetByID(id string) (*model.Task, error) {
 	return &task, nil
 }
 
-// UpdateStatus 更新任务状态
+// staleHeartbeat 心跳超时阈值：超过该时长未上报心跳的 running 任务才视为已中断。
+// worker 执行期间每 20 秒刷新一次，正常任务不会命中该阈值。
+const staleHeartbeat = 3 * time.Minute
+
+// UpdateStatus 更新任务状态（顺带刷新心跳：running 一开始就应有存活证据，
+// 否则首次进度上报前的窗口里会被其他实例的残留清理当作已中断）
 func (r *TaskRepository) UpdateStatus(id string, status model.TaskStatus) error {
 	db := mysql.GetDB()
 	if db == nil {
 		return nil
 	}
-	return db.Model(&model.Task{}).Where("id = ?", id).Update("status", status).Error
+	return db.Model(&model.Task{}).Where("id = ?", id).
+		Updates(map[string]interface{}{
+			"status":       status,
+			"heartbeat_at": time.Now(),
+		}).Error
+}
+
+// TouchHeartbeat 刷新任务执行心跳（worker 执行期间周期性调用）
+func (r *TaskRepository) TouchHeartbeat(id string) error {
+	db := mysql.GetDB()
+	if db == nil {
+		return nil
+	}
+	return db.Model(&model.Task{}).Where("id = ?", id).
+		Update("heartbeat_at", time.Now()).Error
 }
 
 // UpdateProgress 更新任务进度
@@ -66,6 +86,7 @@ func (r *TaskRepository) UpdateProgress(id string, progress int, currentStep str
 		Updates(map[string]interface{}{
 			"progress":     progress,
 			"current_step": currentStep,
+			"heartbeat_at": time.Now(),
 		}).Error
 }
 
@@ -76,8 +97,11 @@ func (r *TaskRepository) UpdateProgressAndSteps(task *model.Task) error {
 	if db == nil {
 		return nil
 	}
+	// 进度落库同时刷新心跳：详情页的每一项进度都是“这个执行者还活着”的证据
+	now := time.Now()
+	task.HeartbeatAt = &now
 	return db.Model(task).
-		Select("progress", "current_step", "task_steps").
+		Select("progress", "current_step", "task_steps", "heartbeat_at").
 		Updates(task).Error
 }
 
@@ -163,20 +187,29 @@ func (r *TaskRepository) CountByUserID(userID uint) (*model.TaskCountResponse, e
 	return resp, nil
 }
 
-// ResetInterruptedTasks 服务启动时恢复残留任务：把 pending/running 标记为 failed 并退还预扣积分。
-// pending 任务只存在于内存队列，进程重启后不会再被消费；若不清理会永久占用用户活跃名额
-// （CountActive 统计 pending+running），且已预扣的积分无法退回。
+// ResetInterruptedTasks 服务启动时恢复残留任务，并退还预扣积分。
+//
+// 只清理确定已中断的任务：
+//   - pending：只存在于内存队列，进程重启后不可能再被消费；
+//   - running 且心跳超时：执行者已消失。心跳仍新鲜的 running 任务会跳过，
+//     避免把另一个进程（旧实例/野进程）正在执行的任务误判为失败——
+//     否则它会先被写成 failed，旧进程跑完又写回 success，前端表现为
+//     “生成中突然失败，回来又莫名其妙成功”。
 func (r *TaskRepository) ResetInterruptedTasks() (int64, error) {
 	db := mysql.GetDB()
 	if db == nil {
 		return 0, nil
 	}
 
-	interrupted := []model.TaskStatus{model.TaskStatusPending, model.TaskStatusRunning}
+	// 条件必须对查询与更新保持一致，避免退积分与置 failed 的目标集不同
+	cond := "status = ? OR (status = ? AND (heartbeat_at IS NULL OR heartbeat_at < ?))"
+	cut := time.Now().Add(-staleHeartbeat)
+	args := []interface{}{model.TaskStatusPending, model.TaskStatusRunning, cut}
+
 	var count int64
 	err := db.Transaction(func(tx *gorm.DB) error {
 		var tasks []model.Task
-		if err := tx.Where("status IN ?", interrupted).Find(&tasks).Error; err != nil {
+		if err := tx.Where(cond, args...).Find(&tasks).Error; err != nil {
 			return err
 		}
 
@@ -194,7 +227,7 @@ func (r *TaskRepository) ResetInterruptedTasks() (int64, error) {
 			}
 		}
 
-		result := tx.Model(&model.Task{}).Where("status IN ?", interrupted).
+		result := tx.Model(&model.Task{}).Where(cond, args...).
 			Updates(map[string]interface{}{
 				"status":       model.TaskStatusFailed,
 				"current_step": "服务重启，任务中断",
