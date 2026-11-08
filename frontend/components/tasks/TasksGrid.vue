@@ -9,12 +9,13 @@
         :class="'st-' + row.status"
         @click="openDetail(row)"
       >
-        <!-- 手机壳缩略图 -->
-        <div class="t-thumb">
+        <!-- 手机壳缩略图：多图任务用叠层阴影表示“一叠页”，右上角标页数 -->
+        <div class="t-thumb" :class="{ 't-thumb--multi': imgCount(row) > 1 }">
           <el-image v-if="row.images?.[0]?.url" :src="row.images[0].url" fit="cover" class="thumb-img" loading="lazy">
             <template #error><div class="thumb-ph"><i class="fas fa-image"></i></div></template>
           </el-image>
           <div v-else class="thumb-ph"><i class="fas fa-image"></i></div>
+          <span v-if="imgCount(row) > 1" class="thumb-count">{{ imgCount(row) }}页</span>
         </div>
 
         <!-- 信息区 -->
@@ -128,6 +129,9 @@ const stepLabel = s => STEP_LABELS[s] || s
 // 进入详情：所有状态均可查看（生成中展示生成动画，失败展示失败样式）
 const openDetail = (row) => emit('detail', row)
 
+// 页面数（多图任务一图一页）
+const imgCount = (row) => row.images?.length || 0
+
 // 生成选项/高级选项：数组里每一项拆成独立标签；label 唯一来源为配置字典（共享 store，不写死）
 const configStore = useConfigStore()
 onMounted(() => configStore.load())
@@ -208,6 +212,28 @@ const platformIcon  = (p) => configStore.platformIcon(p)
   display: flex; align-items: center; justify-content: center;
 }
 .thumb-ph i { font-size: 24px; color: rgba(255, 255, 255, 0.12); }
+
+/* 多图：用层叠阴影表现“一叠页”（阴影不受 overflow:hidden 影响） */
+.t-thumb--multi {
+  box-shadow:
+    3px 3px 0 0 rgba(11, 16, 32, 0.95),
+    3px 3px 0 1px rgba(148, 163, 184, 0.28),
+    6px 6px 0 0 rgba(11, 16, 32, 0.95),
+    6px 6px 0 1px rgba(148, 163, 184, 0.14);
+}
+.thumb-count {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #06121a;
+  background: linear-gradient(135deg, #22d3ee, #06b6d4);
+  box-shadow: 0 2px 8px rgba(6, 182, 212, 0.35);
+}
 
 /* ═══ 信息区 ═══ */
 .t-body {

@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"frontend_api/pkg/ai"
 	"frontend_api/pkg/logger"
-	"os"
-	"path/filepath"
 )
 
 // ═══════════════════════════════════════════════
@@ -46,6 +44,7 @@ func (s *ReactSkill) Execute(ctx context.Context, input interface{}) (interface{
 	if prompt == "" {
 		return nil, fmt.Errorf("react: 提示词文件未找到")
 	}
+	s.logger.Infof("[ReactSkill] prompt 拼装: %d chars (base + react)", len(prompt))
 
 	messages := []ai.Message{
 		{Role: "system", Content: prompt},
@@ -58,20 +57,9 @@ func (s *ReactSkill) Execute(ctx context.Context, input interface{}) (interface{
 	}
 
 	s.logger.Infof("[ReactSkill] 生成完成, code=%d chars", len(content))
-	return Output{Code: content, Preview: "", Score: 0}, nil
+	return Output{Code: content, Preview: ""}, nil
 }
 
 func (s *ReactSkill) loadPrompt() string {
-	paths := []string{
-		"prompts/react/generate.txt",
-		"../prompts/react/generate.txt",
-		filepath.Join("..", "prompts", "react", "generate.txt"),
-	}
-	for _, p := range paths {
-		data, err := os.ReadFile(p)
-		if err == nil {
-			return string(data)
-		}
-	}
-	return ""
+	return LoadPrompt("react")
 }

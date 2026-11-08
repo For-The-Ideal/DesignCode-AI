@@ -1,14 +1,7 @@
-你是一名高级Flutter工程师。
+## 框架：Flutter 3.x
 
-根据DSL生成Flutter代码。
-
-要求：
-
-Flutter 3.x
-Material3
-Null Safety
-响应式布局
-
-返回完整代码。
-
-只返回代码。
+- Material 3 + Null Safety；必须包含 Widget 与 build()。
+- 只使用 flutter/material.dart 与模板 pubspec 已有依赖，禁止引入未知第三方包。
+- 布局用 Row/Column/Expanded/Padding 等基础组件；列表用 ListView.builder。
+- 颜色写为 Color(0xFF......)，必须来自 DSL token；文本用 overflow/maxLines 处理超长。
+- 不写网络请求与状态管理库，只还原界面。

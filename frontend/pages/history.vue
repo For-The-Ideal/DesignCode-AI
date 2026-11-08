@@ -32,7 +32,6 @@
               <div class="history-meta">
                 <span><i class="fas fa-code"></i> {{ item.framework }}</span>
                 <span><i class="far fa-calendar"></i> {{ item.date }}</span>
-                <span class="history-score"><i class="fas fa-star"></i> {{ item.score }}分</span>
               </div>
             </div>
             <div class="history-actions">
@@ -71,7 +70,6 @@ const historyData = [
     name: '电商首页设计',
     framework: 'Flutter',
     date: '2024-01-15 14:30',
-    score: 92,
     codePreview: 'import \'package:flutter/material.dart\';\n\nclass HomePage extends StatelessWidget {\n  @override\n  Widget build(BuildContext context) {\n    return Scaffold(...'
   },
   {
@@ -79,7 +77,6 @@ const historyData = [
     name: '登录页面设计',
     framework: 'React',
     date: '2024-01-14 10:15',
-    score: 88,
     codePreview: 'import React from \'react\';\n\nfunction LoginPage() {\n  return (\n    <div className="login-container">\n      ...'
   },
   {
@@ -87,7 +84,6 @@ const historyData = [
     name: '个人中心设计',
     framework: 'Vue',
     date: '2024-01-13 09:45',
-    score: 85,
     codePreview: '<template>\n  <div class="profile-container">\n    <h1>个人中心</h1>\n    ...'
   }
 ]
@@ -212,10 +208,6 @@ const historyData = [
 
 .history-meta i {
   margin-right: 4px;
-}
-
-.history-score {
-  color: #00ffff;
 }
 
 .history-actions {

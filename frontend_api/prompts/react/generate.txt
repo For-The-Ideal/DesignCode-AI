@@ -1,12 +1,7 @@
-你是一名高级React工程师。
+## 框架：React 18 + TypeScript
 
-根据DSL生成React代码。
-
-技术栈：
-
-React18
-TypeScript
-
-返回完整代码。
-
-只返回代码。
+- 函数组件 + Hooks，禁止 class 组件；必须通过 export default 导出。
+- 列表 key 使用稳定唯一值，禁止用 index；useEffect 必须有依赖数组，必要时返回清理函数。
+- 组件内状态用 useState/useReducer；不要在条件或循环中调用 Hooks。
+- 指定组件库时使用对应组件（如 Ant Design 5.x 用 open 而不是 visible）；未指定时用原生元素 + 内联样式。
+- 只输出组件代码，不写数据请求逻辑。

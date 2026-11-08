@@ -69,6 +69,12 @@ func Run() {
 		appLog.Errorf("[App] 初始化生成配置字典失败: %v", err)
 	}
 
+	// 4.0.1 会员套餐 / 积分包首次启动灌入默认数据（幂等）
+	membershipRepo := repository.NewMembershipRepository()
+	if err := membershipRepo.SeedIfEmpty(); err != nil {
+		appLog.Errorf("[App] 初始化会员套餐失败: %v", err)
+	}
+
 	// 4.1 恢复残留任务（服务重启后清理）：pending 已丢在内存队列、running 被中断，
 	// 统一置 failed 并退还预扣积分
 	if n, err := taskRepo.ResetInterruptedTasks(); err != nil {

@@ -22,6 +22,9 @@ type captchaEntry struct {
 // GenerateCaptcha 生成 SVG 验证码图片
 // 返回 captcha_id、base64 图片、正确答案
 func GenerateCaptcha() (captchaID string, imageBase64 string, answer string) {
+	// 惰性清理，避免未验证的过期条目永久占用内存
+	cleanupExpiredCaptchas()
+
 	// 4位随机数字
 	const digits = "0123456789"
 	code := make([]byte, 4)
@@ -47,6 +50,17 @@ func GenerateCaptcha() (captchaID string, imageBase64 string, answer string) {
 	imageBase64 = "data:image/svg+xml;base64," + base64.StdEncoding.EncodeToString([]byte(svg))
 
 	return
+}
+
+// cleanupExpiredCaptchas 删除已过期的验证码（仅处理未被验证消费的条目）
+func cleanupExpiredCaptchas() {
+	now := time.Now()
+	captchaStore.Range(func(key, value interface{}) bool {
+		if entry, ok := value.(captchaEntry); ok && now.After(entry.ExpiresAt) {
+			captchaStore.Delete(key)
+		}
+		return true
+	})
 }
 
 // VerifyCaptcha 校验验证码（一次性消费，验证后删除）

@@ -28,8 +28,12 @@
         ref="codeInputRef"
         v-model="code"
         type="text"
+        inputmode="numeric"
+        pattern="[0-9]*"
+        autocomplete="off"
         placeholder="请输入验证码"
         maxlength="4"
+        @input="onCodeInput"
         @keyup.enter="handleConfirm"
       />
       <button type="button" class="refresh-btn" @click="refresh" title="刷新验证码">
@@ -82,6 +86,14 @@ const refresh = () => {
 
 const showError = (msg) => {
   errorMsg.value = msg
+}
+
+// 验证码为 4 位纯数字：输入时过滤非数字并截断，避免提交后才报错
+// 直接读写 e.target.value，不依赖 v-model 与自定义 @input 的执行先后
+const onCodeInput = (e) => {
+  const next = e.target.value.replace(/\D/g, '').slice(0, 4)
+  if (e.target.value !== next) e.target.value = next
+  code.value = next
 }
 
 const resetLoading = () => {

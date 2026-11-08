@@ -34,9 +34,9 @@ func NewAuthHandler() *AuthHandler {
 
 // RegisterRequest 注册请求参数
 type RegisterRequest struct {
-	Password string `json:"password" binding:"required,min=6"`
+	Password string `json:"password" binding:"required,min=6,max=64"`
 	Nickname string `json:"nickname"`
-	Email    string `json:"email" binding:"required"`
+	Email    string `json:"email" binding:"required,email,max=254"`
 }
 
 // LoginRequest 登录请求参数
@@ -67,8 +67,11 @@ type ForgotPasswordRequest struct {
 // ResetPasswordRequest 重置密码请求参数
 type ResetPasswordRequest struct {
 	Token    string `json:"token" binding:"required"`
-	Password string `json:"password" binding:"required,min=6"`
+	Password string `json:"password" binding:"required,min=6,max=64"`
 }
+
+// passwordResetSentMessage 忘记密码统一提示，避免通过错误信息枚举已注册用户
+const passwordResetSentMessage = "如果该邮箱已注册，重置邮件将发送至您的邮箱"
 
 // Captcha 获取图形验证码
 func (h *AuthHandler) Captcha(c *gin.Context) {
@@ -169,7 +172,8 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	var user model.User
 	if err := db.Where("email = ?", req.Email).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			utils.Unauthorized(c, "该邮箱未注册")
+			// 与密码错误使用同一提示，避免枚举邮箱
+			utils.Unauthorized(c, "邮箱或密码错误")
 		} else {
 			utils.InternalError(c, "查询用户失败")
 		}
@@ -178,7 +182,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 	// 校验密码
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
-		utils.Unauthorized(c, "密码错误")
+		utils.Unauthorized(c, "邮箱或密码错误")
 		return
 	}
 
@@ -234,11 +238,17 @@ func (h *AuthHandler) ForgotPassword(c *gin.Context) {
 
 	var user model.User
 	if err := db.Where("email = ?", req.Email).First(&user).Error; err != nil {
-		utils.Error(c, 404, "该邮箱未注册")
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			// 不暴露邮箱是否注册，直接返回与成功一致的提示
+			utils.Success(c, gin.H{}, passwordResetSentMessage)
+			return
+		}
+		utils.InternalError(c, "查询用户失败")
 		return
 	}
 	if user.Status == "disabled" {
-		utils.Error(c, 403, "账号已被禁用")
+		// 禁用账号不发送邮件，但对外保持与成功一致的提示
+		utils.Success(c, gin.H{}, passwordResetSentMessage)
 		return
 	}
 
@@ -269,7 +279,7 @@ func (h *AuthHandler) ForgotPassword(c *gin.Context) {
 		return
 	}
 
-	utils.Success(c, gin.H{}, "重置邮件已发送，请检查邮箱")
+	utils.Success(c, gin.H{}, passwordResetSentMessage)
 }
 
 // ResetPassword 重置密码

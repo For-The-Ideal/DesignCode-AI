@@ -39,15 +39,15 @@ export function useRegionDescribe() {
   }
 
   async function aiDescribe() {
-    if (aiLoading.value) return
+    if (aiLoading.value) return false
     const imageUrl = store.image.url
     if (!imageUrl) {
       ElMessage.warning('当前主图缺少图片地址，无法生成描述')
-      return
+      return false
     }
     if (!store.nodeList.length) {
       ElMessage.warning('还没有标注区域，请先框选')
-      return
+      return false
     }
     aiLoading.value = true
     try {
@@ -74,8 +74,10 @@ export function useRegionDescribe() {
       if (!filled) throw new Error('AI 返回的节点均无法匹配，请重试')
       if (filled < total) ElMessage.warning(`已回填 ${filled}/${total} 个区域描述`)
       else ElMessage.success(`已生成 ${filled} 个区域描述`)
+      return true
     } catch (e) {
       ElMessage.error(e?.message || 'AI 描述生成失败')
+      return false
     } finally {
       aiLoading.value = false
     }

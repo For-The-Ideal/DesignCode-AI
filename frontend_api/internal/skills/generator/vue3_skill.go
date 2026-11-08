@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"frontend_api/pkg/ai"
 	"frontend_api/pkg/logger"
-	"os"
-	"path/filepath"
 )
 
 // ═══════════════════════════════════════════════
@@ -46,6 +44,7 @@ func (s *Vue3Skill) Execute(ctx context.Context, input interface{}) (interface{}
 	if prompt == "" {
 		return nil, fmt.Errorf("vue3: 提示词文件未找到")
 	}
+	s.logger.Infof("[Vue3Skill] prompt 拼装: %d chars (base + vue3)", len(prompt))
 
 	messages := []ai.Message{
 		{Role: "system", Content: prompt},
@@ -58,20 +57,9 @@ func (s *Vue3Skill) Execute(ctx context.Context, input interface{}) (interface{}
 	}
 
 	s.logger.Infof("[Vue3Skill] 生成完成, code=%d chars", len(content))
-	return Output{Code: content, Preview: "", Score: 0}, nil
+	return Output{Code: content, Preview: ""}, nil
 }
 
 func (s *Vue3Skill) loadPrompt() string {
-	paths := []string{
-		"prompts/vue3/generate.txt",
-		"../prompts/vue3/generate.txt",
-		filepath.Join("..", "prompts", "vue3", "generate.txt"),
-	}
-	for _, p := range paths {
-		data, err := os.ReadFile(p)
-		if err == nil {
-			return string(data)
-		}
-	}
-	return ""
+	return LoadPrompt("vue3")
 }

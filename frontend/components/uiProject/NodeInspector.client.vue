@@ -1,29 +1,45 @@
 <template>
   <div v-if="node" class="inspector">
-    <div class="ins-head">
-      <span class="ins-title">{{ displayName(node) }}</span>
-      <div class="ins-actions">
-        <span class="status-chip" :style="{ background: STATUS_COLOR[node.status] }">{{ statusText(node.status) }}</span>
-      </div>
-    </div>
 
-    <div class="ins-body">
+    <!-- 焦点离开输入区即落库：input 的 300ms debounce 未触发时点「开始生成」也不会漏掉最新区域名 -->
+    <div class="ins-body" @focusout="flushNow">
       <!-- 顶层：从枚举内联选类型（取代旧的图上浮层） -->
       <div v-if="isTop" class="field">
-        <span class="field-label">区域类型<span v-if="!form.name" class="need-pick">（必选其一）</span></span>
+        <span class="field-label"><span class="req">*</span>区域类型<span v-if="!form.name" class="need-pick">（必选其一）</span></span>
         <div class="type-grid">
           <button
             v-for="t in TOP_REGION_ENUM"
             :key="t"
             class="type-chip"
             :class="{ active: form.name === t, used: otherUsed[t] }"
+            :title="`${t}｜${TOP_REGION_TIPS[t] || ''}`"
             @click="pickType(t)"
-          >{{ t }}<span v-if="otherUsed[t]" class="chip-used">已用</span></button>
+          >{{ regionLabel(t) }}<span v-if="otherUsed[t]" class="chip-used">已用</span></button>
+        </div>
+      </div>
+
+      <!-- ≥2 级：先选元素类型（容器/叶子同表），区域名只写业务含义；
+           已关联附图时名称随素材自动生成，禁止手动输入，取消关联后恢复可编辑 -->
+      <div v-if="!isTop" class="field">
+        <span class="field-label"><span class="req">*</span>元素类型<span v-if="!form.component" class="need-pick">（必选其一）</span></span>
+        <div v-for="group in ELEMENT_TYPE_GROUPS" :key="group.label" class="type-row">
+          <span class="type-row-label">{{ group.label }}</span>
+          <div class="type-grid type-grid--dense">
+            <button
+              v-for="t in group.types"
+              :key="t"
+              class="type-chip type-chip--sm"
+              :class="{ active: form.component === t }"
+              :title="`${t}｜${ELEMENT_TYPE_TIPS[t] || ''}${form.component === t ? '（再次点击取消）' : ''}`"
+              @click="pickElementType(t)"
+            >{{ elementLabel(t) }}</button>
+          </div>
         </div>
       </div>
 
       <div v-if="isContainer" class="field field--row">
         <span class="field-label">排列方式
+          <span v-if="form.layout" class="layout-src">{{ LAYOUT_SRC_TEXT[form.layoutSource] || '已设置' }}</span>
           <span class="help-tip" :data-tip="LAYOUT_TIP">
             <i class="fas fa-circle-question help-badge"></i>
           </span>
@@ -37,13 +53,13 @@
             @click="setLayout(op.value)"
           >{{ op.label }}</button>
         </div>
+        <div v-if="childCount" class="layout-sub">决定这块区域内 {{ childCount }} 个子区域怎么排；子区域自己内部再各看各的排列方式</div>
       </div>
 
-      <!-- 非顶层节点：自由命名（无论叶子还是容器都可命名；顶层走上方枚举类型）；
-           已关联附图时名称随素材自动生成，禁止手动输入，取消关联后恢复可编辑 -->
       <label v-if="!isTop" class="field">
         <span class="field-label">
-          区域名
+          <span class="req">*</span>区域名
+          <span class="help-tip" :data-tip="NAME_TIP"><i class="fas fa-circle-question help-badge"></i></span>
           <span v-if="form.assetId" class="name-locked"><i class="fas fa-lock"></i> 随素材自动生成</span>
         </span>
         <input
@@ -51,7 +67,7 @@
           class="inp"
           maxlength="24"
           :disabled="!!form.assetId"
-          :placeholder="form.assetId ? '已关联附图，名称随素材自动生成' : '子节点自由命名'"
+          :placeholder="form.assetId ? '已关联附图，名称随素材自动生成' : '写这块框的业务含义'"
         />
       </label>
 
@@ -103,7 +119,7 @@
         <!-- 无素材时也保留入口：标注过程中可直接补传，不必退出编辑器 -->
         <div v-else class="asset-empty" @click="pickAsset">
           <i class="fa-regular fa-images"></i>
-          <span>暂无附图素材，点击上传 Logo / 图标 / 插画</span>
+          <span>点击上传素材 Logo / 图标 / 插画</span>
         </div>
         <span v-if="form.assetId" class="asset-link-tip">
           生成时该区域直接使用素材，不再由 AI 重绘
@@ -124,7 +140,8 @@
     </div>
   </div>
   <div v-else class="inspector inspector--empty">
-    选中左侧框或右侧节点后可编辑描述
+    <i class="fas fa-hand-pointer"></i>
+    <span>选中区域后可编辑描述</span>
   </div>
 </template>
 
@@ -134,7 +151,16 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUiProjectStore } from '~/stores/uiProject'
 import { useCodeStore } from '~/stores/code'
 import { MAX_ASSETS } from '~/stores/code/upload'
-import { TOP_REGION_ENUM } from '~/utils/uiTree.js'
+import {
+  TOP_REGION_ENUM,
+  TOP_REGION_TIPS,
+  regionLabel,
+  ELEMENT_CONTAINER_TYPES,
+  ELEMENT_LEAF_TYPES,
+  ELEMENT_TYPE_TIPS,
+  elementLabel,
+  isContainerElement,
+} from '~/utils/uiTree.js'
 
 const store = useUiProjectStore()
 const codeStore = useCodeStore()
@@ -146,22 +172,36 @@ const STATUS_COLOR = {
   empty: '#ff4757',
 }
 const STATUS_TEXT = { pending: '待描述', ai_draft: 'AI 初稿', confirmed: '已确认', empty: '待补全' }
+// 排列方式：row/column/grid 为流式排列；stack 为叠放（子元素共用同一块区域、按坐标叠加，如背景图 + 浮层）
 const LAYOUT_OPTIONS = [
   { value: 'row', label: '横排 ⇄' },
   { value: 'column', label: '竖排 ⇅' },
   { value: 'grid', label: '网格 ⊞' },
+  { value: 'stack', label: '叠放 ⧉' },
+]
+// 元素类型分两行：容器型（可继续下钻）/ 叶子型
+const ELEMENT_TYPE_GROUPS = [
+  { label: '容器', types: ELEMENT_CONTAINER_TYPES },
+  { label: '元素', types: ELEMENT_LEAF_TYPES },
 ]
 
 // 排列方式的优先级说明：用 data-tip 交给纯 CSS 气泡渲染（不用 v-title，避免与原生 title 气泡叠层）
-const LAYOUT_TIP = '排列方式取值优先级：手动 ＞ 自动推断 ＞ AI 建议。画完框选了类型时，若顶层 AI 给了排列方向会自动选中；AI 没给就留空不选。增删子区域后会按子框位置重新自动推断，手动选定过就不再被覆盖。'
+const LAYOUT_TIP = '排列方式取值优先级：手动 ＞ 自动推断 ＞ AI 建议。画完框选了类型时，若顶层 AI 给了排列方向会自动选中；AI 没给就留空不选。增删子区域后会按子框位置重新自动推断，手动选定过就不再被覆盖。叠放＝子元素不排队，共用这块区域按原图坐标叠加（典型：底图铺满 + 文案/按钮/卡片浮在上面）。再次点击已选中的排列方式可取消。'
 const LAYOUT_SRC_TEXT = { manual: '手动', ai: 'AI 建议', auto: '自动推断' }
 // 关联素材说明：（只在当前主图有可用附图时显示该字段）
 const ASSET_TIP = '选择上传区附带的真实素材（Logo / 图标 / 插画 / 照片），生成时该区域直接使用这张素材，不再由 AI 重绘。'
+// 区域名说明：名称只承载业务语义（元素类型已在上方单独选），生成前必填
+const NAME_TIP = '只写业务含义（这块框承载的文案或功能），不要重复上方的元素类型；生成前必填，会显示在层级树与框线标签上。'
 
 const node = computed(() => store.selectedNode)
 const isTop = computed(() => !!node.value && !node.value.parentId)
-// 可引用/可管理的附图：展示全部素材，上传中与失败也入列表（loading/重试/删除与外部托盘一致）
-const assetOptions = computed(() => codeStore.assets)
+// 可引用/可管理的附图：只列当前主图名下的素材（多图切页后自动跟着变），
+// 上传中与失败也入列表（loading/重试/删除与外部托盘一致）
+const assetOptions = computed(() => {
+  const all = codeStore.assets
+  const scope = store.assetScopeId
+  return scope ? all.filter((a) => !a.ownerId || a.ownerId === scope) : all
+})
 // 是否有子节点：非顶层但已下钻子级时，它充当父容器，同样需要交互行为字段
 const hasChildren = computed(() => !!node.value && (node.value.childrenIds?.length || 0) > 0)
 // 其它顶层节点已占用的枚举（用于“已用”标记，仍可点选自动生成序号）
@@ -174,54 +214,70 @@ const otherUsed = computed(() => {
   return set
 })
 const isContainer = computed(() =>
-  !!(node.value && (!node.value.parentId || node.value.childrenIds?.length || node.value.nodeType === 'container')),
+  !!(
+    node.value &&
+    (!node.value.parentId ||
+      node.value.childrenIds?.length ||
+      node.value.nodeType === 'container' ||
+      isContainerElement(node.value.component))
+  ),
 )
 
-const statusText = (s) => STATUS_TEXT[s] || s
-function displayName(n) {
-  if (!n.name) return '未命名区域'
-  return n.variantIndex > 0 ? `${n.name}-${n.variantIndex + 1}` : n.name
-}
 
 // 表单本地态，改动 debounce 回写 store（触发 markEdited / manual layout）
-const form = reactive({ name: '', summary: '', styleHints: '', behavior: '', layout: '', assetId: '' })
+const form = reactive({ name: '', component: '', summary: '', styleHints: '', behavior: '', layout: '', layoutSource: '', assetId: '' })
+// 该区域内直接子区域数量：排列方式描述的是它们之间的排布
+const childCount = computed(() => node.value?.childrenIds?.length || 0)
 let timer = null
 
 function pullFromNode(n) {
   form.name = n?.name || ''
+  form.component = n?.component || ''
   form.summary = n?.summary || ''
   form.styleHints = n?.styleHints || ''
   form.behavior = n?.behavior || ''
   form.layout = n?.layout || ''
+  form.layoutSource = n?.layoutSource || ''
   form.assetId = n?.assetId || ''
 }
 
-watch(node, (n) => { if (n) pullFromNode(n) }, { immediate: true })
+// 切换节点前先落库上一个节点的输入，再载入新节点内容
+watch(node, (n, old) => {
+  if (old) flushTo(old)
+  if (n) pullFromNode(n)
+}, { immediate: true })
 // 外部改动（如顶部工具栏「AI 描述」批量回填）时，同步当前节点的描述到表单
 watch(() => node.value?.summary, (s) => {
   if (node.value && form.summary !== (s || '')) form.summary = s || ''
 })
 
-function pushToStore() {
-  if (!node.value) return
-  store.updateNode(node.value.nodeKey, {
+// 立即把表单写回指定节点（不依赖当前选中）：失焦、切换节点前调用，
+// 避免 debounce 未落库时生成校验读到旧的区域名
+function flushTo(target) {
+  if (timer) { clearTimeout(timer); timer = null }
+  if (!target) return
+  store.updateNode(target.nodeKey, {
     name: form.name,
     summary: form.summary,
     styleHints: form.styleHints,
     behavior: form.behavior,
   })
 }
+const flushNow = () => flushTo(node.value)
 
 // name/layout 单独处理：layout 走 manual，name 走 updateNode
 watch(() => [form.name, form.summary, form.styleHints, form.behavior], () => {
   clearTimeout(timer)
-  timer = setTimeout(pushToStore, 300)
+  timer = setTimeout(() => flushTo(node.value), 300)
 })
 
+// 点击选中；再次点击同一个即取消（显式清空，交给 layoutSource=manual 阻止自动推断覆盖）
 function setLayout(val) {
   if (!node.value) return
-  form.layout = val
-  store.updateNode(node.value.nodeKey, { layout: val })
+  const next = form.layout === val ? '' : val
+  form.layout = next
+  form.layoutSource = 'manual'
+  store.updateNode(node.value.nodeKey, { layout: next })
 }
 
 // 关联 / 取消关联附图素材：点击即回写（绑定视为已编辑确认）
@@ -307,7 +363,16 @@ function pickType(name) {
   if (!node.value) return
   const res = store.assignTopName(node.value.nodeKey, name)
   pullFromNode(node.value)
-  if (res && res.ok && res.hints && res.hints.length) ElMessage.warning(`「${name}」${res.hints[0]}`)
+  if (res && res.ok && res.hints && res.hints.length) ElMessage.warning(`「${regionLabel(name)}」${res.hints[0]}`)
+}
+
+// 非顶层选元素类型：再次点击已选中的类型 = 取消选择（回到未选，生成侧按容器推断）
+function pickElementType(type) {
+  if (!node.value) return
+  const next = node.value.component === type ? '' : type
+  const res = store.assignElementType(node.value.nodeKey, next)
+  pullFromNode(node.value)
+  if (res && res.hints && res.hints.length) ElMessage.warning(res.hints[0])
 }
 </script>
 
@@ -321,31 +386,22 @@ function pickType(name) {
   overflow: hidden;
 }
 .inspector--empty {
-  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 24px 20px;
   text-align: center;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.28);
+  color: rgba(255, 255, 255, 0.3);
 }
-.ins-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 12px;
-  border-bottom: 1px solid rgba(0, 255, 255, 0.1);
-}
-.ins-title { font-size: 13px; font-weight: 600; color: rgba(255, 255, 255, 0.85); }
-.ins-actions { display: flex; align-items: center; gap: 8px; }
-.status-chip {
-  font-size: 11px;
-  padding: 2px 8px;
-  border-radius: 10px;
-  color: #0a0a0f;
-  font-weight: 700;
-}
-.ins-body { padding: 12px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; container-type: inline-size; }
-.field { display: flex; flex-direction: column; gap: 5px; }
+.inspector--empty i { font-size: 18px; color: rgba(0, 255, 255, 0.35); }
+.ins-body { padding: 12px; display: flex; flex-direction: column; gap: 12px; overflow-x: hidden; overflow-y: auto; container-type: inline-size; }
+.field { position: relative; display: flex; flex-direction: column; gap: 5px; }
 .field--row { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 8px; }
 .field-label { font-size: 12px; color: rgba(255, 255, 255, 0.45); }
+/* 必填项标记：红色星号统一放在标签前 */
+.req { color: #ff4d5e; margin-right: 3px; }
 .inp {
   width: 100%;
   background: rgba(0, 0, 0, 0.5);
@@ -362,6 +418,9 @@ function pickType(name) {
 /* 已关联附图：区域名由素材自动生成，输入框禁用 */
 .inp:disabled { opacity: 0.55; cursor: not-allowed; border-color: rgba(255, 255, 255, 0.12); }
 .name-locked { margin-left: 6px; font-size: 10px; color: rgba(0, 255, 255, 0.6); display: inline-flex; align-items: center; gap: 3px; }
+/* 排列方式来源：让用户知道已有值且是系统按子框推断的，不必手填 */
+.layout-src { margin-left: 5px; font-size: 10px; color: rgba(0, 255, 255, 0.55); }
+.layout-sub { flex-basis: 100%; font-size: 10px; line-height: 1.5; color: rgba(255, 255, 255, 0.32); }
 .txt { resize: vertical; }
 .field--row .inp { flex: none; width: auto; }
 .layout-seg { display: flex; gap: 6px; }
@@ -386,7 +445,9 @@ function pickType(name) {
 }
 /* 字段说明气泡：圆形徽章 + 自绘 tooltip（跟随文字换行，不依赖指令/原生 title） */
 /* cursor 不用 help：Windows 的 help 光标自带一个小问号，会与徽章上的问号重复 */
-.help-tip { position: relative; display: inline-flex; vertical-align: middle; margin-left: 5px; cursor: pointer; }
+/* 气泡相对整个字段定位（.field 为定位祖先），而不是相对问号小图标：
+   否则图标靠左 + 气泡 240px 宽会把面板撑出横向溢出，触发横向滚动条 */
+.help-tip { position: static; display: inline-flex; vertical-align: middle; margin-left: 5px; cursor: pointer; }
 .help-badge {
   display: inline-flex;
   align-items: center;
@@ -444,6 +505,13 @@ function pickType(name) {
 .type-chip.active { border-color: #00ffff; color: #00ffff; background: rgba(0, 255, 255, 0.12); }
 .type-chip.used { opacity: 0.62; }
 .chip-used { margin-left: 4px; font-size: 10px; color: rgba(255, 207, 77, 0.85); }
+
+/* 元素类型（≥2 级）：容器/元素两行，胶囊更紧凑 */
+.type-row { display: flex; gap: 6px; }
+.type-row + .type-row { margin-top: 6px; }
+.type-row-label { flex: none; width: 24px; padding-top: 4px; font-size: 10px; color: rgba(255, 255, 255, 0.35); }
+.type-grid--dense { flex: 1; gap: 4px; }
+.type-chip--sm { padding: 3px 7px; border-radius: 6px; font-size: 11px; }
 
 /* 关联素材：缩略图选择 */
 .field-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -523,31 +591,28 @@ function pickType(name) {
   font-size: 11px;
   cursor: pointer;
 }
-/* hover 蒙层 + 中央删除：与外部素材托盘一致 */
+/* 删除：与选中互斥（选中时模板不渲染），未选中时仅 hover 在右上角浮现 */
 .asset-opt-hover {
   position: absolute;
-  inset: 0;
+  top: 2px;
+  right: 2px;
   z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(5, 8, 12, 0.55);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.18s ease;
 }
 .asset-opt:hover .asset-opt-hover { opacity: 1; }
 .asset-opt-del {
-  width: 30px;
-  height: 30px;
+  width: 20px;
+  height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
+  border-radius: 6px;
   border: 1px solid rgba(255, 71, 87, 0.55);
-  background: rgba(20, 10, 14, 0.75);
+  background: rgba(20, 10, 14, 0.8);
   color: #ff6b7a;
-  font-size: 13px;
+  font-size: 10px;
   cursor: pointer;
   pointer-events: auto;
   transition: all 0.18s ease;

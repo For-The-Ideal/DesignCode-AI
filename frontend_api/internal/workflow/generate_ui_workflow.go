@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"frontend_api/internal/model"
+	"frontend_api/internal/quality"
 	"frontend_api/internal/repository"
 	"frontend_api/internal/skills/code_to_html"
 	"frontend_api/internal/skills/generator"
@@ -146,8 +147,18 @@ func (w *GenerateUIWorkflow) simulateProgress(ctx context.Context, taskID string
 			w.updateProgressDB(taskID, step, p)
 		}
 	}
-	// 确保终点精确
+	// 确保终点精准
 	w.updateProgressDB(taskID, step, to)
+}
+
+// progressTo 单页任务保留平滑模拟；多页任务直接推送里程碑，
+// 避免逐页 sleep 累加导致总耗时被拉长。
+func (w *GenerateUIWorkflow) progressTo(ctx context.Context, task *model.Task, step string, from, to int, multiPage bool) {
+	if multiPage {
+		w.pushProgress(task, step, to)
+		return
+	}
+	w.simulateProgress(ctx, task.ID, step, from, to, 150)
 }
 
 // streamCode 将代码按行拆分为 SSE message 事件逐步推送
@@ -203,139 +214,189 @@ func (w *GenerateUIWorkflow) Execute(ctx context.Context, task *model.Task) erro
 	task.Status = model.TaskStatusRunning
 	w.pushUserStatus(task, model.TaskStatusRunning)
 
-	// ── Step 1: 准备图片（取 URL + 下载转 base64）──
+	// ── Step 1: 准备图片（按页下载 + 转 base64）──
 	w.pushProgress(task, StepDownloadImages, 5)
-	w.log.Infof("[Workflow] step 1/6: 准备图片 (%d 张)...", len(task.Images))
-	imageURLs := make([]string, len(task.Images))
-	imagesBase64 := make([]string, 0, len(task.Images))
-	for i, img := range task.Images {
-		imageURLs[i] = img.URL
-		w.log.Infof("[Workflow]   图片[%d]: %s", i, img.URL)
-		// 下载图片并转为 base64，供 Generator 等通用模型使用
+	pages := OrderedPages(task.Images)
+	multiPage := len(pages) > 1
+	w.log.Infof("[Workflow] step 1/6: 准备图片（%d 页）...", len(pages))
+	// 逐页下载并转 base64：多页任务每页生成只带自己的图片，避免输入膨胀
+	b64ByPage := make(map[string]string, len(pages))
+	for i, img := range pages {
+		w.log.Infof("[Workflow]   页面[%d] %s: %s", i+1, img.PageID, img.URL)
 		if b64, err := urlToBase64(img.URL); err == nil {
-			imagesBase64 = append(imagesBase64, b64)
-			w.log.Infof("[Workflow]   图片[%d] base64 转换完成: %d bytes", i, len(b64))
+			b64ByPage[img.PageID] = b64
+			w.log.Infof("[Workflow]   页面[%d] base64 转换完成: %d bytes", i+1, len(b64))
 		} else {
-			w.log.Infof("[Workflow]   [WARN] 图片[%d] 转 base64 失败: %v", i, err)
+			w.log.Infof("[Workflow]   [WARN] 页面[%d] 转 base64 失败: %v", i+1, err)
 		}
 	}
 	w.simulateProgress(ctx, task.ID, StepDownloadImages, 5, 20, 400)
 
-	// ── Step 2: DSL 来源 —— 优先用结构编辑器提交的树（跳过 Vision），否则回退视觉分析 ──
-	w.pushProgress(task, StepVisionAnalyzeSkill, 20)
-	var dsl string
-	if built, ok := BuildDSLFromTrees(task.Images); ok {
-		dsl = built
-		w.log.Infof("[Workflow] step 2/6: 使用结构标注生成 DSL（跳过 Vision）...")
-		w.simulateProgress(ctx, task.ID, StepVisionAnalyzeSkill, 20, 50, 150)
-	} else {
-		w.log.Infof("[Workflow] step 2/6: 无结构标注，回退视觉分析 (VisionAnalyzeSkill)...")
-		w.simulateProgress(ctx, task.ID, StepVisionAnalyzeSkill, 20, 35, 300)
-		visionOutput, err := w.visionSkill.Execute(ctx, vision.Input{Images: imageURLs})
-		if err != nil {
-			w.handleError(task, fmt.Errorf("视觉分析失败: %w", err))
-			return err
-		}
-		dsl = visionOutput.(vision.Output).DSL
-		w.simulateProgress(ctx, task.ID, StepVisionAnalyzeSkill, 35, 50, 200)
-	}
-	w.log.Infof("[Workflow] step 2/6 完成, DSL: %s", dsl)
-
-	// ── Step 3: GeneratorSkill → Code + Preview ───
+	// ── Step 2~4: 逐页生成（DSL → 代码 → 预览）──
+	// 单页任务与旧行为完全等价（走同一条逐页路径）；多页任务每页独立生成，
+	// 进度 20% → 80% 按页均分，current_step 带 (i/N) 便于前端展示当前页。
 	genStep := getGeneratorStepName(task.Target)
-	w.pushProgress(task, genStep, 50)
-	w.log.Infof("[Workflow] step 3/6: 代码生成 (%s)...", genStep)
-	w.simulateProgress(ctx, task.ID, genStep, 50, 65, 300)
-
 	genAI, err := ai.SelectClient("write")
 	if err != nil {
 		w.handleError(task, fmt.Errorf("获取AI客户端失败: %w", err))
 		return err
 	}
-
 	genSkill := generator.GeneratorFunc(task.Target, genAI)
-	genInput := generator.Input{
-		DSL:      dsl,
-		Images:   imagesBase64,
-		Platform: task.Platform,
-		Options:  task.Options,
+
+	pageResults := make([]model.PageResult, 0, len(pages))
+	total := len(pages)
+	for i, page := range pages {
+		segStart := 20 + 60*i/total
+		segEnd := 20 + 60*(i+1)/total
+		dslEnd := segStart + (segEnd-segStart)*30/100
+		genEnd := segStart + (segEnd-segStart)*85/100
+		suffix := ""
+		if multiPage {
+			suffix = fmt.Sprintf(" %d/%d", i+1, total)
+		}
+		visionStep := StepVisionAnalyzeSkill + suffix
+		pageGenStep := genStep + suffix
+
+		// ── 2a. DSL：有标注树本地构建，无树对该页图片单独跑 Vision ──
+		w.pushProgress(task, visionStep, segStart)
+		dsl, ok := BuildPageDSL(page)
+		if ok {
+			w.log.Infof("[Workflow] 页面 %s(%s): 使用结构标注生成 DSL（跳过 Vision）", page.PageID, page.PageName)
+		} else {
+			w.log.Infof("[Workflow] 页面 %s(%s): 无结构标注，回退视觉分析", page.PageID, page.PageName)
+			visionOutput, verr := w.visionSkill.Execute(ctx, vision.Input{Images: []string{page.URL}})
+			if verr != nil {
+				w.handleError(task, fmt.Errorf("第 %d 页视觉分析失败: %w", i+1, verr))
+				return verr
+			}
+			dsl = visionOutput.(vision.Output).DSL
+		}
+		w.progressTo(ctx, task, visionStep, segStart, dslEnd, multiPage)
+
+		// ── 3. 代码生成：每页只带自己的图片 ──
+		w.pushProgress(task, pageGenStep, dslEnd)
+		pageImages := make([]string, 0, 1)
+		if b64 := b64ByPage[page.PageID]; b64 != "" {
+			pageImages = append(pageImages, b64)
+		}
+		genInput := generator.Input{
+			DSL:      dsl,
+			Images:   pageImages,
+			Platform: task.Platform,
+			Options:  task.Options,
+		}
+		if task.ComponentLib != "" {
+			genInput.ComponentLib = task.ComponentLib
+		}
+		genOutput, gerr := genSkill.Execute(ctx, genInput)
+		if gerr != nil {
+			w.handleError(task, fmt.Errorf("第 %d 页代码生成失败: %w", i+1, gerr))
+			return gerr
+		}
+		out := genOutput.(generator.Output)
+		// 清洗 markdown 代码块包裹 (```dart ... ``` → 纯代码)
+		out.Code = cleanCodeBlock(out.Code)
+		// 空结果拦截：模型偶尔会因思维链(reasoning_content)吃满 max_tokens 而返回空 content。
+		// 此时不得当作成功入库（否则出现 code="" 的 success 记录），直接判失败并退积分。
+		if strings.TrimSpace(out.Code) == "" {
+			emptyErr := fmt.Errorf("第 %d 页代码生成结果为空（模型未返回有效代码，疑似思维链耗尽 max_tokens）", i+1)
+			w.handleError(task, emptyErr)
+			return emptyErr
+		}
+		w.log.Infof("[Workflow] 页面 %s 生成完成, code=%d chars", page.PageID, len(out.Code))
+
+		// 确定性质量检查：规则编号与 prompts/*/generate.txt 的硬性规则一一对应。
+		// 只做扫描与标记，不阻断生成（fail 由前端展示，不在这里回滚任务）。
+		report := quality.Scan(out.Code, task.Target, dsl, task.ComponentLib)
+		if report.Status != "pass" {
+			w.log.Infof("[Workflow] 页面 %s 质量检查: %s (%d/%d 通过)", page.PageID, report.Status, report.Passed, report.Total)
+		}
+
+		// 单页任务保留逐行推代码的生成动画；多页任务不推，避免多段代码在前端拼接混杂
+		if !multiPage {
+			w.streamCode(ctx, task.ID, out.Code)
+		}
+		w.progressTo(ctx, task, pageGenStep, dslEnd, genEnd, multiPage)
+
+		// ── 4. 转 HTML 预览（失败降级用模型自带 preview）──
+		htmlStep := pageGenStep
+		if !multiPage {
+			// 单页任务保留独立的 CodeToHtmlSkill 阶段，与旧版步骤序列一致
+			htmlStep = StepConvertPreview
+			w.pushProgress(task, htmlStep, genEnd)
+		}
+		htmlOutput, herr := w.codeToHtmlSkill.Execute(ctx, code_to_html.Input{
+			SourceCode: out.Code,
+			Framework:  task.Target,
+			DSL:        dsl,
+			Images:     page.URL,
+		})
+		previewHTML := out.Preview
+		if herr != nil {
+			w.log.Errorf("[Workflow] 页面 %s 转 HTML 失败: %v（降级用模型自带 preview）", page.PageID, herr)
+		} else {
+			previewHTML = htmlOutput.(code_to_html.Output).HTML
+		}
+		route := page.Route
+		if route == "" {
+			route = "/" + page.PageID
+		}
+		pageResults = append(pageResults, model.PageResult{
+			PageID:        page.PageID,
+			PageName:      page.PageName,
+			Route:         route,
+			DSL:           dsl,
+			Code:          out.Code,
+			Preview:       previewHTML,
+			Status:        "success",
+			QualityReport: &report,
+		})
+		w.progressTo(ctx, task, htmlStep, genEnd, segEnd, multiPage)
 	}
-	if task.ComponentLib != "" {
-		genInput.ComponentLib = task.ComponentLib
-	}
-	genOutput, err := genSkill.Execute(ctx, genInput)
-	if err != nil {
-		w.handleError(task, fmt.Errorf("代码生成失败: %w", err))
-		return err
-	}
 
-	out := genOutput.(generator.Output)
-	// 清洗 markdown 代码块包裹 (```dart ... ``` → 纯代码)
-	out.Code = cleanCodeBlock(out.Code)
-	w.log.Infof("[Workflow] step 3/6 完成, code=%d chars", len(out.Code))
+	// ── Step 5: 合成 + 保存结果 ─────────────────────
+	// 入口页（OrderedPages 已前置）作为旧字段 Code/Preview/DSL 的兼容取值，
+	// 保证未升级的前端与旧数据读取路径不受影响。
+	entry := pageResults[0]
+	appPreview := BuildAppPreview(pageResults, entry.PageID)
+	navMap := BuildNavMap(task.PageLinks, pageResults)
 
-	// 空结果拦截：模型偶尔会因思维链(reasoning_content)吃满 max_tokens 而返回空 content。
-	// 此时不得当作成功入库（否则出现 code="" 的 success 记录），直接判失败并退积分。
-	if strings.TrimSpace(out.Code) == "" {
-		emptyErr := fmt.Errorf("代码生成结果为空（模型未返回有效代码，疑似思维链耗尽 max_tokens）")
-		w.handleError(task, emptyErr)
-		return emptyErr
-	}
-
-	// 逐步推送 templateCode（逐行，SSE message 事件）
-	w.streamCode(ctx, task.ID, out.Code)
-	w.simulateProgress(ctx, task.ID, genStep, 65, 75, 200)
-
-	// ── Step 4: CodeToHtmlSkill → HTML Preview ────
-	w.pushProgress(task, StepConvertPreview, 75)
-	w.log.Infof("[Workflow] step 4/6: 代码转 HTML 预览 (CodeToHtmlSkill)...")
-
-	// 将图像 URL 拼接成逗号分隔字符串
-	imageURLStr := strings.Join(imageURLs, ",")
-	htmlOutput, err := w.codeToHtmlSkill.Execute(ctx, code_to_html.Input{
-		SourceCode: out.Code,
-		Framework:  task.Target,
-		DSL:        dsl,
-		Images:     imageURLStr,
-	})
-	var previewHTML string
-	if err != nil {
-		w.log.Errorf("[Workflow] CodeToHtmlSkill 转换失败: %v", err)
-		// 降级：使用 generator 返回的原始 preview
-		previewHTML = out.Preview
-	} else {
-		previewHTML = htmlOutput.(code_to_html.Output).HTML
-	}
-
-	w.simulateProgress(ctx, task.ID, StepConvertPreview, 75, 85, 200)
-
-	// 推送 preview 事件（替换之前 Step 3 末推送 out.Preview 的逻辑）
-	w.sseManager.Push(task.ID, sse.SSEEvent{
-		Event: "preview",
-		Data:  previewHTML,
-	})
-
-	// ── Step 5: 保存结果到 DB ─────────────────────
-	w.pushProgress(task, StepSaveResult, 85)
-	w.log.Infof("[Workflow] step 5/6: 保存结果...")
+	w.pushProgress(task, StepSaveResult, 80)
+	w.log.Infof("[Workflow] step 5/6: 保存结果（%d 页）...", len(pageResults))
 	result := &model.Result{
 		TaskID:           task.ID,
 		UserID:           task.UserID,
-		DSL:              dsl,
-		Code:             out.Code,
-		Preview:          previewHTML, // 使用转换后的 HTML
-		Score:            out.Score,
+		DSL:              entry.DSL,
+		Code:             entry.Code,
+		Preview:          entry.Preview,
 		CodeType:         task.Target,
 		GenerationStatus: "success",
 		PointsDeducted:   task.RequiredPoints,
 		CreatedAt:        time.Now(),
+		Pages:            pageResults,
+		AppPreview:       appPreview,
+		NavMap:           navMap,
+		QualityReport:    entry.QualityReport,
 	}
 	if err := w.resultRepo.Create(result); err != nil {
 		w.log.Errorf("[Workflow] 保存结果失败: %v", err)
 	}
 
+	// 推送 preview 事件：入口页 HTML（前端生成动画/预览区即时展示）
+	w.sseManager.Push(task.ID, sse.SSEEvent{
+		Event: "preview",
+		Data:  entry.Preview,
+	})
+
+	// 推送 quality 事件：入口页质量检查报告（与 done 解耦，前端可先展示检查结果）
+	if entry.QualityReport != nil {
+		if payload, err := json.Marshal(entry.QualityReport); err == nil {
+			w.sseManager.Push(task.ID, sse.SSEEvent{Event: "quality", Data: string(payload)})
+		}
+	}
+
 	// 积分已在创建任务时预扣，此处无需重复扣减
-	w.simulateProgress(ctx, task.ID, StepSaveResult, 85, 95, 200)
+	w.simulateProgress(ctx, task.ID, StepSaveResult, 80, 95, 200)
 
 	// ── Step 6: Done ───────────────────────────────
 	task.Status = model.TaskStatusSuccess

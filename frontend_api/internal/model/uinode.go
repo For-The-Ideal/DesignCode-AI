@@ -20,8 +20,9 @@ type BBox struct {
 type UINode struct {
 	NodeKey      string   `json:"nodeKey"`
 	Name         string   `json:"name"`         // 顶层区域枚举 header/sidebar/main/... 或子节点标签
+	Component    string   `json:"component"`    // ≥2 级元素类型（group/card/button/...），空=未选，type 按 Name 兜底映射
 	NodeType     string   `json:"nodeType"`     // 编辑器节点类型（容器/叶子等），重开回显所需
-	Layout       string   `json:"layout"`       // row | column | grid | ""
+	Layout       string   `json:"layout"`       // row | column | grid | stack（叠放，子元素按坐标叠加）| ""
 	LayoutSource string   `json:"layoutSource"` // layout 来源：ai | manual（手动不被 AI 覆盖，重开需保留）
 	VariantIndex int      `json:"variantIndex"` // 同一区域枚举的多块序号（回显时区分同名块）
 	Summary      string   `json:"summary"`      // 语义描述
@@ -29,6 +30,7 @@ type UINode struct {
 	Behavior     string   `json:"behavior"`     // 交互行为
 	Status       string   `json:"status"`       // pending | ai_draft | confirmed | empty
 	AssetID      string   `json:"assetId"`      // 关联附图素材：对应附图的 asset_id（空=未关联，生成时直接使用素材）
+	LinkTo       string   `json:"linkTo"`       // 点击跳转目标：目标页面的 page_id（多图模式，空=无跳转；优先生成 data-nav）
 	BBox         BBox     `json:"bbox"`
 	Children     []UINode `json:"children"`
 }

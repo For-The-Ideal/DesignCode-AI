@@ -24,8 +24,7 @@ const sseData = reactive({
   templateCode: '',
   previewCode: '',
   id: null,        // 对齐 auth.go 模板接口 { template_code, preview_code, id }
-  score: 0,
-  dimensions: [],
+  quality: null,   // 确定性质量检查报告 { passed,total,status,issues }
   progress: 0,     // SSE progress 事件跟踪
   currentStep: '', // 当前步骤名称
 })
@@ -99,13 +98,11 @@ export function useSSE () {
           sseData.currentStep = p.step || ''
         } catch { log('progress 解析失败', data) }
         break
-      case 'score':
+      case 'quality':
         try {
-          const parsed = JSON.parse(data)
-          sseData.score = parsed.score
-          sseData.dimensions = parsed.dimensions
-          log('评分数据已接收', parsed)
-        } catch { log('评分解析失败', data) }
+          sseData.quality = JSON.parse(data)
+          log('质量检查数据已接收', sseData.quality)
+        } catch { log('质量检查解析失败', data) }
         break
       case 'done':
         log('SSE 流传输完成，共接收', sseData.templateCode.length, '个字符')
@@ -134,7 +131,7 @@ export function useSSE () {
     status.value = 'connecting'
     error.value = ''
     retry.value = 0
-    Object.assign(sseData, { templateCode: '', previewCode: '', id: null, score: 0, dimensions: [], progress: 0, currentStep: '' })
+    Object.assign(sseData, { templateCode: '', previewCode: '', id: null, quality: null, progress: 0, currentStep: '' })
     abortController = new AbortController()
 
     const timeoutId = setTimeout(() => {

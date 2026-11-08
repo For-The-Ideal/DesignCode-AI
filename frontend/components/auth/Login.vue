@@ -3,7 +3,7 @@
     <!-- 邮箱 -->
     <div class="input-field" :class="{ focused: focusedInput === 'email', error: errors.email }">
       <i class="fas fa-envelope input-icon"></i>
-      <input type="email" v-model="form.email" placeholder="邮箱地址" maxlength="50"
+      <input type="email" v-model="form.email" placeholder="邮箱地址" maxlength="254" autocomplete="username"
         @focus="onFocus('email')" @blur="onBlur('email')" @input="clearError('email')">
       <svg class="border-svg" :class="{ animate: animatedInput === 'email' }">
         <rect x="0" y="0" rx="26" ry="26" width="100%" height="100%" pathLength="100" class="border-bg" />
@@ -16,8 +16,8 @@
     <div class="input-field" :class="{ focused: focusedInput === 'password', error: errors.password }">
       <i class="fas fa-lock input-icon"></i>
       <input :type="showPassword ? 'text' : 'password'" 
-      v-model="form.password" placeholder="密码" minlength="6" maxlength="20"
-        @focus="onFocus('password')" @blur="onBlur('password')" @input="clearError('password')" @keyup.enter="handleLogin">
+      v-model="form.password" placeholder="密码" minlength="6" maxlength="64" autocomplete="current-password"
+        @focus="onFocus('password')" @blur="onBlur('password')" @input="clearError('password')">
       <button type="button" class="password-eye" @click="showPassword = !showPassword">
         <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
       </button>
@@ -33,9 +33,8 @@
       <a href="#" class="forgot-link" @click.prevent="$emit('forgotPassword')">忘记密码？</a>
     </div>
 
-    <button type="submit" class="submit-btn" :disabled="loading">
-      <span v-if="!loading">登录</span>
-      <span v-else class="loading-spinner"></span>
+    <button type="submit" class="submit-btn">
+      <span>登录</span>
     </button>
   </form>
 </template>
@@ -45,7 +44,6 @@ import { ref, reactive } from 'vue'
 
 const emit = defineEmits(['forgotPassword', 'requestCaptcha'])
 
-const loading = ref(false)
 const showPassword = ref(false)
 const focusedInput = ref(null)
 const animatedInput = ref(null)
@@ -214,17 +212,5 @@ const handleLogin = () => {
 .submit-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-}
-.loading-spinner {
-  width: 20px;
-  height: 20px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: white;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  display: inline-block;
-}
-@keyframes spin {
-  to { transform: rotate(360deg); }
 }
 </style>

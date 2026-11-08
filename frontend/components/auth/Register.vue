@@ -3,7 +3,7 @@
     <!-- 邮箱 -->
     <div class="input-field" :class="{ focused: focusedInput === 'email', error: errors.email }">
       <i class="fas fa-envelope input-icon"></i>
-      <input type="email" v-model="form.email" placeholder="邮箱" maxlength="50"
+      <input type="email" v-model="form.email" placeholder="邮箱" maxlength="254" autocomplete="email"
         @focus="onFocus('email')" @blur="onBlur('email')" @input="clearError('email')">
       <svg class="border-svg" :class="{ animate: animatedInput === 'email' }">
         <rect x="0" y="0" rx="26" ry="26" width="100%" height="100%" pathLength="100" class="border-bg" />
@@ -16,7 +16,7 @@
     <div class="input-field" :class="{ focused: focusedInput === 'password', error: errors.password }">
       <i class="fas fa-lock input-icon"></i>
       <input :type="showPassword ? 'text' : 'password'" v-model="form.password"
-        placeholder="密码" maxlength="20" minlength="6"
+        placeholder="密码" maxlength="64" minlength="6" autocomplete="new-password"
         @focus="onFocus('password')" @blur="onBlur('password')" @input="clearError('password')">
       <button type="button" class="password-eye" @click="showPassword = !showPassword">
         <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
@@ -32,7 +32,7 @@
     <div class="input-field" :class="{ focused: focusedInput === 'confirm', error: errors.confirm }">
       <i class="fas fa-check-circle input-icon"></i>
       <input :type="showConfirm ? 'text' : 'password'" v-model="form.confirm"
-        placeholder="确认密码" maxlength="20" minlength="6"
+        placeholder="确认密码" maxlength="64" minlength="6" autocomplete="new-password"
         @focus="onFocus('confirm')" @blur="onBlur('confirm')" @input="clearError('confirm')">
       <button type="button" class="password-eye" @click="showConfirm = !showConfirm">
         <i :class="showConfirm ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
@@ -92,6 +92,11 @@ const handleRegister = async () => {
       email: form.email.toLowerCase(),
       password: form.password,
     })
+    // 请求被重复请求互踢/取消时 resolve(null)，不能直接取 res.code
+    if (!res) {
+      ElMessage.error('请求已取消，请重试')
+      return
+    }
     if (res.code === 200) {
       ElMessage.success('注册成功！请登录')
       emit('success')

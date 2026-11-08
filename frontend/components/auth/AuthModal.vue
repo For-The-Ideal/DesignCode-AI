@@ -106,8 +106,15 @@ const emailProviders = [
 ]
 
 const open = () => {
-  dialogRef.value?.open()
+  // 重置所有子状态：避免上次在验证码页/忘记密码页关闭后，再次打开停在旧界面
+  isCaptchaActive.value = false
+  forgotEmail.value = ''
+  forgotMsg.value = ''
+  forgotMsgType.value = ''
+  forgotLoading.value = false
+  forgotProvider.value = 'qq'
   goToLogin()
+  dialogRef.value?.open()
 }
 const close = () => { dialogRef.value?.close() }
 
@@ -155,6 +162,11 @@ const onCaptchaConfirm = async ({ captchaId, captchaCode }) => {
       captcha_id: captchaId,
       captcha_code: captchaCode,
     })
+    // 请求被重复请求互踢/取消时 resolve(null)，不能直接取 res.code
+    if (!res) {
+      captchaModalRef.value?.showError('请求已取消，请重试')
+      return
+    }
     if(res.code !=200){
       captchaModalRef.value?.refresh()
       captchaModalRef.value?.showError(res.message || '验证失败，请重试')
@@ -171,7 +183,7 @@ const onCaptchaConfirm = async ({ captchaId, captchaCode }) => {
   }
 }
 
-const onRegisterSuccess = (data) => {
+const onRegisterSuccess = () => {
   goToLogin()
 }
 const submitForgotPassword = async () => {
@@ -198,6 +210,11 @@ const submitForgotPassword = async () => {
   forgotMsg.value = ''
   try {
     const res = await loginApi.forgotPassword({ email: email.toLowerCase() })
+    if (!res) {
+      forgotMsg.value = '请求已取消，请重试'
+      forgotMsgType.value = 'error'
+      return
+    }
     if (res.code != 200) {
       forgotMsg.value = res.message || '发送失败，请重试'
       forgotMsgType.value = 'error'

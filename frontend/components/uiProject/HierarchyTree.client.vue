@@ -1,6 +1,6 @@
 <template>
   <div class="tree">
-    <div class="tree-head">
+    <div v-if="!hideHead" class="tree-head">
       <span class="tree-title">层级结构</span>
       <span class="tree-count">{{ nodeListCount }}</span>
     </div>
@@ -26,10 +26,13 @@
         <!-- 状态色点 -->
         <span class="dot" :style="{ background: STATUS_COLOR[node.status] || STATUS_COLOR.pending }"></span>
 
-        <span class="node-name">{{ displayName(node) }}</span>
+        <span class="node-name" :class="{ 'node-name--miss': isNameMissing(node) }">{{ displayName(node) }}</span>
+
+        <!-- 子级缺区域名：生成会被拦截，树里直接标红，免得到处找 -->
+        <span v-if="isNameMissing(node)" class="name-miss" title="生成前必须填区域名：选中它，在右侧「区域名」写这块框的业务含义">缺名</span>
 
         <!-- 排列方向图标 -->
-        <span v-if="node.layout" class="layout-chip" :title="'layout: ' + node.layout">
+        <span v-if="node.layout" class="layout-chip" :title="'排列: ' + (LAYOUT_TEXT[node.layout] || node.layout)">
           {{ LAYOUT_ICON[node.layout] }}
         </span>
 
@@ -47,7 +50,8 @@
       </div>
 
       <div v-if="!store.hasNodes" class="tree-empty">
-        还没有节点，在中间图片上拖拽框选第一个区域
+        <i class="fas fa-draw-polygon"></i>
+        <span>在图上框选第一个区域</span>
       </div>
     </div>
   </div>
@@ -56,9 +60,17 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useUiProjectStore } from '~/stores/uiProject'
+import { nodeLabel } from '~/utils/uiTree.js'
 
 const store = useUiProjectStore()
+defineProps({
+  // 外层折叠区已带标题/计数时隐藏内部「层级结构」头，避免重复
+  hideHead: { type: Boolean, default: false },
+})
 const emit = defineEmits(['addChild', 'deleteNode', 'select'])
+
+// 子级（有父级）没写区域名 → 生成硬校验会拦截，树上给红标
+const isNameMissing = (n) => !!n?.parentId && !n?.name
 
 // 状态 -> 颜色条（灰/黄/绿/红）
 const STATUS_COLOR = {
@@ -67,8 +79,9 @@ const STATUS_COLOR = {
   confirmed: '#37e08d',
   empty: '#ff4757',
 }
-// 排列方向 -> 图标
-const LAYOUT_ICON = { row: '⇄', column: '⇅', grid: '⊞' }
+// 排列方向 -> 图标（stack=叠放，子元素按坐标叠加）
+const LAYOUT_ICON = { row: '⇄', column: '⇅', grid: '⊞', stack: '⧉' }
+const LAYOUT_TEXT = { row: '横排', column: '竖排', grid: '网格', stack: '叠放' }
 
 const collapsedSet = ref(new Set())
 const nodeListCount = computed(() => store.nodeList.length)
@@ -98,10 +111,8 @@ const hasKids = (n) => !!(n.children && n.children.length)
 // 任意节点都可再框子区域（叶子框入子节点后会自动转为容器）
 const canAddChild = () => true
 
-function displayName(n) {
-  if (!n.name) return '未命名区域'
-  return n.variantIndex > 0 ? `${n.name}-${n.variantIndex + 1}` : n.name
-}
+// 顶层：区域类型（多块补序号）；子级：「元素类型 · 业务名」
+const displayName = (n) => nodeLabel(n)
 </script>
 
 <style scoped>
@@ -180,6 +191,17 @@ function displayName(n) {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.node-name--miss { color: #ff6b78; }
+.name-miss {
+  flex-shrink: 0;
+  padding: 0 5px;
+  border-radius: 6px;
+  font-size: 9px;
+  line-height: 15px;
+  color: #ff6b78;
+  background: rgba(255, 71, 87, 0.14);
+  border: 1px solid rgba(255, 71, 87, 0.3);
+}
 .layout-chip {
   flex-shrink: 0;
   font-size: 12px;
@@ -210,9 +232,16 @@ function displayName(n) {
 .mini--danger:hover { color: #ff4757; background: rgba(255, 71, 87, 0.12); border-color: rgba(255, 71, 87, 0.4); }
 
 .tree-empty {
-  padding: 24px 12px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px 12px;
   text-align: center;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.25);
+  color: rgba(255, 255, 255, 0.3);
 }
+.tree-empty i { font-size: 20px; color: rgba(0, 255, 255, 0.35); }
 </style>

@@ -1,14 +1,17 @@
 package handler
 
 import (
+	"errors"
 	"frontend_api/internal/model"
 	"frontend_api/pkg/mysql"
 	"frontend_api/utils"
+	"math/rand/v2"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // ═══════════════════════════════════════════════
@@ -92,16 +95,7 @@ func (h *MembershipHandler) UpgradeMembership(c *gin.Context) {
 		return
 	}
 
-	// 3. 增加积分（套餐每月赠送积分）
-	if err := db.Model(&user).UpdateColumn("credits", gorm.Expr("credits + ?", plan.CreditsPerMonth)).Error; err != nil {
-		utils.InternalError(c, "积分增加失败")
-		return
-	}
-
-	// 3.5 同步用户等级
-	db.Model(&user).UpdateColumn("level", plan.Level)
-
-	// 4. 创建订单记录
+	// 3. 加积分、同步等级、创建订单：同一事务，避免部分成功
 	order := model.PaymentOrder{
 		OrderNo:       genOrderNo("MEM"),
 		UserID:        user.ID,
@@ -113,11 +107,34 @@ func (h *MembershipHandler) UpgradeMembership(c *gin.Context) {
 	}
 	now := time.Now()
 	order.PaidAt = &now
-	db.Create(&order)
+
+	var creditsAfter int
+	err := db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Model(&user).UpdateColumn("credits", gorm.Expr("credits + ?", plan.CreditsPerMonth)).Error; err != nil {
+			return err
+		}
+		if err := tx.Model(&user).UpdateColumn("level", plan.Level).Error; err != nil {
+			return err
+		}
+		if err := tx.Create(&order).Error; err != nil {
+			return err
+		}
+		// 事务内重查，返回增加后的真实积分
+		var latest model.User
+		if err := tx.Select("credits").First(&latest, user.ID).Error; err != nil {
+			return err
+		}
+		creditsAfter = latest.Credits
+		return nil
+	})
+	if err != nil {
+		utils.InternalError(c, "升级失败，请稍后重试")
+		return
+	}
 
 	utils.Success(c, gin.H{
 		"level":    plan.Level,
-		"credits":  user.Credits + plan.CreditsPerMonth,
+		"credits":  creditsAfter,
 		"order_no": order.OrderNo,
 	}, "升级成功")
 }
@@ -151,13 +168,7 @@ func (h *MembershipHandler) BuyCredits(c *gin.Context) {
 		return
 	}
 
-	// 3. 增加积分
-	if err := db.Model(&user).UpdateColumn("credits", gorm.Expr("credits + ?", pkg.Credits)).Error; err != nil {
-		utils.InternalError(c, "积分增加失败")
-		return
-	}
-
-	// 4. 创建订单记录
+	// 3. 加积分、创建订单：同一事务，避免部分成功
 	order := model.PaymentOrder{
 		OrderNo:       genOrderNo("CRD"),
 		UserID:        user.ID,
@@ -168,14 +179,37 @@ func (h *MembershipHandler) BuyCredits(c *gin.Context) {
 	}
 	now := time.Now()
 	order.PaidAt = &now
-	db.Create(&order)
+
+	var creditsAfter int
+	err := db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Model(&user).UpdateColumn("credits", gorm.Expr("credits + ?", pkg.Credits)).Error; err != nil {
+			return err
+		}
+		if err := tx.Create(&order).Error; err != nil {
+			return err
+		}
+		// 事务内重查，返回增加后的真实积分
+		var latest model.User
+		if err := tx.Select("credits").First(&latest, user.ID).Error; err != nil {
+			return err
+		}
+		creditsAfter = latest.Credits
+		return nil
+	})
+	if err != nil {
+		utils.InternalError(c, "积分购买失败，请稍后重试")
+		return
+	}
 
 	utils.Success(c, gin.H{
 		"order_no": order.OrderNo,
-		"credits":  user.Credits + pkg.Credits,
+		"credits":  creditsAfter,
 		"added":    pkg.Credits,
 	}, "积分购买成功")
 }
+
+// errOrderStatusInvalid 回调到达时订单已不是待支付状态
+var errOrderStatusInvalid = errors.New("订单状态异常")
 
 // ═══════════════════════════════════════════════
 //  POST /api/v1/membership/callback
@@ -195,33 +229,44 @@ func (h *MembershipHandler) PaymentCallback(c *gin.Context) {
 	}
 
 	db := mysql.GetDB()
-	var order model.PaymentOrder
-	if err := db.Where("order_no = ?", req.OrderNo).First(&order).Error; err != nil {
-		utils.Error(c, http.StatusNotFound, "订单不存在")
-		return
-	}
-
-	if order.Status != model.OrderPending {
-		utils.Error(c, http.StatusBadRequest, "订单状态异常")
-		return
-	}
-
-	// 标记已支付
 	now := time.Now()
-	db.Model(&order).Updates(map[string]interface{}{
-		"status":   model.OrderPaid,
-		"trade_no": req.TradeNo,
-		"paid_at":  now,
-	})
 
-	// 按订单类型发放权益
-	var user model.User
-	if err := db.First(&user, order.UserID).Error; err == nil {
-		if order.OrderType == "credits" {
-			db.Model(&user).UpdateColumn("credits", gorm.Expr("credits + ?", order.CreditsAmount))
-		} else if order.OrderType == "membership" {
-			// 激活会员（忽略，UpgradeMembership 已处理）
+	var order model.PaymentOrder
+	err := db.Transaction(func(tx *gorm.DB) error {
+		// 行锁：同一订单的并发回调只能有一个完成 pending → paid
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+			Where("order_no = ?", req.OrderNo).First(&order).Error; err != nil {
+			return err
 		}
+		if order.Status != model.OrderPending {
+			return errOrderStatusInvalid
+		}
+		if err := tx.Model(&order).Updates(map[string]interface{}{
+			"status":   model.OrderPaid,
+			"trade_no": req.TradeNo,
+			"paid_at":  now,
+		}).Error; err != nil {
+			return err
+		}
+		// 按订单类型发放权益（membership 的权益在 UpgradeMembership 已发放，不重复加）
+		if order.OrderType == "credits" {
+			if err := tx.Model(&model.User{}).Where("id = ?", order.UserID).
+				UpdateColumn("credits", gorm.Expr("credits + ?", order.CreditsAmount)).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		switch {
+		case errors.Is(err, gorm.ErrRecordNotFound):
+			utils.Error(c, http.StatusNotFound, "订单不存在")
+		case errors.Is(err, errOrderStatusInvalid):
+			utils.Error(c, http.StatusBadRequest, "订单状态异常")
+		default:
+			utils.InternalError(c, "回调处理失败")
+		}
+		return
 	}
 
 	utils.Success(c, gin.H{}, "支付成功")
@@ -237,8 +282,7 @@ func randomDigit(n int) string {
 	const digits = "0123456789"
 	b := make([]byte, n)
 	for i := range b {
-		b[i] = digits[time.Now().UnixNano()%10]
-		time.Sleep(time.Nanosecond) // 防同纳秒重复
+		b[i] = digits[rand.IntN(len(digits))]
 	}
 	return string(b)
 }

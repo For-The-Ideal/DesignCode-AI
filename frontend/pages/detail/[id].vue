@@ -46,7 +46,20 @@
           </div>
           <div class="content-left">
             <div class="pv-card">
-             
+              <!-- 多页任务：页签切换预览（与右栏代码折叠双向联动） -->
+              <div v-if="pages.length > 1 && !taskDetail?.iframeUrl" class="page-tabs">
+                <button
+                  v-for="(p, i) in pages"
+                  :key="p.page_id"
+                  class="page-tab"
+                  :class="{ active: i === activePage }"
+                  type="button"
+                  @click="selectPage(i)"
+                >
+                  <span class="pt-idx">{{ String(i + 1).padStart(2, '0') }}</span>
+                  <span class="pt-name">{{ p.page_name || p.page_id }}</span>
+                </button>
+              </div>
               <div class="pv-body">
                 <!-- 生成中 / 排队中：走预览模板内置的生成动画（html 为空即 loading 态） -->
                 <PreviewTemplate
@@ -72,10 +85,10 @@
                   frameborder="0"
                   allow="autoplay; fullscreen"
                 ></iframe>
-                <!-- 其它平台（vue/react）及 flutter 未构建时的兜底：HTML 内联预览 -->
+                <!-- 其它平台（vue/react）及 flutter 未构建时的兜底：HTML 内联预览（多页时只展示当前页） -->
                 <PreviewTemplate
-                  v-else-if="taskDetail?.preview"
-                  :html="taskDetail.preview"
+                  v-else-if="currentPreview"
+                  :html="currentPreview"
                   :showBottomNav="task.platform === 'mobile'"
                 />
                 <div v-else class="pv-empty">
@@ -84,13 +97,70 @@
                 </div>
               </div>
             </div>
+
+            <!-- 质量检查：确定性规则扫描结果（不展示百分制分数） -->
+            <div
+              v-if="currentQuality"
+              class="qc-card"
+              :class="`qc-card--${currentQuality.status}`"
+            >
+              <button class="qc-head" type="button" @click="qcOpen = !qcOpen">
+                <i class="fas qc-icon" :class="qcIcon"></i>
+                <span class="qc-title">质量检查</span>
+                <span class="qc-badge">{{ qcLabel }}</span>
+                <span class="qc-count">{{ currentQuality.passed }}/{{ currentQuality.total }} 项通过</span>
+                <i class="fas qc-arrow" :class="qcOpen ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+              </button>
+              <div v-if="qcOpen" class="qc-body">
+                <div v-if="!currentQuality.issues?.length" class="qc-ok">
+                  <i class="fas fa-circle-check"></i> 所有规则均通过
+                </div>
+                <div
+                  v-for="(issue, i) in currentQuality.issues"
+                  :key="i"
+                  class="qc-item"
+                  :class="`qc-item--${issue.severity}`"
+                >
+                  <span class="qc-rule">{{ issue.rule }}</span>
+                  <span class="qc-detail">{{ issue.detail }}</span>
+                </div>
+              </div>
+            </div>
           </div>
           <div class="content-right">
             <div class="code-card">
              
-              <div class="code-body">
+              <div class="code-body" :class="{ 'code-body--pages': pages.length > 1 }">
+                <!-- 多页：每页一个可折叠代码面板（同一时间只展开一页，展开才挂载编辑器） -->
+                <div v-if="pages.length > 1" class="page-code-list">
+                  <div
+                    v-for="(p, i) in pages"
+                    :key="p.page_id"
+                    class="page-code-item"
+                    :class="{ open: i === activePage }"
+                  >
+                    <button class="pc-head" type="button" @click="selectPage(i)">
+                      <i class="fas" :class="i === activePage ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
+                      <span class="pc-idx">{{ String(i + 1).padStart(2, '0') }}</span>
+                      <span class="pc-name">{{ p.page_name || p.page_id }}</span>
+                      <span v-if="p.route" class="pc-route">{{ p.route }}</span>
+                      <span class="pc-lines">{{ lineCount(p.code) }} 行</span>
+                      <span class="pc-copy" role="button" title="复制本页代码" @click.stop="copyPage(p.code)">
+                        <i class="fa-regular fa-copy"></i>
+                      </span>
+                    </button>
+                    <div v-if="i === activePage" class="pc-body">
+                      <CodeEditor
+                        :modelValue="p.code"
+                        :language="codeLang(task.framework)"
+                        :readonly="true"
+                        height="100%"
+                      />
+                    </div>
+                  </div>
+                </div>
                 <CodeEditor
-                  v-if="taskDetail"
+                  v-else-if="taskDetail"
                   :modelValue="taskDetail.code"
                   :language="codeLang(task.framework)"
                   :readonly="true"
@@ -154,7 +224,8 @@ const codeLang = (fw) => ({ Flutter: 'dart', React: 'typescript', Vue3: 'html', 
 
 // ═══ 数据（真实接口，非 Mock） ═══
 const task = ref(null)         // 当前任务概要（驱动预览/代码渲染）
-const taskDetail = ref(null)   // 生成结果（code + preview + iframeUrl）
+const taskDetail = ref(null)   // 生成结果（code + preview + iframeUrl + 多页 pages）
+const activePage = ref(0)      // 多页模式当前页下标（左页签 / 右折叠共用）
 const taskList = ref([])       // 侧栏任务列表
 const loading = ref(false)
 
@@ -185,7 +256,19 @@ async function loadTask(id) {
       images: d.images || [],
     }
     const r = d.result
-    taskDetail.value = r ? { code: r.code, preview: r.preview, iframeUrl: r.iframe_url } : null
+    taskDetail.value = r
+      ? {
+          code: r.code,
+          preview: r.preview,
+          iframeUrl: r.iframe_url,
+          // 多页产物：pages 为空/长度 1 时自动走原有单编辑器逻辑
+          pages: r.pages || [],
+          appPreview: r.app_preview || '',
+          navMap: r.nav_map || [],
+          qualityReport: r.quality_report || null,
+        }
+      : null
+    activePage.value = 0
   } catch {
     task.value = null
     taskDetail.value = null
@@ -193,6 +276,25 @@ async function loadTask(id) {
     loading.value = false
   }
 }
+
+// ═══ 多页：左页签预览 / 右折叠代码双向联动 ═══
+const pages = computed(() => taskDetail.value?.pages || [])
+const currentPreview = computed(() => {
+  if (pages.value.length) return pages.value[activePage.value]?.preview || ''
+  return taskDetail.value?.preview || ''
+})
+const selectPage = (i) => { activePage.value = i }
+
+// ═══ 质量检查：当前展示页的报告（多页优先取本页，单页回退入口页） ═══
+const qcOpen = ref(false)
+const currentQuality = computed(() => {
+  const p = pages.value[activePage.value]
+  return p?.quality_report || taskDetail.value?.qualityReport || null
+})
+const qcLabel = computed(() => ({ pass: '通过', warning: '有告警', fail: '未通过' }[currentQuality.value?.status] || ''))
+const qcIcon = computed(() => ({ pass: 'fa-circle-check', warning: 'fa-triangle-exclamation', fail: 'fa-circle-xmark' }[currentQuality.value?.status] || 'fa-shield-halved'))
+const lineCount = (code) => (code || '').split('\n').length
+const copyPage = (code) => { if (code) navigator.clipboard.writeText(code) }
 
 // 1) watch 路由参数变化：同步侧栏展开项 + 加载新任务（实例复用后统一走此处，不再另设 onBeforeRouteUpdate 以免重复请求）
 watch(() => route.params.id, (id) => { sidebarExpandedId.value = id; loadTask(id) })
@@ -452,7 +554,8 @@ onMounted(() => {
 
 /* 预览卡片 */
 .pv-card {
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   background: rgba(15, 22, 32, 0.6);
   border: 1px solid rgba(255,255,255,0.04);
   border-radius: 12px;
@@ -486,6 +589,115 @@ onMounted(() => {
   display: flex;
   overflow: hidden;
 }
+
+/* ═══ 质量检查（确定性规则扫描结果） ═══ */
+.qc-card {
+  flex-shrink: 0;
+  margin-top: 12px;
+  background: rgba(15, 22, 32, 0.6);
+  border: 1px solid rgba(255,255,255,0.04);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.qc-card--pass { border-color: rgba(52, 211, 153, 0.18); }
+.qc-card--warning { border-color: rgba(251, 191, 36, 0.2); }
+.qc-card--fail { border-color: rgba(248, 113, 113, 0.22); }
+.qc-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 14px;
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,0.55);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+}
+.qc-head i { font-size: 13px; }
+.qc-card--pass .qc-icon { color: #34d399; }
+.qc-card--warning .qc-icon { color: #fbbf24; }
+.qc-card--fail .qc-icon { color: #f87171; }
+.qc-title { font-weight: 600; }
+.qc-badge {
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 10px;
+}
+.qc-card--pass .qc-badge { background: rgba(52, 211, 153, 0.12); color: #34d399; }
+.qc-card--warning .qc-badge { background: rgba(251, 191, 36, 0.12); color: #fbbf24; }
+.qc-card--fail .qc-badge { background: rgba(248, 113, 113, 0.14); color: #f87171; }
+.qc-count {
+  margin-left: auto;
+  color: rgba(255,255,255,0.3);
+  font-size: 11px;
+}
+.qc-arrow { color: rgba(255,255,255,0.25); font-size: 10px; }
+.qc-body {
+  padding: 0 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.qc-ok {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #34d399;
+  font-size: 12px;
+}
+.qc-item {
+  display: flex;
+  gap: 8px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: rgba(255,255,255,0.5);
+}
+.qc-rule {
+  flex-shrink: 0;
+  padding: 0 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  height: 18px;
+  line-height: 18px;
+}
+.qc-item--critical .qc-rule { background: rgba(248, 113, 113, 0.14); color: #f87171; }
+.qc-item--warning .qc-rule { background: rgba(251, 191, 36, 0.12); color: #fbbf24; }
+
+/* ═══ 多页页签（左栏） ═══ */
+.page-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 10px 12px 0;
+  overflow-x: auto;
+  flex-shrink: 0;
+}
+.page-tabs::-webkit-scrollbar { height: 3px; }
+.page-tabs::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+.page-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.03);
+  color: rgba(255,255,255,0.5);
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  font-family: inherit;
+}
+.page-tab:hover { color: #e2e8f0; border-color: rgba(0,255,255,0.25); }
+.page-tab.active {
+  color: #06121a;
+  background: linear-gradient(135deg, #22d3ee, #06b6d4);
+  border-color: transparent;
+  font-weight: 700;
+}
+.pt-idx { font-variant-numeric: tabular-nums; opacity: 0.75; }
 .pv-empty {
   flex: 1;
   display: flex;
@@ -601,6 +813,47 @@ onMounted(() => {
   flex: 1;
   min-height: 0;
 }
+
+/* ═══ 多页代码折叠（右栏）：同时只展开一页，展开才挂载编辑器 ═══ */
+.code-body--pages { display: flex; flex-direction: column; overflow: hidden; }
+.page-code-list { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow-y: auto; }
+.page-code-list::-webkit-scrollbar { width: 4px; }
+.page-code-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+.page-code-item {
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.page-code-item.open {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.pc-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 14px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: rgba(255,255,255,0.6);
+  font-size: 12px;
+  font-family: inherit;
+  text-align: left;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+.pc-head:hover { background: rgba(255,255,255,0.03); }
+.page-code-item.open .pc-head { color: #22d3ee; background: rgba(34,211,238,0.06); }
+.pc-idx { font-variant-numeric: tabular-nums; opacity: 0.7; flex-shrink: 0; }
+.pc-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pc-route { font-family: 'Fira Code', monospace; font-size: 11px; color: rgba(255,255,255,0.3); flex-shrink: 0; }
+.pc-lines { margin-left: auto; font-size: 11px; color: rgba(255,255,255,0.25); flex-shrink: 0; }
+.pc-copy { padding: 2px 6px; border-radius: 4px; color: rgba(255,255,255,0.35); flex-shrink: 0; }
+.pc-copy:hover { color: #22d3ee; background: rgba(34,211,238,0.12); }
+.pc-body { flex: 1; min-height: 0; display: flex; }
+.pc-body > * { flex: 1; min-width: 0; }
 :deep(.code-editor-wrapper) {
   border: none !important;
   border-radius: 0 !important;

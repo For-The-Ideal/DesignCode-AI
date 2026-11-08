@@ -21,8 +21,9 @@
                 :type="showOld ? 'text' : 'password'"
                 v-model="form.oldPassword"
                 placeholder="当前密码"
-                maxlength="20"
+                maxlength="64"
                 minlength="6"
+                autocomplete="current-password"
                 @focus="focusedInput = 'old'"
                 @blur="focusedInput = null"
                 @input="clearError('oldPassword')"
@@ -44,8 +45,9 @@
                 :type="showNew ? 'text' : 'password'"
                 v-model="form.newPassword"
                 placeholder="新密码"
-                maxlength="20"
+                maxlength="64"
                 minlength="6"
+                autocomplete="new-password"
                 @focus="focusedInput = 'new1'"
                 @blur="focusedInput = null"
                 @input="clearError('newPassword')"
@@ -67,8 +69,9 @@
                 :type="showConfirm ? 'text' : 'password'"
                 v-model="form.confirmPassword"
                 placeholder="确认新密码"
-                maxlength="20"
+                maxlength="64"
                 minlength="6"
+                autocomplete="new-password"
                 @focus="focusedInput = 'new2'"
                 @blur="focusedInput = null"
                 @input="clearError('confirmPassword')"
@@ -96,10 +99,12 @@ import { ref, reactive } from 'vue'
 import DialogModel from '@/components/dialog/DialogModel.vue'
 import { ElMessage } from 'element-plus'
 import { userApi } from '~/api/user'
+import { useUserStore } from '~/stores/user'
 
-const emit = defineEmits(['close', 'back'])
+const emit = defineEmits(['close'])
 
 const dialogRef = ref(null)
+const userStore = useUserStore()
 const loading = ref(false)
 const focusedInput = ref(null)
 const showOld = ref(false)
@@ -121,19 +126,16 @@ const errors = reactive({
 const clearError = (field) => { errors[field] = '' }
 
 const open = () => {
-  dialogRef.value.open()
+  dialogRef.value?.open()
   resetForm()
 }
 
 const close = () => {
-  dialogRef.value.close()
+  dialogRef.value?.close()
   emit('close')
 }
 
-const handleClose = () => {
-  dialogRef.value.close()
-  emit('close')
-}
+const handleClose = () => close()
 
 const resetForm = () => {
   form.oldPassword = ''
@@ -158,21 +160,30 @@ const handleSubmit = async () => {
   if (form.newPassword.length < 6)        { errors.newPassword       = '新密码长度至少6位'; return }
   if (form.newPassword !== form.confirmPassword) { errors.confirmPassword = '两次输入的新密码不一致'; return }
 
- loading.value = true
+  loading.value = true
   try {
     const res = await userApi.updatePassword({
       oldPassword: form.oldPassword,
       newPassword: form.newPassword,
     })
+    // 请求被重复请求互踢/取消时 resolve(null)，不能直接取 res.code
+    if (!res) {
+      ElMessage.error('请求已取消，请重试')
+      return
+    }
     if (res.code === 200) {
-      ElMessage.success('密码修改成功')
+      // 旧 JWT 仍有效，主动退出，让用户用新密码重新登录
+      ElMessage.success('密码修改成功，请重新登录')
+      userStore.logout()
       close()
+    } else if (res.message?.includes('当前密码')) {
+      errors.oldPassword = res.message
     } else {
-      // 后端返回错误信息（如"当前密码错误"）
-      errors.oldPassword = res.message || '修改失败'
+      // 非旧密码错误（如登录失效、新密码不合规）不再塞到旧密码框下，避免误导
+      ElMessage.error(res.message || '修改失败')
     }
   } catch (e) {
-    errors.oldPassword = '网络错误，请重试'
+    ElMessage.error('网络错误，请重试')
   } finally {
     loading.value = false
   }

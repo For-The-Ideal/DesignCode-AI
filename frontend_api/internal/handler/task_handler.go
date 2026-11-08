@@ -74,19 +74,54 @@ func crockfordBase32(id [16]byte) string {
 //
 //	target   - flutter | vue3 | react
 //	platform - mobile | desktop | tablet（必选）
-//	images   - 图片列表，每项含 url / tree / width / height / sort_order，最多5张（tree 为结构编辑器提交的嵌套节点，为空时后端回退 Vision）
+//	images   - 页面列表（一图一页），每项含 url / tree / width / height / sort_order
+//	           以及多图模式的页面身份：page_id / page_name / page_desc / route / is_entry，最多8页
+//	page_links - 页面跳转边（多图模式），如 [{from_page_id:"p1",to_page_id:"p2",trigger:"node_click"}]
 //	options  - 生成选项 responsive/comment/component
 //	advanced - 高级选项 perf/docs
 //	component_lib - 使用的组件库
 //
-//	示例：{"target":"flutter","platform":"mobile","images":[{"url":"https://...","tree":[...],"width":2732,"height":1534,"sort_order":1}],"options":["responsive"],"advanced":[],"component_lib":"material"}
+//	示例：{"target":"flutter","platform":"mobile","images":[{"url":"https://...","tree":[...],"width":2732,"height":1534,"sort_order":1,"page_id":"p1","page_name":"商品列表","is_entry":true}],"page_links":[{"from_page_id":"p1","to_page_id":"p2","trigger":"node_click"}]}
 type CreateTaskRequest struct {
 	Target       string            `json:"target" binding:"required"`
 	Platform     string            `json:"platform" binding:"required"`
-	Images       []model.ImageItem `json:"images" binding:"required,min=1,max=5"`
+	Images       []model.ImageItem `json:"images" binding:"required,min=1,max=8"`
+	PageLinks    []model.PageLink  `json:"page_links"`
 	Options      []string          `json:"options"`
 	Advanced     []string          `json:"advanced"`
 	ComponentLib string            `json:"component_lib"`
+}
+
+// validatePageLinks 校验页面边表：页面引用存在、无自环、触发方式合法、边数受限。
+// 空边表合法（单页/多页均可无显式跳转，交由生成模型推断）。
+func validatePageLinks(links []model.PageLink, images []model.ImageItem) error {
+	if len(links) == 0 {
+		return nil
+	}
+	if len(links) > 64 {
+		return fmt.Errorf("页面关系过多（%d 条，上限 64 条）", len(links))
+	}
+	nameOf := make(map[string]string, len(images))
+	for _, img := range images {
+		nameOf[img.PageID] = img.PageName
+	}
+	validTrigger := map[string]bool{"node_click": true, "bottom_tab": true, "back": true, "auto": true}
+	for i, l := range links {
+		fromName, okFrom := nameOf[l.FromPageID]
+		if !okFrom {
+			return fmt.Errorf("第 %d 条页面关系：起始页 %q 不存在", i+1, l.FromPageID)
+		}
+		if _, okTo := nameOf[l.ToPageID]; !okTo {
+			return fmt.Errorf("第 %d 条页面关系：目标页 %q 不存在", i+1, l.ToPageID)
+		}
+		if l.FromPageID == l.ToPageID {
+			return fmt.Errorf("第 %d 条页面关系：不能跳转到自己（%s）", i+1, fromName)
+		}
+		if l.Trigger != "" && !validTrigger[l.Trigger] {
+			return fmt.Errorf("第 %d 条页面关系：trigger 必须是 node_click/bottom_tab/back/auto 之一", i+1)
+		}
+	}
+	return nil
 }
 
 // 创建任务事务内使用的哨兵错误
@@ -185,16 +220,24 @@ func (h *TaskHandler) CreateTask(c *gin.Context) {
 		Target:         req.Target,
 		Platform:       req.Platform,
 		Images:         req.Images,
+		PageLinks:      req.PageLinks,
 		Options:        req.Options,
 		Advanced:       req.Advanced,
 		ComponentLib:   req.ComponentLib,
-		Quality:        90, // 后端固定90，后续可以通过逻辑来控制
 		RequiredPoints: imageCount,
 		Status:         model.TaskStatusPending,
 		Progress:       0,
 		UserID:         userID,
 		CreatedAt:      time.Now(),
 		UpdatedAt:      time.Now(),
+	}
+
+	// 页面身份兜底（page_id/page_name/入口页/路由）+ 页面跳转边校验。
+	// 单图任务同样走一遍，保证新旧请求都能拿到完整的页面元信息。
+	task.NormalizePages()
+	if err := validatePageLinks(task.PageLinks, task.Images); err != nil {
+		utils.BadRequest(c, err.Error())
+		return
 	}
 
 	// 事务内完成：活跃上限校验 → 建任务 → 原子扣积分（任一步失败整体回滚）

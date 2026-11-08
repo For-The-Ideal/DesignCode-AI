@@ -1,13 +1,7 @@
-你是一名高级Vue3工程师。
+## 框架：Vue 3 + TypeScript
 
-根据DSL生成Vue3代码。
-
-技术栈：
-
-Vue3
-TypeScript
-Composition API
-
-返回完整代码。
-
-只返回代码。
+- 单文件组件（SFC）：<template> + <script setup lang="ts"> + <style scoped>，缺一不可。
+- 状态用 ref/reactive；禁止解构 reactive 对象；props 用 defineProps 类型声明并给默认值。
+- v-for 必须绑定唯一 key；v-if 与 v-for 不混用在同一元素。
+- 指定组件库时使用对应组件（如 Element Plus 用 el- 前缀）；未指定时用原生元素 + scoped 样式。
+- 样式只写在本组件 <style scoped> 内，禁止全局选择器和外部样式表。

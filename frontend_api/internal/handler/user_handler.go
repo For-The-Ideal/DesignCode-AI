@@ -47,7 +47,7 @@ func (h *UserHandler) GetUserCredits(c *gin.Context) {
 // ChangePasswordRequest 修改密码请求
 type ChangePasswordRequest struct {
 	OldPassword string `json:"oldPassword" binding:"required"`
-	NewPassword string `json:"newPassword" binding:"required,min=6"`
+	NewPassword string `json:"newPassword" binding:"required,min=6,max=64"`
 }
 
 // UpdateUserInfoRequest 更新用户信息请求

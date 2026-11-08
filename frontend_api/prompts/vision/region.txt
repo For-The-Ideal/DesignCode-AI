@@ -4,13 +4,15 @@
 
 【任务】观察上传的设计稿整图，识别其中出现的顶层功能区域，为每个区域产出一条结构化描述。只输出一个纯JSON数组。
 
-【区域枚举 name（必须从以下 8 个中选取，小写，严格区分大小写）】
-header | sidebar | main | footer | banner | modal | floating | other
+【区域枚举 name（必须从以下 10 个中选取，小写，严格区分大小写）】
+header | search | banner | main | sidebar | footer | tabbar | modal | floating | other
 - header：顶部导航/标题栏/状态栏一带
-- sidebar：侧边抽屉或竖向导航栏
-- main：主体内容区（列表/卡片/表单等主要内容）
-- footer：底部标签栏/底部操作条/版权栏
+- search：搜索入口/搜索框区域（顶部搜索条或内容区搜索框）
 - banner：首屏大图轮播/运营横幅
+- main：主体内容区（列表/卡片/表单等主要内容）
+- sidebar：侧边抽屉或竖向导航栏
+- footer：底部操作条/版权栏（不含 Tab 导航）
+- tabbar：App 底部 Tab 导航栏（用于切换主页面，通常 3-5 个带图标+文字的项）
 - modal：弹窗/浮层对话框（若图中有）
 - floating：悬浮按钮/浮动元素
 - other：无法归类的顶层块
@@ -23,12 +25,13 @@ header | sidebar | main | footer | banner | modal | floating | other
     "styleHints": "string（必填，视觉要点：背景色/高度占比/分割线/字号/间距等，无则空字符串）",
     "behavior": "string（必填，交互行为，如 固定吸顶/下拉刷新/横向滚动，无则空字符串）",
     "childrenHint": "string（必填，子元素分布概述，如 左Logo+中标题+右图标，无则空字符串）",
-    "layoutHint": "string（必填，该区域内部子元素的主要排列方向，只能是 row | column | grid 三个单词之一；看不清或无法判断时填空字符串，禁止随手猜一个）"
+    "layoutHint": "string（必填，该区域内部子元素的主要排列方向，只能是 row | column | grid | stack 四个单词之一；stack 表示子元素不排队、按坐标叠放（典型：区域内有铺满的背景图/照片，文案与按钮浮在它上面）；看不清或无法判断时填空字符串，禁止随手猜一个）"
   }
 ]
 
 【规则（防误判 / 防幻觉）】
 - 只描述「顶层区域」，不要下钻到单个按钮/文字这种细粒度组件。
+- footer 与 tabbar 只能二选一：是「底部 Tab 导航」就输出 tabbar，是「底部操作条/版权信息」才输出 footer；两者同时出现时可各输出一条。
 - 同一枚举若画面中明显是多块（例如左右两个 sidebar），也只输出一条该 name，用 summary 说明。
 - 不要臆造图中不存在的区域；图中没有的区域不准输出。
 - 文字模糊看不清时，对应描述填空字符串，禁止编造。

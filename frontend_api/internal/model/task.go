@@ -1,16 +1,21 @@
 package model
 
-import "time"
+import (
+	"fmt"
+	"sort"
+	"time"
+)
 
 // ═══════════════════════════════════════════════
 //  任务领域模型
 // ═══════════════════════════════════════════════
 
 // TaskStatus 任务状态
-//   pending   - 刚创建，等待队列
-//   running   - 执行中（VisionAnalyzeSkill / GeneratorSkill / ReviewSkill）
-//   success   - 完成
-//   failed    - 失败
+//
+//	pending   - 刚创建，等待队列
+//	running   - 执行中（VisionAnalyzeSkill / GeneratorSkill / ReviewSkill）
+//	success   - 完成
+//	failed    - 失败
 type TaskStatus string
 
 const (
@@ -32,6 +37,8 @@ type AttachedAsset struct {
 }
 
 // ImageItem 上传图片项
+// 多图模式下每张图即一个页面：PageID/PageName/PageDesc/Route/IsEntry 描述页面身份，
+// 页面之间的跳转关系统一存在 Task.PageLinks（边表），不在此处重复表达。
 type ImageItem struct {
 	URL            string          `json:"url"`
 	Title          string          `json:"title,omitempty"`           // 每图简短标题（列表/详情回显用，如文件名去扩展名）
@@ -40,6 +47,29 @@ type ImageItem struct {
 	Width          int             `json:"width,omitempty"`           // 原图像素宽（供 DSL canvas 坐标换算）
 	Height         int             `json:"height,omitempty"`          // 原图像素高
 	SortOrder      int             `json:"sort_order"`                // 排序，1-N（多图页序，生成时按其升序消费）
+
+	// ── 页面身份（多图模式；单图缺省时由后端按 sort_order 兜底填充）──
+	PageID   string `json:"page_id,omitempty"`   // 页面唯一标识（p1/p2...），PageLink 引用它
+	PageName string `json:"page_name,omitempty"` // 页面名（如「商品列表」），生成时作为页面标题
+	PageDesc string `json:"page_desc,omitempty"` // 页面说明（用户填写的页面级 brief，喂给生成模型）
+	Route    string `json:"route,omitempty"`     // 路由（如 /list、/detail/:id），缺省由生成模型推断
+	IsEntry  bool   `json:"is_entry,omitempty"`  // 是否入口页（App 启动页）；多页时至少一个
+}
+
+// PageLink 页面跳转边（多图模式的页面关系图）
+//
+//	trigger = node_click  某节点点击进入目标页（NodeKey 为空表示由生成模型推断触发元素）
+//	trigger = bottom_tab  底部导航切换（对应 tabbar 项）
+//	trigger = back        返回上一页（生成 AppBar 返回按钮）
+//	trigger = auto        仅声明层级，触发方式交给生成模型
+//
+// 页面关系是图（多入边/多出边），因此用边表而非每页一个 relation 字段。
+type PageLink struct {
+	FromPageID string `json:"from_page_id"`
+	ToPageID   string `json:"to_page_id"`
+	Trigger    string `json:"trigger"`            // node_click | bottom_tab | back | auto
+	NodeKey    string `json:"node_key,omitempty"` // 挂到哪个标注节点（空=整页/自动推断）
+	Label      string `json:"label,omitempty"`    // 触发元素描述，如「商品卡片」
 }
 
 // TaskStep 任务执行步骤记录
@@ -59,8 +89,8 @@ type Task struct {
 	Options        []string    `json:"options" gorm:"column:options;serializer:json"`
 	Advanced       []string    `json:"advanced" gorm:"column:advanced;serializer:json"`
 	ComponentLib   string      `json:"component_lib" gorm:"size:50"`
-	Quality        int         `json:"quality"`         // 质量要求 60-100
-	RequiredPoints int         `json:"required_points"` // 本次任务消耗的积分数
+	PageLinks      []PageLink  `json:"page_links" gorm:"column:page_links;serializer:json"` // 页面跳转边（多图模式）
+	RequiredPoints int         `json:"required_points"`                                     // 本次任务消耗的积分数
 	Status         TaskStatus  `json:"status" gorm:"size:20"`
 	Progress       int         `json:"progress"`                                            // 当前进度 0-100
 	CurrentStep    string      `json:"current_step"`                                        // 当前执行步骤
@@ -70,17 +100,73 @@ type Task struct {
 	UpdatedAt      time.Time   `json:"updated_at"`
 }
 
+// NormalizePages 入库前补齐页面身份并按页序排列：
+//   - 缺 PageID 按 p1..pN 生成，并保证唯一；
+//   - 缺 PageName 回退 Title，再回退「页面 N」；
+//   - 缺省入口页时，首张视为入口页。
+//
+// 兼容旧请求（无页面字段）与单图任务，保证多页生成/回显始终拿到完整元信息。
+func (t *Task) NormalizePages() {
+	if len(t.Images) == 0 {
+		return
+	}
+	sort.SliceStable(t.Images, func(i, j int) bool {
+		return t.Images[i].SortOrder < t.Images[j].SortOrder
+	})
+	seen := make(map[string]bool, len(t.Images))
+	for i := range t.Images {
+		img := &t.Images[i]
+		if img.SortOrder <= 0 {
+			img.SortOrder = i + 1
+		}
+		if img.PageID == "" {
+			img.PageID = fmt.Sprintf("p%d", i+1)
+		}
+		for seen[img.PageID] { // 外部传入重复 ID 时追加后缀消重
+			img.PageID += "x"
+		}
+		seen[img.PageID] = true
+		if img.PageName == "" {
+			img.PageName = img.Title
+		}
+		if img.PageName == "" {
+			img.PageName = fmt.Sprintf("页面 %d", i+1)
+		}
+	}
+	hasEntry := false
+	for _, img := range t.Images {
+		if img.IsEntry {
+			hasEntry = true
+			break
+		}
+	}
+	if !hasEntry {
+		t.Images[0].IsEntry = true
+	}
+	// 路由兜底：入口页 /，其余 /<page_id>（供合成预览导航与详情页回显）
+	for i := range t.Images {
+		if t.Images[i].Route == "" {
+			if t.Images[i].IsEntry {
+				t.Images[i].Route = "/"
+			} else {
+				t.Images[i].Route = "/" + t.Images[i].PageID
+			}
+		}
+	}
+}
+
 // ── 任务状态查询响应 ──────────────────────────
 
 // TaskStatusResponse GET /api/v1/task/:id 的完整响应
-//   task_id       - 任务唯一标识
-//   status        - pending | running | success | failed
-//   target        - flutter | vue3 | react
-//   progress      - 执行进度 0-100
-//   current_step  - 当前执行步骤，如 VisionAnalyzeSkill / FlutterGenerateSkill
-//   can_sse       - 是否可以连接 SSE（true=运行中可连，false=已结束无需连）
-//   result        - 生成结果（仅 success 时有值）
-//   images        - 上传的图片列表（刷新后回显用）
+//
+//	task_id       - 任务唯一标识
+//	status        - pending | running | success | failed
+//	target        - flutter | vue3 | react
+//	progress      - 执行进度 0-100
+//	current_step  - 当前执行步骤，如 VisionAnalyzeSkill / FlutterGenerateSkill
+//	can_sse       - 是否可以连接 SSE（true=运行中可连，false=已结束无需连）
+//	result        - 生成结果（仅 success 时有值）
+//	images        - 上传的图片列表（刷新后回显用）
 type TaskStatusResponse struct {
 	TaskID      string      `json:"task_id"`
 	Target      string      `json:"target"`
@@ -90,6 +176,7 @@ type TaskStatusResponse struct {
 	CurrentStep string      `json:"current_step"`
 	CanSSE      bool        `json:"can_sse"`
 	Images      []ImageItem `json:"images"`
+	PageLinks   []PageLink  `json:"page_links"` // 页面跳转边（详情页回显页面关系）
 	TaskSteps   []TaskStep  `json:"task_steps"` // 执行步骤记录
 	Result      *Result     `json:"result,omitempty"`
 }
@@ -106,6 +193,7 @@ func (t *Task) ToTaskStatusResponse(result *Result) *TaskStatusResponse {
 		CurrentStep: t.CurrentStep,
 		CanSSE:      canSSE,
 		Images:      t.Images,
+		PageLinks:   t.PageLinks,
 		TaskSteps:   t.TaskSteps,
 		Result:      result,
 	}

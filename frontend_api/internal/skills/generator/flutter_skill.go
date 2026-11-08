@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"frontend_api/pkg/ai"
 	"frontend_api/pkg/logger"
-	"os"
-	"path/filepath"
 )
 
 // ═══════════════════════════════════════════════
@@ -46,6 +44,7 @@ func (s *FlutterSkill) Execute(ctx context.Context, input interface{}) (interfac
 	if prompt == "" {
 		return nil, fmt.Errorf("flutter: 提示词文件未找到")
 	}
+	s.logger.Infof("[FlutterSkill] prompt 拼装: %d chars (base + flutter)", len(prompt))
 
 	messages := []ai.Message{
 		{Role: "system", Content: prompt},
@@ -58,27 +57,9 @@ func (s *FlutterSkill) Execute(ctx context.Context, input interface{}) (interfac
 	}
 
 	s.logger.Infof("[FlutterSkill] 生成完成, code=%d chars", len(content))
-	return Output{Code: content, Preview: "", Score: 0}, nil
+	return Output{Code: content, Preview: ""}, nil
 }
 
 func (s *FlutterSkill) loadPrompt() string {
-	paths := []string{
-		"prompts/flutter/generate.txt",
-		"../prompts/flutter/generate.txt",
-		filepath.Join("..", "prompts", "flutter", "generate.txt"),
-	}
-	for _, p := range paths {
-		data, err := os.ReadFile(p)
-		if err == nil {
-			return string(data)
-		}
-	}
-	return ""
-}
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
+	return LoadPrompt("flutter")
 }

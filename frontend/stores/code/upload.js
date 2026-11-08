@@ -12,7 +12,7 @@ const IMAGE_EXT_RE = /\.(png|jpe?g|gif|webp|svg|bmp|avif|heic|heif|ico)$/i
 export const isImageFile = (f) => !!f && (f.type?.startsWith('image/') || IMAGE_EXT_RE.test(f.name || ''))
 
 export const createUploadActions = (ctx) => {
-  const { state, images, assets, isConcurrencyFull } = ctx
+  const { state, images, assets, pageLinks, isConcurrencyFull } = ctx
 
   // 取消作用域前缀：所有上传请求统一注册为 upload:<uploadId>
   const scopeKey = (uploadId) => `upload:${uploadId}`
@@ -44,6 +44,15 @@ export const createUploadActions = (ctx) => {
       }
       reader.readAsDataURL(file)
     })
+  }
+
+  /** 分配页面 ID：p1/p2...，按已有最大序号 +1（删除不回收，保证页间引用稳定） */
+  const nextPageID = (list) => {
+    const max = list.reduce((m, it) => {
+      const n = parseInt(String(it.pageId || '').replace(/^p/, ''), 10)
+      return Number.isFinite(n) && n > m ? n : m
+    }, 0)
+    return `p${max + 1}`
   }
 
   /** 添加图片到列表（含校验） */
@@ -81,9 +90,20 @@ export const createUploadActions = (ctx) => {
         cosUrl: '',
         uploading: true,
         uploadError: '',
+        // 页面说明（多图模式即 page_desc：用户填写的页面级 brief，随任务提交给生成模型）
         description: '',
         // 标注框列表: [{ id, x, y, w, h(0~1 相对比例), label, desc }]
         annotations: [],
+        // ── 页面身份（多图模式下每张图是一页）──
+        pageId: nextPageID(images.value),   // 稳定标识，页面关系引用它
+        pageName: '',                        // 页面名（留空由后端按文件名/序号兜底）
+        route: '',                           // 路由（留空由后端兜底：入口页 /，其余 /pN）
+        // 入口页不落字段：恒为页面列表第 1 张，排序/增删后跟着列表走
+        // ── 页面关系（UI 友好字段，提交时转成 page_links 边表）──
+        parentPageId: '',                    // 从哪一页进入（空=独立页）
+        linkTrigger: 'node_click',           // 进入方式：node_click | bottom_tab | auto
+        // ── 多图画板坐标（仅前端排版；null = 尚未拖入画布）──
+        board: null,
       })
       // 传 uploadId 而非索引：上传期间删除/清空/重排不会导致错位
       uploadOne(uploadId, file, scope)
@@ -159,8 +179,19 @@ export const createUploadActions = (ctx) => {
     // 先取消在途上传，再移除
     if (item.uploadId) cancelUpload(item.uploadId)
     images.value.splice(idx, 1)
+    // 删除的是当前编辑页：当前页落到相邻页（优先同位置，其次上一页）
+    if (state.activePageId === item.pageId) {
+      state.activePageId = images.value[Math.min(idx, images.value.length - 1)]?.pageId || ''
+    }
     const fallback = images.value[0]?.uploadId || ''
     assets.value.forEach((a) => { if (a.ownerId === item.uploadId) a.ownerId = fallback })
+    // 页面关系清理：删除引用被删页的所有边，避免提交悬空边
+    const links = pageLinks.value
+    for (let i = links.length - 1; i >= 0; i--) {
+      if (links[i].fromPageId === item.pageId || links[i].toPageId === item.pageId) links.splice(i, 1)
+    }
+    // 旧字段同步置空
+    images.value.forEach((it) => { if (it.parentPageId === item.pageId) it.parentPageId = '' })
   }
 
   // ═══ 附图素材（与主图同一上传模块，作用域前缀 asset: 隔离） ═══

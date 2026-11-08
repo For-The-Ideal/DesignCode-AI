@@ -20,12 +20,12 @@ import (
 
 // 顶层区域枚举（与前端 utils/uiTree.js TOP_REGION_ENUM 严格一致）
 var topRegionEnum = map[string]bool{
-	"header": true, "sidebar": true, "main": true, "footer": true,
-	"banner": true, "modal": true, "floating": true, "other": true,
+	"header": true, "search": true, "banner": true, "main": true, "sidebar": true,
+	"footer": true, "tabbar": true, "modal": true, "floating": true, "other": true,
 }
 
-// layout 合法值（与前端 LAYOUT_VALUES 一致）
-var layoutValues = map[string]bool{"row": true, "column": true, "grid": true}
+// layout 合法值（与前端 LAYOUT_VALUES 一致；stack=叠放，子元素按坐标叠加）
+var layoutValues = map[string]bool{"row": true, "column": true, "grid": true, "stack": true}
 
 // RegionInput 顶层识别输入
 type RegionInput struct {
@@ -322,7 +322,7 @@ func writeRegionTree(b *strings.Builder, nodes []RegionNode, depth int) {
 	for _, n := range nodes {
 		line := strings.Repeat("  ", depth) + "- [nodeKey=" + n.NodeKey + "] " + regionTextOrDefault(n.Name, "未命名")
 		if l := strings.TrimSpace(n.Layout); l != "" {
-			line += "｜布局 " + l
+			line += "｜布局 " + layoutText(l)
 		}
 		if bb := n.BBox; bb != nil {
 			line += fmt.Sprintf("｜位置 x=%.0f y=%.0f w=%.0f h=%.0f", bb.X, bb.Y, bb.W, bb.H)
@@ -345,6 +345,21 @@ func writeRegionTree(b *strings.Builder, nodes []RegionNode, depth int) {
 		b.WriteString(line + "\n")
 		writeRegionTree(b, n.Children, depth+1)
 	}
+}
+
+// layoutText 把 layout 代码翻成生成模型能直接理解的中文（stack 必须点明可重叠）
+func layoutText(v string) string {
+	switch v {
+	case "row":
+		return "横排 row"
+	case "column":
+		return "竖排 column"
+	case "grid":
+		return "网格 grid"
+	case "stack":
+		return "叠放 stack（子元素不排队，按原图坐标叠加，允许重叠）"
+	}
+	return v
 }
 
 // regionTextOrDefault 去空白后为空时给默认值

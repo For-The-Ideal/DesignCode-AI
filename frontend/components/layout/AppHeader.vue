@@ -20,7 +20,7 @@
       <!-- 导航菜单 -->
       <nav class="nav">
         <a href="javascript:void(0)" class="nav-link" :class="{'active': route.path === item.link}" v-for="item in navList" :key="item.name" 
-        @click="handleNavClick(item.link)">{{item.name}}</a>
+        @click="handleNavClick(item)">{{item.name}}</a>
       </nav>
 
       <!-- 右侧区域 -->
@@ -82,7 +82,7 @@
       @close="handleModalClose"
     />
 
-    <Password ref="passwordModalRef" :backToLogin="passwordBackToLogin" @back="handlePasswordBack" />
+    <Password ref="passwordModalRef" />
 
 </template>
 
@@ -100,12 +100,11 @@ const userStore = useUserStore()
 const commonStore = useCommonStore()
 const loginModalRef = ref()
 const passwordModalRef = ref()
-const passwordBackToLogin = ref(false)
 const showDropdown = ref(false)
 const avatarFailed = ref(false)
 const { isLogin, userInfo } = storeToRefs(userStore)
 
-// 监听外部（如 UploadZone）触发的登录弹窗请求
+// 监听外部（工作台/画廊等）触发的登录弹窗请求
 watch(() => commonStore.loginModalVisible, (val) => {
   if (val) loginModalRef.value?.open()
 })
@@ -113,14 +112,17 @@ const navList = ref([
   {
     name:"首页",
     link:"/",
+    mode:"index",
   },
   {
     name:"代码生成",
-    link:"/code?mode=single",
+    link:"/code",
+    mode:"single",
   },
   {
     name:"历史记录",
     link:"/history",
+    mode:"history",
   }
 ])
 
@@ -141,19 +143,21 @@ const handleLogout = async () => {
   userStore.logout()
 }
 
-const handleNavClick = (link) => {
-  if (route.path === link) return;
-  router.push(link)
+// 导航跳转：带 mode 的入口（如「代码生成」）把模式写进 URL，
+// 页面据此恢复单图/多图状态；同路径但模式不同时也要更新 query。
+const handleNavClick = (item) => {
+  if (!item.mode) {
+    if (route.path === item.link) return
+    router.push(item.link)
+    return
+  }
+  if (route.path === item.link && route.query.mode === item.mode) return
+  router.push({ path: item.link, query: { ...route.query, mode: item.mode } })
 }
 
 const openPasswordModal = () => {
   showDropdown.value = false
-  passwordBackToLogin.value = false
   passwordModalRef.value?.open()
-}
-
-const handlePasswordBack = () => {
-  loginModalRef.value?.open()
 }
 
 const fallbackLetter = computed(() => {

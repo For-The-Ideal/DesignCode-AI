@@ -21,8 +21,9 @@
           :type="showPassword ? 'text' : 'password'"
           v-model="form.password"
           placeholder="新密码（至少6位）"
-          maxlength="20"
+          maxlength="64"
           minlength="6"
+          autocomplete="new-password"
           @focus="focusedInput = 'new'"
           @blur="focusedInput = null"
           @input="clearError('password')"
@@ -44,8 +45,9 @@
           :type="showConfirm ? 'text' : 'password'"
           v-model="form.confirm"
           placeholder="确认新密码"
-          maxlength="20"
+          maxlength="64"
           minlength="6"
+          autocomplete="new-password"
           @focus="focusedInput = 'confirm'"
           @blur="focusedInput = null"
           @input="clearError('confirm')"
@@ -112,10 +114,7 @@ const close = () => {
   emit('close')
 }
 
-const handleClose = () => {
-  dialogRef.value?.close()
-  emit('close')
-}
+const handleClose = () => close()
 
 const resetForm = () => {
   form.password = ''
@@ -144,14 +143,18 @@ const handleSubmit = async () => {
       token: props.token,
       password: form.password,
     })
+    // 请求被重复请求互踢/取消时 resolve(null)，不能直接取 res.code
+    if (!res) {
+      serverError.value = '请求已取消，请重试'
+      return
+    }
     if(res.code != 200){
-      ElMessage.error(res.message || '重置失败')
       serverError.value = res.message || '重置失败'
       return
     }
-      ElMessage.success('密码重置成功')
-      close()
-      emit('success')
+    // 只 emit success，由父组件导航；再调 close() 会让父组件 onClose 重复跳转
+    ElMessage.success('密码重置成功')
+    emit('success')
   } catch (e) {
     serverError.value = '网络错误，请重试'
   } finally {
