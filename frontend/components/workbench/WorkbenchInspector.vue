@@ -2,8 +2,9 @@
   <!-- 右栏：一列可折叠分区（区域 = 树 + 属性 / 生成配置），不切 tab；底部常驻开始生成 -->
   <div class="wb-inspector">
     <div class="insp-scroll">
-      <!-- 区域：树在上、选中节点的属性紧接在下，一段内完成「选节点 → 改属性」 -->
-      <section class="insp-sec">
+      <!-- 区域：树在上、选中节点的属性紧接在下，一段内完成「选节点 → 改属性」；
+           没上传图片、或上传了但还没框选区域时整段隐藏（框选在画布上完成，不依赖这段树） -->
+      <section v-if="showNodeSection" class="insp-sec">
         <button class="sec-head" @click="toggle('nodes')">
           <i class="fas" :class="open.nodes ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
           <i class="fas fa-sitemap sec-icon"></i>
@@ -86,6 +87,10 @@ const isMulti = computed(() => codeStore.mode === 'multi')
 // 三段折叠：区域（树 + 属性）/ 页面关系（多图）/ 生成配置；默认全展开
 const open = reactive({ nodes: true, relations: true, config: true })
 const toggle = (key) => { open[key] = !open[key] }
+
+// 区域结构段是否出现：没上传图片、或上传了但还没框选任何区域时，整段隐藏
+// （没图没得选；有图没框时树和属性都是空壳，留着只占位置）
+const showNodeSection = computed(() => Boolean(store.image.url) && store.hasNodes)
 
 // 配置段徽标：目标框架 · 目标平台（配置字典未加载完成时为空）
 const configSummary = computed(() => {
