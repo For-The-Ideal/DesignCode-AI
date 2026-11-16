@@ -6,7 +6,8 @@ export const useMenuListStore = defineStore("menuList", {
       { icon: "fa-solid fa-house", label: "首页", to: "/" },
       { icon: "fa-solid fa-code", label: "代码生成", to: "/code" },
       { icon: "fa-regular fa-folder", label: "任务列表", to: "/tasks" },
-      { icon: "fa-regular fa-copy", label: "模板市场", to: "/templates" },
+      // soon: 功能未上线，点击只提示不跳转（拦截在 AppSidebar 统一处理）
+      { icon: "fa-regular fa-copy", label: "模板市场", to: "/templates", soon: true },
     ],
   }),
 

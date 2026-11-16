@@ -19,8 +19,8 @@
         :key="item.label"
         href="#"
         class="nav-item"
-        :class="{ active: item.active }"
-        @click.prevent="$emit('navClick', item)"
+        :class="{ active: item.active, soon: item.soon }"
+        @click.prevent="onNavClick(item)"
       >
         <i :class="item.icon" class="nav-icon"></i>
         <span v-show="sidebarOpen" class="nav-label">{{ item.label }}</span>
@@ -39,6 +39,7 @@
 
 <script setup>
 import { ref, watch } from 'vue'
+import { ElMessage } from 'element-plus'
 
 const props = defineProps({
   brand: { type: String, default: '' },
@@ -58,6 +59,15 @@ watch(() => props.modelValue, (val) => {
 const toggleSidebar = () => {
   sidebarOpen.value = !sidebarOpen.value
   emit('update:modelValue', sidebarOpen.value)
+}
+
+// 待上线入口（item.soon）：只提示不跳转，也不进页面自己的登录/路由流程
+const onNavClick = (item) => {
+  if (item.soon) {
+    ElMessage.warning(`${item.label}还在开发中，敬请期待`)
+    return
+  }
+  emit('navClick', item)
 }
 </script>
 
@@ -149,6 +159,10 @@ const toggleSidebar = () => {
 .nav-item.active {
   color: #e2e8f0;
   background: rgba(0, 255, 255, 0.06);
+}
+/* 待上线入口：不在 active 态时也保持可点（点击弹提示），仅弱化一档 */
+.nav-item.soon:not(.active) {
+  opacity: 0.55;
 }
 .nav-icon {
   width: 20px;
