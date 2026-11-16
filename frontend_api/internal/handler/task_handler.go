@@ -471,15 +471,13 @@ func (h *TaskHandler) DeleteTask(c *gin.Context) {
 }
 
 // ── 获取模版 ──
+// defaultTemplateID 默认模板 id：与仓库层 SeedDefault 写入的那一条保持一致
+const defaultTemplateID = 1
+
+// GetTemplate 获取预置模板：
+//   - 路径不带 id（GET /api/v1/template）→ 从全部模板里随机返回一条；
+//   - 路径带 id（GET /api/v1/template/3）→ 返回该模板，查不到（越界/未维护）回落默认模板 1。
 func (h *TaskHandler) GetTemplate(c *gin.Context) {
-	idStr := c.Param("id")
-
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		utils.BadRequest(c, "模版获取失败: "+err.Error())
-		return
-	}
-
 	db := mysql.GetDB()
 	if db == nil {
 		utils.InternalError(c, "数据库未连接")
@@ -487,9 +485,30 @@ func (h *TaskHandler) GetTemplate(c *gin.Context) {
 	}
 
 	var tmpl model.TaskTemplate
-	if err := db.Where("id = ?", id).First(&tmpl).Error; err != nil {
-		utils.Error(c, 404, "模版获取失败: "+err.Error())
-		return
+
+	if c.Param("id") == "" {
+		// 没带 id → 随机一条（跳过内容为空的脏行）
+		if err := db.Where("template_code IS NOT NULL AND template_code <> ''").
+			Order("RAND()").First(&tmpl).Error; err != nil {
+			utils.Error(c, 404, "模版获取失败: "+err.Error())
+			return
+		}
+	} else {
+		id, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			// id 非法（如 abc）按默认模板处理，不向前端抛错
+			id = defaultTemplateID
+		}
+
+		err = db.Where("id = ?", id).First(&tmpl).Error
+		// 查询不到（如 ?template=100 越界、或该 id 未维护）→ 回落到默认模板 1，避免前端白屏
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			err = db.Where("id = ?", defaultTemplateID).First(&tmpl).Error
+		}
+		if err != nil {
+			utils.Error(c, 404, "模版获取失败: "+err.Error())
+			return
+		}
 	}
 
 	utils.Success(c, gin.H{

@@ -94,20 +94,6 @@
           </div>
           <div class="content-left">
             <div class="pv-card">
-              <!-- 多页任务：页签切换预览（与右栏代码折叠双向联动） -->
-              <div v-if="pages.length > 1 && !taskDetail?.iframeUrl" class="page-tabs">
-                <button
-                  v-for="(p, i) in pages"
-                  :key="p.page_id"
-                  class="page-tab"
-                  :class="{ active: i === activePage }"
-                  type="button"
-                  @click="selectPage(i)"
-                >
-                  <span class="pt-idx">{{ String(i + 1).padStart(2, '0') }}</span>
-                  <span class="pt-name">{{ p.page_name || p.page_id }}</span>
-                </button>
-              </div>
               <div class="pv-body">
                 <!-- 生成中 / 排队中：走预览模板内置的生成动画（html 为空即 loading 态） -->
                 <PreviewTemplate
@@ -152,16 +138,16 @@
             <div class="code-card">
              
               <div class="code-body" :class="{ 'code-body--pages': pages.length > 1 }">
-                <!-- 多页：每页一个可折叠代码面板（同一时间只展开一页，展开才挂载编辑器） -->
+                <!-- 多页：每页一个可折叠代码面板（手风琴：最多展开一页，点已展开项则全部收起） -->
                 <div v-if="pages.length > 1" class="page-code-list">
                   <div
                     v-for="(p, i) in pages"
                     :key="p.page_id"
                     class="page-code-item"
-                    :class="{ open: i === activePage }"
+                    :class="{ open: i === expandedPage }"
                   >
                     <button class="pc-head" type="button" @click="selectPage(i)">
-                      <i class="fas" :class="i === activePage ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
+                      <i class="fas" :class="i === expandedPage ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
                       <span class="pc-idx">{{ String(i + 1).padStart(2, '0') }}</span>
                       <span class="pc-name">{{ p.page_name || p.page_id }}</span>
                       <span v-if="p.route" class="pc-route">{{ p.route }}</span>
@@ -170,7 +156,7 @@
                         <i class="fa-regular fa-copy"></i>
                       </span>
                     </button>
-                    <div v-if="i === activePage" class="pc-body">
+                    <div v-if="i === expandedPage" class="pc-body">
                       <CodeEditor
                         :modelValue="p.code"
                         :language="codeLang(task.framework)"
@@ -247,7 +233,8 @@ const codeLang = (fw) => ({ Flutter: 'dart', React: 'typescript', Vue3: 'html', 
 // ═══ 数据（真实接口，非 Mock） ═══
 const task = ref(null)         // 当前任务概要（驱动预览/代码渲染）
 const taskDetail = ref(null)   // 生成结果（code + preview + iframeUrl + 多页 pages）
-const activePage = ref(0)      // 多页模式当前页下标（左页签 / 右折叠共用）
+const activePage = ref(0)      // 预览/质量报告当前展示页下标（多页模式，始终有值）
+const expandedPage = ref(0)    // 右栏代码面板展开页下标；-1 = 全部收起（手风琴互斥）
 const taskList = ref([])       // 侧栏任务列表
 const loading = ref(false)
 const failReason = ref('')     // 失败原因（results.error_msg；后端在 failed 时一并返回）
@@ -315,6 +302,7 @@ async function loadTask(id, silent = false) {
         : null
     }
     activePage.value = 0
+    expandedPage.value = 0
   } catch {
     // 网络异常：不清空已展示的任务，避免误判“任务不存在”
   } finally {
@@ -347,13 +335,17 @@ function resetFailCheck () {
   failChecks = 0
 }
 
-// ═══ 多页：左页签预览 / 右折叠代码双向联动 ═══
+// ═══ 多页：预览跟随 activePage / 右栏代码手风琴展开 expandedPage ═══
 const pages = computed(() => taskDetail.value?.pages || [])
 const currentPreview = computed(() => {
   if (pages.value.length) return pages.value[activePage.value]?.preview || ''
   return taskDetail.value?.preview || ''
 })
-const selectPage = (i) => { activePage.value = i }
+// 点标题同时做两件事：预览切到该页（收起状态也生效）；代码面板互斥展开，再点同一页则全部收起
+const selectPage = (i) => {
+  activePage.value = i
+  expandedPage.value = expandedPage.value === i ? -1 : i
+}
 
 // ═══ 质量检查：当前展示页的报告（多页优先取本页，单页回退入口页） ═══
 const qcOpen = ref(false)
@@ -859,39 +851,6 @@ onMounted(() => {
 .qc-item--critical .qc-rule { background: rgba(248, 113, 113, 0.14); color: #f87171; }
 .qc-item--warning .qc-rule { background: rgba(251, 191, 36, 0.12); color: #fbbf24; }
 
-/* ═══ 多页页签（左栏） ═══ */
-.page-tabs {
-  display: flex;
-  gap: 6px;
-  padding: 10px 12px 0;
-  overflow-x: auto;
-  flex-shrink: 0;
-}
-.page-tabs::-webkit-scrollbar { height: 3px; }
-.page-tabs::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
-.page-tab {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 12px;
-  border-radius: 8px;
-  border: 1px solid rgba(255,255,255,0.08);
-  background: rgba(255,255,255,0.03);
-  color: rgba(255,255,255,0.5);
-  font-size: 12px;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: all 0.18s ease;
-  font-family: inherit;
-}
-.page-tab:hover { color: #e2e8f0; border-color: rgba(0,255,255,0.25); }
-.page-tab.active {
-  color: #06121a;
-  background: linear-gradient(135deg, #22d3ee, #06b6d4);
-  border-color: transparent;
-  font-weight: 700;
-}
-.pt-idx { font-variant-numeric: tabular-nums; opacity: 0.75; }
 .pv-empty {
   flex: 1;
   display: flex;

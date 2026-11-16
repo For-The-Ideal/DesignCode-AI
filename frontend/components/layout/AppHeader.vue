@@ -17,12 +17,6 @@
         </div>
       </div>
 
-      <!-- 导航菜单 -->
-      <nav class="nav">
-        <a href="javascript:void(0)" class="nav-link" :class="{'active': route.path === item.link}" v-for="item in navList" :key="item.name" 
-        @click="handleNavClick(item)">{{item.name}}</a>
-      </nav>
-
       <!-- 右侧区域 -->
       <div class="auth-area">
         <!-- 未登录：登录按钮 -->
@@ -108,23 +102,6 @@ const { isLogin, userInfo } = storeToRefs(userStore)
 watch(() => commonStore.loginModalVisible, (val) => {
   if (val) loginModalRef.value?.open()
 })
-const navList = ref([
-  {
-    name:"首页",
-    link:"/",
-    mode:"index",
-  },
-  {
-    name:"代码生成",
-    link:"/code",
-    mode:"single",
-  },
-  {
-    name:"历史记录",
-    link:"/history",
-    mode:"history",
-  }
-])
 
 const handleLoginSuccess = async (user) => {
   await userStore.setUserInfo(user)
@@ -139,20 +116,13 @@ const handleModalClose = () => {
 
 const handleLogout = async () => {
   showDropdown.value = false
-  // 清 Pinia 状态
-  userStore.logout()
-}
-
-// 导航跳转：带 mode 的入口（如「代码生成」）把模式写进 URL，
-// 页面据此恢复单图/多图状态；同路径但模式不同时也要更新 query。
-const handleNavClick = (item) => {
-  if (!item.mode) {
-    if (route.path === item.link) return
-    router.push(item.link)
-    return
-  }
-  if (route.path === item.link && route.query.mode === item.mode) return
-  router.push({ path: item.link, query: { ...route.query, mode: item.mode } })
+  // 清登录态 + 工作台素材 + 任务级 SSE（具体清理项见 userStore.logout）
+  await userStore.logout()
+  commonStore.setLoginModalVisible(false)
+  // 头像加载失败标记复位，否则下个账号有头像时仍显示首字母
+  avatarFailed.value = false
+  // 退出后回首页：/tasks、/detail 等页面的数据不应继续展示
+  if (route.path !== '/') await router.push('/')
 }
 
 const openPasswordModal = () => {

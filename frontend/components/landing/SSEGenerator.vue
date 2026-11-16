@@ -34,7 +34,8 @@ import FlutterTemplate from '@/components/common/FlutterTemplate.vue'
 
 const route = useRoute()
 const screenRef = ref(null)
-const templateId = ref(route.query.template || 1)
+
+const templateId = ref(route.query.template || '')
 const {
   template,
   initTemplateData,

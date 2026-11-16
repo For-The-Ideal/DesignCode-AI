@@ -247,3 +247,20 @@ export function useGeneration () {
     cleanup,
   }
 }
+
+/**
+ * 退出登录时复位生成模块。
+ * 模块级 ref 不随页面卸载销毁，任务级 SSE 也不会自己停 —— 三者都必须显式清，
+ * 否则下一个登录的账号进 /code 会看到上一位的任务状态，并继续收到他的推送。
+ * 只能由客户端调用（依赖 localStorage）。
+ */
+export function resetGeneration () {
+  useSSE().disconnect()
+  activeTaskId.value = null
+  activeTaskFramework.value = ''
+  taskStatus.value = 'idle'
+  taskProgress.value = 0
+  taskCurrentStep.value = ''
+  taskErrorMsg.value = ''
+  if (import.meta.client) localStorage.removeItem(RESTORE_KEY)
+}

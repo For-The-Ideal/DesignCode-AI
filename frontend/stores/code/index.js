@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { reactive, computed, toRefs } from 'vue'
+import { reactive, computed, toRefs, watch } from 'vue'
 import { createUploadActions } from './upload'
 import { createTaskActions } from './task'
 import { createRelationActions } from './relation'
@@ -173,6 +173,29 @@ export const useCodeStore = defineStore('code', () => {
     state.isSubmitting = false
   }
 
+  // 退出登录：强制清空单图/多图两套桶（含生成中的状态）
+  // 与 clearAll 不同，这里不做 isSubmitting 拦截、也不只清当前模式：
+  // 上传的图、标注树、附图素材都是账号私有数据，不能留给下一个登录的人
+  const resetForLogout = () => {
+    for (const bucket of Object.values(state.modes)) {
+      bucket.images.forEach((img) => { if (img.uploadId) uploadModule.cancelUpload(img.uploadId) })
+      bucket.assets.forEach((a) => { if (a.assetId) uploadModule.cancelAsset(a.assetId) })
+      bucket.images.splice(0)
+      bucket.assets.splice(0)
+      bucket.pageLinks.splice(0)
+    }
+    state.activePageId = ''
+    state.isSubmitting = false
+  }
+
+  // 退出登录时自动清空素材。只在 store 已经存在于内存中（用户进过生成页）时才会触发，
+  // 从未创建过的 store 没有数据可清 —— 也避免退出流程反向实例化本 store，
+  // 否则 setup 里的 route.query.mode 会被永久锁成首次创建时的值
+  const userStore = useUserStore()
+  watch(() => userStore.isLogin, (loggedIn, prev) => {
+    if (prev && !loggedIn) resetForLogout()
+  })
+
   return {
     ...toRefs(state),
     images,
@@ -192,6 +215,7 @@ export const useCodeStore = defineStore('code', () => {
     moveImage,
     clearImages,
     clearAll,
+    resetForLogout,
     ...actions,
   }
 })

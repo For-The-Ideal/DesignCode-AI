@@ -3,8 +3,10 @@ import httpRequest from "~/utils/request";
 export const commonApi = {
   // 获取模板
   async getTemplate(params = {}, server = true) {
+    // 不带 id → 请求 /api/v1/template，由后端随机返回一条
+    let url = '/api/v1/template' + (params.id ? `/${params.id}` : '');
     let options = {
-      url: `/api/v1/template/${params.id}`,
+      url: url,
       method: "get",
       params:{},
       server,

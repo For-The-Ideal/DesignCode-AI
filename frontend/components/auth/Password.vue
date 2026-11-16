@@ -105,6 +105,8 @@ const emit = defineEmits(['close'])
 
 const dialogRef = ref(null)
 const userStore = useUserStore()
+const router = useRouter()
+const route = useRoute()
 const loading = ref(false)
 const focusedInput = ref(null)
 const showOld = ref(false)
@@ -174,8 +176,9 @@ const handleSubmit = async () => {
     if (res.code === 200) {
       // 旧 JWT 仍有效，主动退出，让用户用新密码重新登录
       ElMessage.success('密码修改成功，请重新登录')
-      userStore.logout()
+      await userStore.logout()
       close()
+      if (route.path !== '/') router.push('/')
     } else if (res.message?.includes('当前密码')) {
       errors.oldPassword = res.message
     } else {

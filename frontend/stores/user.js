@@ -103,11 +103,22 @@ export const useUserStore = defineStore('user', {
       // 先断开 SSE 再清除状态
       this.stopUserSSE()
 
+      // 工作台生成态是模块级 ref，不随页面卸载销毁；任务级 SSE 也不会自己停；
+      // localStorage 里还留着刷新恢复用的任务 ID（跨账号残留）。
+      // 动态 import：退出流程不常走，不值得跟首屏一起打包
+      try {
+        const { resetGeneration } = await import('~/composables/useGeneration')
+        resetGeneration()
+      } catch {
+        // 清理失败不阻断退出
+      }
+
       cookie.remove()
       this.userInfo = {}
       this.isLogin = false
       this.taskCounts = { pending: 0, running: 0, success: 0, failed: 0 }
       this.taskProgress = {}
+      // 工作台上传的图/标注/附图由 stores/code 监听 isLogin 自行清理
     },
   },
 
